@@ -13,6 +13,8 @@ function coverUrl(current: { thumbnailPath: string | null; youtubeId: string | n
 export function PlayerBar() {
   const {
     current,
+    queue,
+    index,
     isPlaying,
     position,
     duration,
@@ -23,6 +25,9 @@ export function PlayerBar() {
     seek,
     setVolume
   } = usePlayerStore();
+
+  const hasPrev = index > 0;
+  const hasNext = index >= 0 && index < queue.length - 1;
 
   const { playlists, refreshPlaylists } = useLibraryStore();
   const [isFavorited, setIsFavorited] = useState(false);
@@ -73,7 +78,11 @@ export function PlayerBar() {
       </div>
       <div className="player-controls">
         <div className="buttons">
-          <button onClick={() => void prev()} disabled={!current} title="Anterior">
+          <button
+            onClick={() => void prev()}
+            title="Anterior"
+            style={{ visibility: hasPrev ? 'visible' : 'hidden' }}
+          >
             &laquo;
           </button>
           <button
@@ -84,7 +93,11 @@ export function PlayerBar() {
           >
             {isPlaying ? '\u275a\u275a' : '\u25b6'}
           </button>
-          <button onClick={() => void next()} disabled={!current} title="Siguiente">
+          <button
+            onClick={() => void next()}
+            title="Siguiente"
+            style={{ visibility: hasNext ? 'visible' : 'hidden' }}
+          >
             &raquo;
           </button>
         </div>

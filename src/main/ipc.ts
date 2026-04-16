@@ -42,6 +42,7 @@ import { getSchemaHistory } from './library/db.js';
 import { discoverSonos, addSonosByIp, initSonosFromCache, sonosPlayTrack, sonosPause, sonosResume, sonosStop, sonosSetVolume, sonosSeek, sonosGetPosition } from './sonos.js';
 import { startAudioServer, getTrackHttpUrl } from './sonos-server.js';
 import { refreshTrayLanguage } from './tray.js';
+import { checkForUpdates, downloadUpdate, quitAndInstall, getLastUpdaterStatus } from './app-updater.js';
 
 function broadcast(channel: string, payload: unknown) {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -54,6 +55,12 @@ function broadcast(channel: string, payload: unknown) {
 export function registerIpc(): void {
   // ----- App / system -----
   ipcMain.handle(Channels.AppVersion, () => app.getVersion());
+
+  // ----- Updater -----
+  ipcMain.handle(Channels.UpdaterCheck, () => checkForUpdates());
+  ipcMain.handle(Channels.UpdaterGetStatus, () => getLastUpdaterStatus());
+  ipcMain.handle(Channels.UpdaterDownload, () => downloadUpdate());
+  ipcMain.handle(Channels.UpdaterInstall, () => quitAndInstall());
   ipcMain.handle(Channels.OpenExternal, async (_evt, url: string) => {
     await shell.openExternal(url);
   });

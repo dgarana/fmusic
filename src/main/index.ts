@@ -12,6 +12,7 @@ import { stopActiveSonos } from './sonos.js';
 import { stopAudioServer } from './sonos-server.js';
 import { createTray, destroyTray, updateTray, type TrayPlayerState } from './tray.js';
 import { createMiniPlayer, showMiniPlayer, hideMiniPlayer, getMiniPlayer } from './miniplayer.js';
+import { initUpdater } from './app-updater.js';
 
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
@@ -208,6 +209,7 @@ app.whenReady().then(() => {
     }
   });
   createMiniPlayer();
+  initUpdater();
 
   // Main renderer → tray menu update.
   ipcMain.on('tray:player-state', (_evt, state: TrayPlayerState) => {

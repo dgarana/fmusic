@@ -9,7 +9,8 @@ import type {
   SearchResult,
   SonosDevice,
   Track,
-  TrackQuery
+  TrackQuery,
+  UpdateStatus
 } from '../shared/types.js';
 
 function invoke<T>(channel: string, ...args: unknown[]): Promise<T> {
@@ -26,6 +27,14 @@ const api = {
   // App / system
   getAppVersion: () => invoke<string>(Channels.AppVersion),
   openExternal: (url: string) => invoke<void>(Channels.OpenExternal, url),
+
+  // Updater
+  checkForUpdates: () => invoke<void>(Channels.UpdaterCheck),
+  getUpdaterStatus: () => invoke<UpdateStatus>(Channels.UpdaterGetStatus),
+  downloadUpdate: () => invoke<void>(Channels.UpdaterDownload),
+  installUpdate: () => invoke<void>(Channels.UpdaterInstall),
+  onUpdaterStatus: (handler: (status: UpdateStatus) => void) =>
+    on<UpdateStatus>(Channels.UpdaterStatus, handler),
   openPath: (p: string) => invoke<void>(Channels.OpenPath, p),
   pickDirectory: () => invoke<string | null>(Channels.PickDirectory),
 

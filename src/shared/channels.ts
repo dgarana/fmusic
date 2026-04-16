@@ -50,6 +50,13 @@ export const Channels = {
   // Schema
   SchemaHistory: 'schema:history',
 
+  // Updater
+  UpdaterStatus: 'updater:status', // event, main -> renderer
+  UpdaterCheck: 'updater:check',
+  UpdaterGetStatus: 'updater:get-status',
+  UpdaterDownload: 'updater:download',
+  UpdaterInstall: 'updater:install',
+
   // Sonos
   SonosDiscover: 'sonos:discover',
   SonosAddByIp: 'sonos:add-by-ip',

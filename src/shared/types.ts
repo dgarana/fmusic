@@ -121,3 +121,12 @@ export interface SonosDevice {
   host: string;
   port: number;
 }
+
+export type UpdateStatus =
+  | { status: 'idle' }
+  | { status: 'checking' }
+  | { status: 'up-to-date' }
+  | { status: 'available'; version: string }
+  | { status: 'downloading'; percent: number }
+  | { status: 'ready'; version: string }
+  | { status: 'error'; message: string };

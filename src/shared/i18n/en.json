@@ -150,6 +150,13 @@
       "applied": "Applied"
     }
   },
+  "updater": {
+    "available": "↑ v{version} available",
+    "downloading": "Downloading {percent}%...",
+    "ready": "↺ Restart to update",
+    "error": "Update failed ·",
+    "downloadManually": "Download manually"
+  },
   "sonos": {
     "title": "📡 Sonos",
     "castTooltip": "Cast to Sonos",

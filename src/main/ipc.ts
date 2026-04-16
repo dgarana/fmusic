@@ -1,4 +1,4 @@
-import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import fs from 'node:fs';
 import { Channels } from '../shared/channels.js';
 import type {
@@ -53,6 +53,7 @@ function broadcast(channel: string, payload: unknown) {
 
 export function registerIpc(): void {
   // ----- App / system -----
+  ipcMain.handle(Channels.AppVersion, () => app.getVersion());
   ipcMain.handle(Channels.OpenExternal, async (_evt, url: string) => {
     await shell.openExternal(url);
   });

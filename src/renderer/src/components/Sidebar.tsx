@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useLibraryStore } from '../store/library';
 import { useT, playlistDisplayName } from '../i18n';
@@ -5,6 +6,11 @@ import { useT, playlistDisplayName } from '../i18n';
 export function Sidebar() {
   const playlists = useLibraryStore((s) => s.playlists);
   const t = useT();
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    window.fmusic.getAppVersion().then(setAppVersion).catch(() => setAppVersion(null));
+  }, []);
 
   return (
     <aside className="sidebar">
@@ -39,6 +45,11 @@ export function Sidebar() {
           </NavLink>
         ))}
       </div>
+      {appVersion && (
+        <div style={{ color: 'var(--text-muted)', fontSize: 11, padding: '12px 16px', marginTop: 'auto' }}>
+          v{appVersion}
+        </div>
+      )}
     </aside>
   );
 }

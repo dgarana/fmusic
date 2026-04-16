@@ -128,7 +128,8 @@
       "minimize": "🗔 Minimizar al cerrar",
       "minimizeDescription": "Al pulsar × la app se oculta en la bandeja del sistema en lugar de cerrarse.",
       "miniPlayer": "🎛️ Mini reproductor",
-      "miniPlayerDescription": "Al hacer clic en el icono del tray se abre el mini reproductor flotante."
+      "miniPlayerDescription": "Al hacer clic en el icono del tray se abre el mini reproductor flotante.",
+      "appVersion": "Versión"
     },
     "network": {
       "skipCert": "🔒 Ignorar errores de certificado SSL",

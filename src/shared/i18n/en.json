@@ -128,7 +128,8 @@
       "minimize": "🗔 Minimize on close",
       "minimizeDescription": "When clicking × the app hides to the system tray instead of quitting.",
       "miniPlayer": "🎛️ Mini player",
-      "miniPlayerDescription": "Clicking the tray icon opens the floating mini player."
+      "miniPlayerDescription": "Clicking the tray icon opens the floating mini player.",
+      "appVersion": "Version"
     },
     "network": {
       "skipCert": "🔒 Ignore SSL certificate errors",

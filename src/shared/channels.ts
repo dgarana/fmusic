@@ -1,6 +1,7 @@
 // Canonical list of IPC channels used by both main and preload.
 export const Channels = {
   // App / system
+  AppVersion: 'app:version',
   OpenExternal: 'app:open-external',
   OpenPath: 'app:open-path',
   PickDirectory: 'app:pick-directory',

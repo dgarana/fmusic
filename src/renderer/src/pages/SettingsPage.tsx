@@ -17,6 +17,8 @@ export function SettingsPage() {
     dependencies: t('settings.tabs.dependencies')
   };
 
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+
   // Deps state is local — it's only needed in this page
   const [deps, setDeps] = useState<DependencyStatus | null>(null);
   const [ytDlpVersion, setYtDlpVersion] = useState<string | null>(null);
@@ -28,12 +30,14 @@ export function SettingsPage() {
 
   useEffect(() => {
     void (async () => {
-      const [d, h] = await Promise.all([
+      const [d, h, v] = await Promise.all([
         window.fmusic.depsStatus(),
-        window.fmusic.schemaHistory()
+        window.fmusic.schemaHistory(),
+        window.fmusic.getAppVersion()
       ]);
       setDeps(d);
       setHistory(h);
+      setAppVersion(v);
       window.fmusic.depsVersion().then(setYtDlpVersion).catch(() => setYtDlpVersion(null));
     })();
   }, []);
@@ -168,6 +172,11 @@ export function SettingsPage() {
             disabled={!(settings.closeToTray ?? true)}
             onChange={(v) => void update({ miniPlayerEnabled: v })}
           />
+          {appVersion && (
+            <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 8 }}>
+              {t('settings.system.appVersion')}: v{appVersion}
+            </div>
+          )}
         </div>
       )}
 

@@ -24,6 +24,7 @@ function on<T>(channel: string, handler: (payload: T) => void): () => void {
 
 const api = {
   // App / system
+  getAppVersion: () => invoke<string>(Channels.AppVersion),
   openExternal: (url: string) => invoke<void>(Channels.OpenExternal, url),
   openPath: (p: string) => invoke<void>(Channels.OpenPath, p),
   pickDirectory: () => invoke<string | null>(Channels.PickDirectory),

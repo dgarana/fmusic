@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { DownloadJob, SearchResult } from '../../../shared/types';
 import { useDownloadsStore } from '../store/downloads';
-import { useSearchStore } from '../store/search';
+import { PAGE_SIZE, useSearchStore } from '../store/search';
 import { extractYoutubeId, formatDuration, isYouTubeUrl } from '../util';
 
 interface Preview {
@@ -23,9 +23,10 @@ function jobYoutubeId(job: DownloadJob): string | null {
 }
 
 export function DownloadPage() {
-  const { query, results, error, setQuery, setResults, setError } = useSearchStore();
+  const { query, results, resultLimit, error, setQuery, setResults, setError } = useSearchStore();
   const [preview, setPreview] = useState<Preview | null>(null);
   const [searching, setSearching] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const jobs = useDownloadsStore((s) => s.jobs);
   const [inLibrary, setInLibrary] = useState<Set<string>>(new Set());
 
@@ -90,12 +91,27 @@ export function DownloadPage() {
     }
     setSearching(true);
     try {
-      const items = await window.fmusic.search(trimmed, 12);
-      setResults(items);
+      const items = await window.fmusic.search(trimmed, PAGE_SIZE);
+      setResults(items, PAGE_SIZE);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSearching(false);
+    }
+  }
+
+  async function loadMore() {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    const nextLimit = resultLimit + PAGE_SIZE;
+    setLoadingMore(true);
+    try {
+      const items = await window.fmusic.search(trimmed, nextLimit);
+      setResults(items, nextLimit);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -269,6 +285,13 @@ export function DownloadPage() {
               );
             })}
           </div>
+          {results.length >= resultLimit && (
+            <div style={{ textAlign: 'center', marginTop: 16 }}>
+              <button onClick={() => void loadMore()} disabled={loadingMore}>
+                {loadingMore ? 'Cargando...' : 'Cargar más resultados'}
+              </button>
+            </div>
+          )}
         </>
       )}
 

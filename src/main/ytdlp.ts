@@ -1,0 +1,290 @@
+import { spawn } from 'node:child_process';
+import { EventEmitter } from 'node:events';
+import fs from 'node:fs';
+import path from 'node:path';
+import { ffmpegPath, hasFfmpeg, hasYtDlp, ytDlpPath } from './paths.js';
+import type { AudioFormat, SearchResult } from '../shared/types.js';
+
+/**
+ * Progress marker that yt-dlp emits on stdout via --progress-template.
+ * We prefix it so it's easy to parse unambiguously.
+ */
+const PROGRESS_PREFIX = '__FMP__';
+const PROGRESS_TEMPLATE = `${PROGRESS_PREFIX}%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s`;
+
+function assertBinaries() {
+  if (!hasYtDlp()) {
+    throw new Error(
+      'yt-dlp no est\u00e1 disponible. Ve a Ajustes y pulsa "Actualizar motor de descarga".'
+    );
+  }
+}
+
+export async function ytDlpVersion(): Promise<string | null> {
+  if (!hasYtDlp()) return null;
+  return new Promise((resolve) => {
+    const proc = spawn(ytDlpPath(), ['--version']);
+    let out = '';
+    proc.stdout.on('data', (chunk) => (out += chunk.toString()));
+    proc.on('error', () => resolve(null));
+    proc.on('close', () => resolve(out.trim() || null));
+  });
+}
+
+/**
+ * Runs yt-dlp and collects its stdout as text.
+ */
+function runCollecting(args: string[]): Promise<string> {
+  assertBinaries();
+  return new Promise((resolve, reject) => {
+    const proc = spawn(ytDlpPath(), args, { windowsHide: true });
+    let stdout = '';
+    let stderr = '';
+    proc.stdout.on('data', (chunk) => (stdout += chunk.toString()));
+    proc.stderr.on('data', (chunk) => (stderr += chunk.toString()));
+    proc.on('error', reject);
+    proc.on('close', (code) => {
+      if (code === 0) resolve(stdout);
+      else reject(new Error(`yt-dlp exited with code ${code}: ${stderr.trim()}`));
+    });
+  });
+}
+
+function parseYtSearchLine(line: string): SearchResult | null {
+  try {
+    const data = JSON.parse(line);
+    const id: string | undefined = data.id;
+    if (!id) return null;
+    const thumbnails: Array<{ url: string; width?: number }> | undefined = data.thumbnails;
+    const thumbnail =
+      data.thumbnail ??
+      (thumbnails && thumbnails.length > 0 ? thumbnails[thumbnails.length - 1].url : null);
+    return {
+      id,
+      title: data.title ?? 'Unknown title',
+      channel: data.channel ?? data.uploader ?? 'Unknown channel',
+      durationSec: typeof data.duration === 'number' ? data.duration : null,
+      thumbnail,
+      url: data.webpage_url ?? `https://www.youtube.com/watch?v=${id}`
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Search YouTube using `ytsearch<N>:<query>`. yt-dlp streams one JSON line per
+ * result when invoked with `--dump-json --flat-playlist`.
+ */
+export async function searchYouTube(query: string, limit = 10): Promise<SearchResult[]> {
+  const stdout = await runCollecting([
+    '--no-warnings',
+    '--flat-playlist',
+    '--dump-json',
+    `ytsearch${limit}:${query}`
+  ]);
+  return stdout
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map(parseYtSearchLine)
+    .filter((r): r is SearchResult => r !== null);
+}
+
+export interface VideoInfo {
+  id: string;
+  title: string;
+  channel: string;
+  durationSec: number | null;
+  thumbnail: string | null;
+  url: string;
+}
+
+export async function fetchVideoInfo(url: string): Promise<VideoInfo> {
+  const stdout = await runCollecting(['--no-warnings', '--dump-json', url]);
+  const data = JSON.parse(stdout);
+  return {
+    id: data.id,
+    title: data.title,
+    channel: data.channel ?? data.uploader ?? 'Unknown channel',
+    durationSec: typeof data.duration === 'number' ? data.duration : null,
+    thumbnail: data.thumbnail ?? null,
+    url: data.webpage_url ?? url
+  };
+}
+
+export interface DownloadProgress {
+  percent: number; // 0..1
+  etaSeconds: number | null;
+  speedHuman: string | null;
+  downloadedBytes: number | null;
+  totalBytes: number | null;
+}
+
+function parsePercent(raw: string): number {
+  const cleaned = raw.replace('%', '').trim();
+  const n = parseFloat(cleaned);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(1, n / 100));
+}
+
+function parseEta(raw: string): number | null {
+  // yt-dlp emits e.g. "00:05" or "--:--"
+  if (!raw || raw.includes('-')) return null;
+  const parts = raw.split(':').map((p) => parseInt(p, 10));
+  if (parts.some(Number.isNaN)) return null;
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return null;
+}
+
+function parseInteger(raw: string): number | null {
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+export interface DownloadOptions {
+  url: string;
+  outputDir: string;
+  format: AudioFormat;
+  quality: number; // kbps
+}
+
+export interface DownloadResult {
+  filePath: string;
+  title: string;
+  youtubeId: string;
+  durationSec: number | null;
+  thumbnail: string | null;
+}
+
+export class DownloadProcess extends EventEmitter {
+  private proc: ReturnType<typeof spawn> | null = null;
+  private cancelled = false;
+  private finalFile: string | null = null;
+  private info: VideoInfo | null = null;
+
+  constructor(private readonly options: DownloadOptions) {
+    super();
+  }
+
+  cancel(): void {
+    this.cancelled = true;
+    if (this.proc) {
+      this.proc.kill('SIGTERM');
+    }
+  }
+
+  async start(): Promise<DownloadResult> {
+    assertBinaries();
+    fs.mkdirSync(this.options.outputDir, { recursive: true });
+
+    // Step 1: fetch info so we know the title up front.
+    this.info = await fetchVideoInfo(this.options.url);
+    this.emit('info', this.info);
+
+    // Step 2: run yt-dlp with audio extraction.
+    const outputTemplate = path.join(this.options.outputDir, '%(title)s [%(id)s].%(ext)s');
+    const args: string[] = [
+      '--no-warnings',
+      '--no-playlist',
+      '-x',
+      '--audio-format',
+      this.options.format,
+      '--audio-quality',
+      `${this.options.quality}K`,
+      '--embed-thumbnail',
+      '--add-metadata',
+      '--progress',
+      '--newline',
+      '--progress-template',
+      `download:${PROGRESS_TEMPLATE}`,
+      '--print',
+      'after_move:__FMP_DONE__%(filepath)s',
+      '-o',
+      outputTemplate
+    ];
+
+    if (hasFfmpeg()) {
+      args.push('--ffmpeg-location', ffmpegPath());
+    }
+
+    args.push(this.options.url);
+
+    return new Promise<DownloadResult>((resolve, reject) => {
+      const proc = spawn(ytDlpPath(), args, { windowsHide: true });
+      this.proc = proc;
+      let stderr = '';
+
+      const onLine = (line: string) => {
+        line = line.trim();
+        if (!line) return;
+        if (line.startsWith(PROGRESS_PREFIX)) {
+          const body = line.slice(PROGRESS_PREFIX.length);
+          const [pct, speed, eta, downloaded, total] = body.split('|');
+          const progress: DownloadProgress = {
+            percent: parsePercent(pct ?? '0'),
+            etaSeconds: parseEta(eta ?? ''),
+            speedHuman: (speed ?? '').trim() || null,
+            downloadedBytes: parseInteger(downloaded ?? ''),
+            totalBytes: parseInteger(total ?? '')
+          };
+          this.emit('progress', progress);
+          return;
+        }
+        if (line.startsWith('__FMP_DONE__')) {
+          this.finalFile = line.slice('__FMP_DONE__'.length).trim();
+          return;
+        }
+      };
+
+      let stdoutBuffer = '';
+      proc.stdout.on('data', (chunk) => {
+        stdoutBuffer += chunk.toString();
+        const parts = stdoutBuffer.split(/\r?\n/);
+        stdoutBuffer = parts.pop() ?? '';
+        for (const part of parts) onLine(part);
+      });
+
+      proc.stderr.on('data', (chunk) => {
+        stderr += chunk.toString();
+      });
+
+      proc.on('error', reject);
+      proc.on('close', (code) => {
+        if (this.cancelled) {
+          reject(new Error('Descarga cancelada'));
+          return;
+        }
+        if (code !== 0) {
+          reject(new Error(`yt-dlp exited with code ${code}: ${stderr.trim()}`));
+          return;
+        }
+        if (!this.finalFile || !this.info) {
+          reject(new Error('yt-dlp finaliz\u00f3 pero no se pudo resolver el fichero generado.'));
+          return;
+        }
+        resolve({
+          filePath: this.finalFile,
+          title: this.info.title,
+          youtubeId: this.info.id,
+          durationSec: this.info.durationSec,
+          thumbnail: this.info.thumbnail
+        });
+      });
+    });
+  }
+}
+
+export function getDependencyStatus() {
+  return {
+    ytDlp: {
+      present: hasYtDlp(),
+      path: hasYtDlp() ? ytDlpPath() : null
+    },
+    ffmpeg: {
+      present: hasFfmpeg(),
+      path: hasFfmpeg() ? ffmpegPath() : null
+    }
+  };
+}

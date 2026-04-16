@@ -1,0 +1,145 @@
+name: Release installers
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Publicar GitHub Release con los artefactos'
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install (skip binaries)
+        run: npm ci
+        env:
+          FMUSIC_SKIP_BINARIES: '1'
+      - name: Typecheck (node + web)
+        run: npm run typecheck
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: typecheck
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: win
+            script: 'dist:win'
+            artifact_glob: |
+              dist/*.exe
+              dist/*.exe.blockmap
+              dist/latest*.yml
+          - os: macos-latest
+            target: mac
+            script: 'dist:mac'
+            artifact_glob: |
+              dist/*.dmg
+              dist/*.dmg.blockmap
+              dist/*.zip
+              dist/latest*.yml
+          - os: ubuntu-latest
+            target: linux
+            script: 'dist:linux'
+            artifact_glob: |
+              dist/*.AppImage
+              dist/*.deb
+              dist/*.tar.gz
+              dist/latest*.yml
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Cache the yt-dlp + ffmpeg binaries that our postinstall writes to
+      # `resources/bin/`. They rarely change and shave ~30s off CI runs.
+      - name: Cache bundled binaries
+        uses: actions/cache@v4
+        with:
+          path: resources/bin
+          key: fmusic-bin-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/postinstall.js') }}
+
+      # Linux needs a handful of libraries so Electron can rebuild native
+      # modules and electron-builder can produce AppImage/deb.
+      - name: Install Linux system deps
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            rpm libarchive-tools fakeroot dpkg
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build distributables
+        run: npm run ${{ matrix.script }}
+        env:
+          # No code-signing certificates configured yet: make absolutely sure
+          # electron-builder does not try to auto-discover a keychain identity.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          # Avoid the GitHub-rate-limited electron download by using the token.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fmusic-${{ matrix.target }}
+          path: ${{ matrix.artifact_glob }}
+          if-no-files-found: ignore
+          retention-days: 30
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.publish_release == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -lh artifacts
+
+      - name: Create / update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+          generate_release_notes: true
+          files: |
+            artifacts/*.exe
+            artifacts/*.exe.blockmap
+            artifacts/*.dmg
+            artifacts/*.dmg.blockmap
+            artifacts/*.zip
+            artifacts/*.AppImage
+            artifacts/*.deb
+            artifacts/*.tar.gz
+            artifacts/latest*.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { usePlayerStore } from '../store/player';
+import { useLibraryStore } from '../store/library';
 import { formatDuration } from '../util';
 
 function coverUrl(current: { thumbnailPath: string | null; youtubeId: string | null } | null): string | null {
@@ -22,6 +24,32 @@ export function PlayerBar() {
     setVolume
   } = usePlayerStore();
 
+  const { playlists, refreshPlaylists } = useLibraryStore();
+  const [isFavorited, setIsFavorited] = useState(false);
+
+  const favoritesPlaylist = playlists.find((p) => p.name === 'Favoritos');
+
+  useEffect(() => {
+    if (!current || !favoritesPlaylist) {
+      setIsFavorited(false);
+      return;
+    }
+    window.fmusic.playlistsForTrack(current.id).then((trackPlaylists) => {
+      setIsFavorited(trackPlaylists.some((p) => p.id === favoritesPlaylist.id));
+    });
+  }, [current?.id, favoritesPlaylist?.id]);
+
+  async function toggleFavorite() {
+    if (!current || !favoritesPlaylist) return;
+    if (isFavorited) {
+      await window.fmusic.removeTrackFromPlaylist(favoritesPlaylist.id, current.id);
+    } else {
+      await window.fmusic.addTrackToPlaylist(favoritesPlaylist.id, current.id);
+    }
+    setIsFavorited(!isFavorited);
+    await refreshPlaylists();
+  }
+
   const cover = coverUrl(current);
 
   return (
@@ -31,9 +59,17 @@ export function PlayerBar() {
           {cover ? <img src={cover} alt="" /> : null}
         </div>
         <div style={{ minWidth: 0 }}>
-          <div className="title">{current?.title ?? 'Nada reproduci\u00e9ndose'}</div>
+          <div className="title">{current?.title ?? 'Nada reproduciéndose'}</div>
           <div className="artist">{current?.artist ?? ''}</div>
         </div>
+        <button
+          className={`heart-btn${isFavorited ? ' is-favorited' : ''}`}
+          onClick={() => void toggleFavorite()}
+          disabled={!current || !favoritesPlaylist}
+          title={isFavorited ? 'Quitar de Favoritos' : 'Añadir a Favoritos'}
+        >
+          {isFavorited ? '♥' : '♡'}
+        </button>
       </div>
       <div className="player-controls">
         <div className="buttons">

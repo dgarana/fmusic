@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { registerIpc } from './ipc.js';
 import { getDb, closeDb } from './library/db.js';
+import { ensureBuiltinPlaylists } from './library/playlists-repo.js';
 import { getTrack, resolveTrackFilePath } from './library/tracks-repo.js';
 
 let mainWindow: BrowserWindow | null = null;
@@ -118,6 +119,7 @@ app.whenReady().then(() => {
   // Warm the library up front so migrations run immediately.
   try {
     getDb();
+    ensureBuiltinPlaylists();
   } catch (err) {
     console.error('[fmusic] Failed to initialize library database:', err);
   }

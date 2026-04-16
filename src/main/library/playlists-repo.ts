@@ -26,6 +26,10 @@ const SELECT_WITH_COUNT = `
   LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.id
 `;
 
+export function ensureBuiltinPlaylists(): void {
+  getDb().prepare('INSERT OR IGNORE INTO playlists(name) VALUES (?)').run('Favoritos');
+}
+
 export function listPlaylists(): Playlist[] {
   const rows = getDb()
     .prepare(
@@ -53,7 +57,10 @@ export function renamePlaylist(id: number, name: string): Playlist | null {
 }
 
 export function deletePlaylist(id: number): boolean {
-  const res = getDb().prepare('DELETE FROM playlists WHERE id = ?').run(id);
+  const db = getDb();
+  const row = db.prepare('SELECT name FROM playlists WHERE id = ?').get(id) as { name: string } | undefined;
+  if (row?.name === 'Favoritos') return false;
+  const res = db.prepare('DELETE FROM playlists WHERE id = ?').run(id);
   return res.changes > 0;
 }
 

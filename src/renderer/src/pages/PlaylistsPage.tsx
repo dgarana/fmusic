@@ -59,16 +59,18 @@ export function PlaylistsPage() {
                 <a href={`#/playlists/${p.id}`}>
                   <button>Abrir</button>
                 </a>
-                <button
-                  className="danger"
-                  onClick={async () => {
-                    if (!confirm(`¿Eliminar playlist "${p.name}"?`)) return;
-                    await window.fmusic.deletePlaylist(p.id);
-                    await refreshPlaylists();
-                  }}
-                >
-                  Eliminar
-                </button>
+                {p.name !== 'Favoritos' && (
+                  <button
+                    className="danger"
+                    onClick={async () => {
+                      if (!confirm(`¿Eliminar playlist "${p.name}"?`)) return;
+                      await window.fmusic.deletePlaylist(p.id);
+                      await refreshPlaylists();
+                    }}
+                  >
+                    Eliminar
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -87,6 +89,7 @@ function PlaylistDetail({ id, name }: { id: number; name: string }) {
   const [adding, setAdding] = useState(false);
   const playTrack = usePlayerStore((s) => s.playTrack);
   const refreshPlaylists = useLibraryStore((s) => s.refreshPlaylists);
+  const playlistsVersion = useLibraryStore((s) => s.playlistsVersion);
 
   async function refresh() {
     const list = await window.fmusic.listTracks({ playlistId: id });
@@ -96,7 +99,7 @@ function PlaylistDetail({ id, name }: { id: number; name: string }) {
   useEffect(() => {
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, playlistsVersion]);
 
   async function openPicker() {
     setAdding(false);

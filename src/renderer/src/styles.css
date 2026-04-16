@@ -395,6 +395,29 @@ a {
   gap: 10px;
   align-items: center;
 }
+.heart-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--text-muted);
+  padding: 4px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: color 0.15s, transform 0.1s;
+  flex-shrink: 0;
+}
+.heart-btn:hover:not(:disabled) {
+  color: #e05c7a;
+  transform: scale(1.15);
+}
+.heart-btn.is-favorited {
+  color: #e05c7a;
+}
+.heart-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
 
 .empty {
   color: var(--text-muted);

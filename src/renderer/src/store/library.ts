@@ -5,6 +5,7 @@ interface LibraryState {
   tracks: Track[];
   genres: string[];
   playlists: Playlist[];
+  playlistsVersion: number;
   query: TrackQuery;
 
   setQuery: (patch: Partial<TrackQuery>) => Promise<void>;
@@ -19,6 +20,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   tracks: [],
   genres: [],
   playlists: [],
+  playlistsVersion: 0,
   query: { sortBy: 'downloadedAt', sortDir: 'desc' },
 
   async setQuery(patch) {
@@ -39,7 +41,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
 
   async refreshPlaylists() {
     const playlists = await window.fmusic.listPlaylists();
-    set({ playlists });
+    set((s) => ({ playlists, playlistsVersion: s.playlistsVersion + 1 }));
   },
 
   async refreshAll() {

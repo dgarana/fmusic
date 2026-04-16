@@ -211,6 +211,14 @@ puedan buscar en el audio sin necesidad de descargarlo entero.
 - **Uso personal.** Respeta los términos de servicio de YouTube y los derechos
   de autor del material que descargues.
 
+## Disclaimer
+
+Este proyecto es de uso **personal y educativo**. No está afiliado ni respaldado por YouTube, Google ni ningún proveedor de contenido.
+
+- El autor no se hace responsable del uso que cada usuario haga de la aplicación.
+- Descargar contenido de YouTube puede violar sus [Términos de Servicio](https://www.youtube.com/t/terms). Consulta la legislación aplicable en tu país antes de descargar material protegido por derechos de autor.
+- Esta herramienta no elude ningún sistema de protección de copia (DRM). Únicamente descarga streams que el propio navegador recibiría al reproducir el vídeo.
+
 ## Licencia
 
 MIT.

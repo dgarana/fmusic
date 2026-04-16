@@ -55,7 +55,8 @@ export const Channels = {
   SonosResume: 'sonos:resume',
   SonosStop: 'sonos:stop',
   SonosVolume: 'sonos:volume',
-  SonosSeek: 'sonos:seek'
+  SonosSeek: 'sonos:seek',
+  SonosPosition: 'sonos:position'
 } as const;
 
 export type ChannelName = (typeof Channels)[keyof typeof Channels];

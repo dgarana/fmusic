@@ -5,12 +5,14 @@ interface SonosState {
   devices: SonosDevice[];
   activeHost: string | null;
   isPlaying: boolean;
+  position: number;
+  duration: number;
   discovering: boolean;
   error: string | null;
 
   discover: () => Promise<void>;
   stopAll: () => Promise<void>;
-  startCasting: (host: string, trackId: number, title?: string, artist?: string) => Promise<void>;
+  startCasting: (host: string, trackId: number, title?: string, artist?: string, seekTo?: number) => Promise<void>;
   sendTrack: (trackId: number, title?: string, artist?: string) => Promise<void>;
   pause: () => Promise<void>;
   resume: () => Promise<void>;
@@ -18,12 +20,18 @@ interface SonosState {
   stop: () => Promise<void>;
   setVolume: (volume: number) => Promise<void>;
   seek: (seconds: number) => Promise<void>;
+  startPositionPolling: () => void;
+  stopPositionPolling: () => void;
 }
+
+let positionPollerId: ReturnType<typeof setInterval> | null = null;
 
 export const useSonosStore = create<SonosState>((set, get) => ({
   devices: [],
   activeHost: null,
   isPlaying: false,
+  position: 0,
+  duration: 0,
   discovering: false,
   error: null,
 
@@ -54,11 +62,17 @@ export const useSonosStore = create<SonosState>((set, get) => ({
     }
   },
 
-  async startCasting(host, trackId, title, artist) {
+  async startCasting(host, trackId, title, artist, seekTo) {
     set({ error: null });
     try {
       await window.fmusic.sonosPlay(host, trackId, title, artist);
-      set({ activeHost: host, isPlaying: true });
+      set({ activeHost: host, isPlaying: true, position: seekTo ?? 0, duration: 0 });
+      get().startPositionPolling();
+      if (seekTo && seekTo > 0) {
+        // Sonos needs time to buffer before accepting a seek
+        await new Promise((r) => setTimeout(r, 1500));
+        await window.fmusic.sonosSeek(host, seekTo);
+      }
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }
@@ -69,7 +83,8 @@ export const useSonosStore = create<SonosState>((set, get) => ({
     if (!activeHost) return;
     try {
       await window.fmusic.sonosPlay(activeHost, trackId, title, artist);
-      set({ isPlaying: true });
+      set({ isPlaying: true, position: 0, duration: 0 });
+      get().startPositionPolling();
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }
@@ -109,12 +124,13 @@ export const useSonosStore = create<SonosState>((set, get) => ({
   async stop() {
     const { activeHost } = get();
     if (!activeHost) return;
+    get().stopPositionPolling();
     try {
       await window.fmusic.sonosStop(activeHost);
     } catch {
       // ignore
     }
-    set({ activeHost: null, isPlaying: false });
+    set({ activeHost: null, isPlaying: false, position: 0, duration: 0 });
   },
 
   async setVolume(volume) {
@@ -132,8 +148,42 @@ export const useSonosStore = create<SonosState>((set, get) => ({
     if (!activeHost) return;
     try {
       await window.fmusic.sonosSeek(activeHost, seconds);
+      set({ position: seconds });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  startPositionPolling() {
+    if (positionPollerId !== null) return;
+    let lastTickTime = Date.now();
+    positionPollerId = setInterval(async () => {
+      const { activeHost, isPlaying } = get();
+      if (!activeHost) {
+        get().stopPositionPolling();
+        return;
+      }
+      const now = Date.now();
+      const elapsed = (now - lastTickTime) / 1000;
+      lastTickTime = now;
+      try {
+        const { position, duration } = await window.fmusic.sonosGetPosition(activeHost);
+        set({ position, duration });
+      } catch {
+        // Sonos can be in a transitioning state (buffering, seeking) where
+        // GetPositionInfo throws. Advance position locally so the scrubber
+        // never freezes.
+        if (isPlaying) {
+          set((s) => ({ position: s.position + elapsed }));
+        }
+      }
+    }, 500);
+  },
+
+  stopPositionPolling() {
+    if (positionPollerId !== null) {
+      clearInterval(positionPollerId);
+      positionPollerId = null;
     }
   }
 }));

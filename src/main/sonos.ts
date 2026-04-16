@@ -79,6 +79,23 @@ export async function sonosSeek(host: string, seconds: number): Promise<void> {
   await device.AVTransportService.Seek({ InstanceID: 0, Unit: 'REL_TIME', Target: timestamp });
 }
 
+function parseTimeToSeconds(time: string): number {
+  const parts = time.split(':').map(Number);
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return 0;
+}
+
+export async function sonosGetPosition(host: string): Promise<{ position: number; duration: number }> {
+  const device = getDevice(host);
+  if (!device) throw new Error(`Sonos device ${host} not found`);
+  const info = await device.AVTransportService.GetPositionInfo({ InstanceID: 0 });
+  return {
+    position: parseTimeToSeconds(info.RelTime ?? '0:00:00'),
+    duration: parseTimeToSeconds(info.TrackDuration ?? '0:00:00')
+  };
+}
+
 export async function sonosSetVolume(host: string, volume: number): Promise<void> {
   const device = getDevice(host);
   if (!device) throw new Error(`Sonos device ${host} not found`);

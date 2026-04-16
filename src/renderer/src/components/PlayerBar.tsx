@@ -99,11 +99,14 @@ export function PlayerBar() {
   // Local scrub state: while dragging, show the drag value instead of live position.
   const [scrubbing, setScrubbing] = useState(false);
   const [scrubValue, setScrubValue] = useState(0);
-  const displayPosition = scrubbing ? scrubValue : position;
-  const maxDuration = duration || current?.durationSec || 0;
+  const livePosition = isCasting ? sonos.position : position;
+  const displayPosition = scrubbing ? scrubValue : livePosition;
+  const maxDuration = isCasting
+    ? (sonos.duration || current?.durationSec || 0)
+    : (duration || current?.durationSec || 0);
 
   function handleScrubStart() {
-    setScrubValue(position);
+    setScrubValue(livePosition);
     setScrubbing(true);
   }
   function handleScrubChange(e: React.ChangeEvent<HTMLInputElement>) {

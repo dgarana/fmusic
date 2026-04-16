@@ -146,7 +146,9 @@ const api = {
   sonosSetVolume: (host: string, volume: number) =>
     invoke<void>(Channels.SonosVolume, host, volume),
   sonosSeek: (host: string, seconds: number) =>
-    invoke<void>(Channels.SonosSeek, host, seconds)
+    invoke<void>(Channels.SonosSeek, host, seconds),
+  sonosGetPosition: (host: string) =>
+    invoke<{ position: number; duration: number }>(Channels.SonosPosition, host)
 };
 
 export type FmusicAPI = typeof api;

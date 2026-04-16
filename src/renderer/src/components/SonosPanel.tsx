@@ -4,6 +4,7 @@ import { usePlayerStore } from '../store/player';
 
 export function SonosPanel() {
   const current = usePlayerStore((s) => s.current);
+  const playerPosition = usePlayerStore((s) => s.position);
   const playerIsPlaying = usePlayerStore((s) => s.isPlaying);
   const playerToggle = usePlayerStore((s) => s.togglePlay);
 
@@ -25,7 +26,8 @@ export function SonosPanel() {
   async function handleCast(host: string) {
     if (!current) return;
     if (playerIsPlaying) playerToggle();
-    await startCasting(host, current.id, current.title ?? undefined, current.artist ?? undefined);
+    const seekTo = playerPosition > 0 ? playerPosition : undefined;
+    await startCasting(host, current.id, current.title ?? undefined, current.artist ?? undefined, seekTo);
   }
 
   async function handleStop(host: string) {

@@ -10,6 +10,11 @@ on:
         description: 'Publish GitHub Release with the artifacts'
         type: boolean
         default: false
+      tag_name:
+        description: 'Tag name to use when publishing the release (required if publish_release=true and not running on a tag)'
+        type: string
+        required: false
+        default: ''
 
 concurrency:
   group: release-${{ github.ref }}
@@ -129,8 +134,12 @@ jobs:
       - name: Create / update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          # When triggered by a tag push, github.ref_name is the tag (e.g. v1.2.3).
+          # When triggered manually, fall back to the tag_name input.
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.tag_name }}
           draft: ${{ !startsWith(github.ref, 'refs/tags/v') }}
           generate_release_notes: true
+          fail_on_unmatched_files: false
           files: |
             artifacts/*.exe
             artifacts/*.exe.blockmap

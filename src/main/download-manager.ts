@@ -71,11 +71,12 @@ export class DownloadManager extends EventEmitter {
 
     this.updateJob(job, { status: 'fetching-metadata' });
 
-    proc.on('info', (info: { title: string; thumbnail: string | null }) => {
+    proc.on('info', (info: { id: string; title: string; thumbnail: string | null }) => {
       this.updateJob(job, {
         status: 'downloading',
         title: info.title,
-        thumbnail: info.thumbnail ?? undefined
+        thumbnail: info.thumbnail ?? undefined,
+        youtubeId: info.id
       });
     });
 

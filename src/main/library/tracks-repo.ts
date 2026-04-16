@@ -155,3 +155,19 @@ export function findByYoutubeId(youtubeId: string): Track | null {
     .get(youtubeId) as TrackRow | undefined;
   return row ? rowToTrack(row) : null;
 }
+
+/**
+ * Given a batch of YouTube video ids, returns the subset that is already
+ * present in the library. Used to grey out "Download" buttons in search
+ * results without issuing one query per row.
+ */
+export function findDownloadedYoutubeIds(youtubeIds: string[]): string[] {
+  if (youtubeIds.length === 0) return [];
+  const placeholders = youtubeIds.map(() => '?').join(',');
+  const rows = getDb()
+    .prepare(
+      `SELECT youtube_id FROM tracks WHERE youtube_id IN (${placeholders})`
+    )
+    .all(...youtubeIds) as Array<{ youtube_id: string }>;
+  return rows.map((r) => r.youtube_id);
+}

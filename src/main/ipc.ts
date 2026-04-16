@@ -20,6 +20,7 @@ import { getDownloadManager } from './download-manager.js';
 import { updateYtDlp } from './updater.js';
 import {
   deleteTrack,
+  findDownloadedYoutubeIds,
   incrementPlayCount,
   listGenres,
   listTracks,
@@ -132,6 +133,9 @@ export function registerIpc(): void {
     if (!track || !fs.existsSync(track.filePath)) return null;
     return pathToFileURL(track.filePath).toString();
   });
+  ipcMain.handle(Channels.TracksDownloadedIds, (_evt, ids: string[]) =>
+    findDownloadedYoutubeIds(ids)
+  );
 
   // ----- Playlists -----
   ipcMain.handle(Channels.PlaylistsList, () => listPlaylists());

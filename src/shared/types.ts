@@ -25,6 +25,8 @@ export interface DownloadJob {
   status: DownloadStatus;
   title?: string;
   thumbnail?: string;
+  /** YouTube video id, resolved once yt-dlp fetches metadata. */
+  youtubeId?: string;
   progress: number; // 0..1
   etaSeconds?: number;
   speedHuman?: string;

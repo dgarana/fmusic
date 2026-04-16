@@ -104,7 +104,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   togglePlay() {
-    const { howl, isPlaying } = get();
+    const { howl, isPlaying, current, index } = get();
+    // The queue finished on the last track: the Howl was unloaded to free
+    // memory but `current` is still set. Hitting play again should restart
+    // that track from the beginning.
+    if (!howl && current && index >= 0) {
+      void get().playFromIndex(index);
+      return;
+    }
     if (!howl) return;
     if (isPlaying) {
       howl.pause();
@@ -120,6 +127,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (index + 1 < queue.length) {
       await get().playFromIndex(index + 1);
     } else {
+      // End of queue: tear down the audio resource but keep `current` so
+      // the UI still shows the last track and the user can replay it by
+      // clicking play again.
       const { howl, tickerId } = get();
       stop(howl, tickerId);
       set({ isPlaying: false, howl: null, tickerId: null, position: 0 });

@@ -72,6 +72,8 @@ const api = {
     invoke<boolean>(Channels.TracksDelete, id, deleteFile),
   markTrackPlayed: (id: number) => invoke<void>(Channels.TracksPlayed, id),
   trackStreamUrl: (id: number) => invoke<string | null>(Channels.TracksStream, id),
+  downloadedYoutubeIds: (ids: string[]) =>
+    invoke<string[]>(Channels.TracksDownloadedIds, ids),
   onTrackAdded: (handler: (track: Track) => void) => on<Track>(Channels.TracksAdded, handler),
 
   // Playlists

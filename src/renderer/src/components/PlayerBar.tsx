@@ -1,6 +1,13 @@
 import { usePlayerStore } from '../store/player';
 import { formatDuration } from '../util';
 
+function coverUrl(current: { thumbnailPath: string | null; youtubeId: string | null } | null): string | null {
+  if (!current) return null;
+  if (current.thumbnailPath) return current.thumbnailPath;
+  if (current.youtubeId) return `https://i.ytimg.com/vi/${current.youtubeId}/hqdefault.jpg`;
+  return null;
+}
+
 export function PlayerBar() {
   const {
     current,
@@ -15,11 +22,13 @@ export function PlayerBar() {
     setVolume
   } = usePlayerStore();
 
+  const cover = coverUrl(current);
+
   return (
     <footer className="player-bar">
       <div className="player-current">
         <div className="cover">
-          {current?.thumbnailPath ? <img src={current.thumbnailPath} alt="" /> : null}
+          {cover ? <img src={cover} alt="" /> : null}
         </div>
         <div style={{ minWidth: 0 }}>
           <div className="title">{current?.title ?? 'Nada reproduci\u00e9ndose'}</div>

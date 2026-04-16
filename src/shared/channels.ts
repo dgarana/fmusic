@@ -32,6 +32,7 @@ export const Channels = {
   TracksPlayed: 'tracks:played',
   TracksAdded: 'tracks:added', // event, main -> renderer
   TracksStream: 'tracks:stream-url',
+  TracksDownloadedIds: 'tracks:downloaded-ids',
 
   // Library - playlists
   PlaylistsList: 'playlists:list',

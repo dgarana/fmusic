@@ -39,7 +39,7 @@ import {
   reorderPlaylist
 } from './library/playlists-repo.js';
 import { getSchemaHistory } from './library/db.js';
-import { discoverSonos, sonosPlayTrack, sonosPause, sonosResume, sonosStop, sonosSetVolume, sonosSeek, sonosGetPosition } from './sonos.js';
+import { discoverSonos, addSonosByIp, initSonosFromCache, sonosPlayTrack, sonosPause, sonosResume, sonosStop, sonosSetVolume, sonosSeek, sonosGetPosition } from './sonos.js';
 import { startAudioServer, getTrackHttpUrl } from './sonos-server.js';
 
 function broadcast(channel: string, payload: unknown) {
@@ -186,6 +186,14 @@ export function registerIpc(): void {
   ipcMain.handle(Channels.SonosDiscover, async () => {
     await startAudioServer();
     return discoverSonos();
+  });
+  ipcMain.handle(Channels.SonosAddByIp, async (_evt, host: string) => {
+    await startAudioServer();
+    return addSonosByIp(host);
+  });
+  ipcMain.handle(Channels.SonosInitFromCache, async () => {
+    await startAudioServer();
+    return initSonosFromCache();
   });
   ipcMain.handle(
     Channels.SonosPlay,

@@ -50,6 +50,8 @@ export const Channels = {
 
   // Sonos
   SonosDiscover: 'sonos:discover',
+  SonosAddByIp: 'sonos:add-by-ip',
+  SonosInitFromCache: 'sonos:init-from-cache',
   SonosPlay: 'sonos:play',
   SonosPause: 'sonos:pause',
   SonosResume: 'sonos:resume',

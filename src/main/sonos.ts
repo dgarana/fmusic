@@ -1,5 +1,6 @@
 import { SonosManager, SonosDevice as SonosDeviceLib } from '@svrooij/sonos';
 import type { SonosDevice } from '../shared/types.js';
+import { getSettings, updateSettings } from './settings.js';
 
 let manager: SonosManager | null = null;
 let activeHost: string | null = null;
@@ -12,10 +13,58 @@ function toInfo(d: SonosDeviceLib): SonosDevice {
   return { name: d.Name ?? d.Host, host: d.Host, port: d.Port };
 }
 
+function saveKnownHost(host: string): void {
+  const known = getSettings().sonosKnownHosts ?? [];
+  if (!known.includes(host)) {
+    updateSettings({ sonosKnownHosts: [...known, host] });
+  }
+}
+
+function removeKnownHost(host: string): void {
+  const known = getSettings().sonosKnownHosts ?? [];
+  updateSettings({ sonosKnownHosts: known.filter((h) => h !== host) });
+}
+
 export async function discoverSonos(timeoutSec = 5): Promise<SonosDevice[]> {
   manager = new SonosManager();
   await manager.InitializeWithDiscovery(timeoutSec);
-  return manager.Devices.map(toInfo);
+  const devices = manager.Devices.map(toInfo);
+  for (const d of devices) saveKnownHost(d.host);
+  return devices;
+}
+
+export async function addSonosByIp(host: string): Promise<SonosDevice> {
+  if (!manager) manager = new SonosManager();
+  await manager.InitializeFromDevice(host);
+  const device = manager.Devices.find((d) => d.Host === host);
+  if (!device) throw new Error(`No se pudo conectar al dispositivo Sonos en ${host}`);
+  saveKnownHost(host);
+  return toInfo(device);
+}
+
+/**
+ * Tries to reconnect to all cached Sonos hosts. Devices that fail to connect
+ * are removed from the cache. Returns successfully reconnected devices.
+ */
+export async function initSonosFromCache(): Promise<SonosDevice[]> {
+  const sonosKnownHosts = getSettings().sonosKnownHosts ?? [];
+  if (sonosKnownHosts.length === 0) return [];
+  if (!manager) manager = new SonosManager();
+  const results = await Promise.allSettled(
+    sonosKnownHosts.map((host) => manager!.InitializeFromDevice(host))
+  );
+  const connected: SonosDevice[] = [];
+  for (let i = 0; i < sonosKnownHosts.length; i++) {
+    const host = sonosKnownHosts[i];
+    if (results[i].status === 'fulfilled') {
+      const device = manager.Devices.find((d) => d.Host === host);
+      if (device) connected.push(toInfo(device));
+      else removeKnownHost(host);
+    } else {
+      removeKnownHost(host);
+    }
+  }
+  return connected;
 }
 
 function getDevice(host: string): SonosDeviceLib | undefined {

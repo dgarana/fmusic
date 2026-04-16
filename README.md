@@ -33,6 +33,9 @@ en la máquina del usuario.
 - 🔊 Controles de **play / pausa / siguiente / anterior / volumen / seek** enrutados al Sonos cuando está activo.
 - ■ Botón de **parar** por dispositivo individual sin afectar al resto.
 - 🌐 Servidor HTTP interno con soporte de **Range requests** para que Sonos pueda buscar en la pista sin descargarla completa.
+- 💾 **Dispositivos cacheados**: los Sonos encontrados se recuerdan entre sesiones y se reconectan automáticamente al abrir el panel; los que ya no respondan se eliminan solos de la caché.
+- 🔌 **Añadir por IP**: permite conectar a un dispositivo Sonos introduciendo su IP manualmente, útil cuando la VPN bloquea el descubrimiento SSDP multicast.
+- 🔇 Al iniciar el casting se pausa el reproductor local para evitar que suenen ambos a la vez.
 
 ### Bandeja del sistema y mini reproductor
 - 🖥️ **La app se mantiene en segundo plano** cuando se cierra la ventana principal (icono en la bandeja del sistema, sin cerrar realmente el proceso).

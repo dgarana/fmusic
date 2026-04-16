@@ -5,15 +5,38 @@ import { usePlayerStore } from '../store/player';
 export function SonosPanel() {
   const current = usePlayerStore((s) => s.current);
   const playerPosition = usePlayerStore((s) => s.position);
-  const playerIsPlaying = usePlayerStore((s) => s.isPlaying);
-  const playerToggle = usePlayerStore((s) => s.togglePlay);
+  const playerPause = usePlayerStore((s) => s.pause);
 
-  const { devices, activeHost, discovering, error, discover, startCasting, stop } =
+  const { devices, activeHost, discovering, error, initFromCache, discover, startCasting, stop } =
     useSonosStore();
 
   const [open, setOpen] = useState(false);
+  const [manualIp, setManualIp] = useState('');
+  const [addingIp, setAddingIp] = useState(false);
+  const [ipError, setIpError] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const isCasting = activeHost !== null;
+
+  async function handleAddByIp() {
+    const ip = manualIp.trim();
+    if (!ip) return;
+    setAddingIp(true);
+    setIpError(null);
+    try {
+      const device = await window.fmusic.sonosAddByIp(ip);
+      useSonosStore.setState((s) => ({
+        devices: s.devices.some((d) => d.host === device.host)
+          ? s.devices
+          : [...s.devices, device],
+        error: null
+      }));
+      setManualIp('');
+    } catch (err) {
+      setIpError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setAddingIp(false);
+    }
+  }
 
   useEffect(() => {
     function onOutside(e: MouseEvent) {
@@ -23,9 +46,18 @@ export function SonosPanel() {
     return () => document.removeEventListener('mousedown', onOutside);
   }, [open]);
 
+  // Pre-populate devices from cache the first time the panel opens
+  const [cacheLoaded, setCacheLoaded] = useState(false);
+  useEffect(() => {
+    if (open && !cacheLoaded) {
+      setCacheLoaded(true);
+      void initFromCache();
+    }
+  }, [open, cacheLoaded, initFromCache]);
+
   async function handleCast(host: string) {
     if (!current) return;
-    if (playerIsPlaying) playerToggle();
+    playerPause();
     const seekTo = playerPosition > 0 ? playerPosition : undefined;
     await startCasting(host, current.id, current.title ?? undefined, current.artist ?? undefined, seekTo);
   }
@@ -91,6 +123,27 @@ export function SonosPanel() {
               </button>
             </>
           )}
+
+          <div style={{ marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
+              Añadir por IP (útil con VPN)
+            </div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <input
+                placeholder="192.168.1.x"
+                value={manualIp}
+                onChange={(e) => setManualIp(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') void handleAddByIp(); }}
+                style={{ flex: 1, fontSize: 12 }}
+              />
+              <button onClick={() => void handleAddByIp()} disabled={addingIp || !manualIp.trim()}>
+                {addingIp ? '...' : 'Añadir'}
+              </button>
+            </div>
+            {ipError && (
+              <div style={{ color: 'var(--danger)', fontSize: 11, marginTop: 4 }}>{ipError}</div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -78,6 +78,8 @@ export interface AppSettings {
   theme: 'system' | 'dark' | 'light';
   /** Disable SSL certificate verification for yt-dlp (useful behind corporate VPNs). Default: false. */
   skipCertCheck: boolean;
+  /** Sonos device hosts remembered across sessions. */
+  sonosKnownHosts: string[];
 }
 
 export interface DependencyStatus {

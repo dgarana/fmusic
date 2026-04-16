@@ -10,6 +10,7 @@ interface SonosState {
   discovering: boolean;
   error: string | null;
 
+  initFromCache: () => Promise<void>;
   discover: () => Promise<void>;
   stopAll: () => Promise<void>;
   startCasting: (host: string, trackId: number, title?: string, artist?: string, seekTo?: number) => Promise<void>;
@@ -34,6 +35,15 @@ export const useSonosStore = create<SonosState>((set, get) => ({
   duration: 0,
   discovering: false,
   error: null,
+
+  async initFromCache() {
+    try {
+      const devices = await window.fmusic.sonosInitFromCache();
+      if (devices.length > 0) set({ devices });
+    } catch {
+      // cache init is best-effort, ignore errors
+    }
+  },
 
   async discover() {
     set({ discovering: true, error: null });

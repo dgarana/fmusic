@@ -16,6 +16,7 @@ interface PlayerState {
   playTrack: (track: Track, queue?: Track[]) => Promise<void>;
   enqueue: (track: Track) => void;
   playFromIndex: (index: number) => Promise<void>;
+  pause: () => void;
   togglePlay: () => void;
   next: () => Promise<void>;
   prev: () => Promise<void>;
@@ -101,6 +102,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       position: 0,
       tickerId: newTickerId
     });
+  },
+
+  pause() {
+    const { howl } = get();
+    if (!howl) return;
+    howl.pause();
+    set({ isPlaying: false });
   },
 
   togglePlay() {

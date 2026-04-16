@@ -138,6 +138,8 @@ const api = {
 
   // Sonos
   sonosDiscover: () => invoke<SonosDevice[]>(Channels.SonosDiscover),
+  sonosAddByIp: (host: string) => invoke<SonosDevice>(Channels.SonosAddByIp, host),
+  sonosInitFromCache: () => invoke<SonosDevice[]>(Channels.SonosInitFromCache),
   sonosPlay: (host: string, trackId: number, title?: string, artist?: string) =>
     invoke<void>(Channels.SonosPlay, host, trackId, title, artist),
   sonosPause: (host: string) => invoke<void>(Channels.SonosPause, host),

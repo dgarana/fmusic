@@ -45,7 +45,7 @@ export function MiniPlayerPage() {
           {cover ? <img src={cover} alt="" /> : <span className="mini-cover-empty">♪</span>}
         </div>
         <div className="mini-info">
-          <div className="mini-title">{state.title ?? 'Nada reproduciéndose'}</div>
+          <div className="mini-title">{state.title ?? '🎵 Nothing playing'}</div>
           <div className="mini-artist">{state.artist ?? ''}</div>
         </div>
       </div>
@@ -54,7 +54,7 @@ export function MiniPlayerPage() {
           onClick={() => send('prev')}
           disabled={!state.hasPrev}
           style={{ visibility: state.hasPrev ? 'visible' : 'hidden' }}
-          title="Anterior"
+          title="Previous"
         >
           ‹‹
         </button>
@@ -62,7 +62,7 @@ export function MiniPlayerPage() {
           className="primary mini-play"
           onClick={() => send('toggle-play')}
           disabled={!state.title}
-          title={state.isPlaying ? 'Pausar' : 'Reproducir'}
+          title={state.isPlaying ? 'Pause' : 'Play'}
         >
           {state.isPlaying ? '❚❚' : '▶'}
         </button>
@@ -70,12 +70,12 @@ export function MiniPlayerPage() {
           onClick={() => send('next')}
           disabled={!state.hasNext}
           style={{ visibility: state.hasNext ? 'visible' : 'hidden' }}
-          title="Siguiente"
+          title="Next"
         >
           ››
         </button>
       </div>
-      <button className="mini-expand" onClick={() => send('expand')} title="Abrir fmusic">
+      <button className="mini-expand" onClick={() => send('expand')} title="Open fmusic">
         ⤢
       </button>
     </div>

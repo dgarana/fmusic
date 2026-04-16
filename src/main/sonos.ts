@@ -37,7 +37,7 @@ export async function addSonosByIp(host: string): Promise<SonosDevice> {
   if (!manager) manager = new SonosManager();
   await manager.InitializeFromDevice(host);
   const device = manager.Devices.find((d) => d.Host === host);
-  if (!device) throw new Error(`No se pudo conectar al dispositivo Sonos en ${host}`);
+  if (!device) throw new Error(`Could not connect to Sonos device at ${host}`);
   saveKnownHost(host);
   return toInfo(device);
 }

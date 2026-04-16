@@ -9,21 +9,21 @@ export function Sidebar() {
       <div className="brand">fmusic</div>
       <nav>
         <NavLink to="/download" className={({ isActive }) => (isActive ? 'active' : '')}>
-          Descargar
+          ⬇️  Download
         </NavLink>
         <NavLink to="/library" className={({ isActive }) => (isActive ? 'active' : '')}>
-          Biblioteca
+          📚  Library
         </NavLink>
         <NavLink to="/playlists" className={({ isActive }) => (isActive ? 'active' : '')}>
-          Playlists
+          🎵  Playlists
         </NavLink>
         <NavLink to="/settings" className={({ isActive }) => (isActive ? 'active' : '')}>
-          Ajustes
+          ⚙️  Settings
         </NavLink>
       </nav>
       <div className="playlists">
-        <h3>Tus playlists</h3>
-        {playlists.length === 0 && <div className="empty">Aún no hay playlists</div>}
+        <h3>🎶 Your playlists</h3>
+        {playlists.length === 0 && <div className="empty">📭 No playlists yet</div>}
         {playlists.map((p) => (
           <NavLink
             key={p.id}

@@ -1,55 +1,55 @@
 # AGENTS.md
 
-> Guía de orientación para agentes de IA que trabajen en este repositorio.
-> Este documento describe _qué_ hace la app, _cómo_ está construida y
-> _por qué_ se han tomado las decisiones actuales. Úsalo como punto de
-> entrada antes de hacer cualquier cambio.
+> Orientation guide for AI agents working on this repository.
+> This document describes _what_ the app does, _how_ it is built and
+> _why_ the current decisions were made. Use it as the entry point
+> before making any change.
 
-## 1. Qué es fmusic
+## 1. What fmusic is
 
-App de escritorio **Electron + React + TypeScript** multiplataforma
-(Windows · macOS · Linux) que permite:
+A cross-platform **Electron + React + TypeScript** desktop app
+(Windows · macOS · Linux) that lets you:
 
-1. Descargar audio de YouTube desde una URL o buscando por nombre.
-2. Gestionar una biblioteca local (tracks, playlists, géneros).
-3. Reproducir los archivos descargados con una cola integrada.
+1. Download audio from YouTube, either by URL or by searching by name.
+2. Manage a local library (tracks, playlists, genres).
+3. Play the downloaded files with a built-in queue.
 
-El motor de descarga es el binario standalone de `yt-dlp`, empaquetado
-por plataforma. No se requiere Python en la máquina del usuario.
+The download engine is the standalone `yt-dlp` binary, bundled per
+platform. No Python installation is required on the user's machine.
 
-## 2. Arquitectura de alto nivel
+## 2. High-level architecture
 
-Tres procesos Electron + un módulo compartido de tipos:
+Three Electron processes plus a shared types module:
 
 ```
 src/
-├─ shared/                 # tipos + canales IPC (sin deps de Node/DOM)
+├─ shared/                 # types + IPC channels (no Node/DOM deps)
 │  ├─ types.ts
 │  └─ channels.ts
 ├─ main/                   # Node.js -- lifecycle, FS, SQLite, spawn yt-dlp
 │  ├─ index.ts             # app lifecycle, BrowserWindow, CSP, IPC init
-│  ├─ ipc.ts               # ipcMain.handle para todos los canales
-│  ├─ paths.ts             # resuelve binDir() en dev vs prod
-│  ├─ settings.ts          # electron-store con defaults
+│  ├─ ipc.ts               # ipcMain.handle for every channel
+│  ├─ paths.ts             # resolves binDir() in dev vs prod
+│  ├─ settings.ts          # electron-store with defaults
 │  ├─ ytdlp.ts             # wrapper: version/search/info/download
-│  ├─ download-manager.ts  # cola secuencial, eventos job-update/track-added
-│  ├─ updater.ts           # re-descarga de yt-dlp desde Settings
-│  ├─ types.d.ts           # declaración `*.sql?raw`
+│  ├─ download-manager.ts  # sequential queue, job-update/track-added events
+│  ├─ updater.ts           # re-downloads yt-dlp from Settings
+│  ├─ types.d.ts           # declares `*.sql?raw`
 │  └─ library/
-│     ├─ db.ts             # better-sqlite3 + migrador
+│     ├─ db.ts             # better-sqlite3 + migration runner
 │     ├─ tracks-repo.ts
 │     ├─ playlists-repo.ts
 │     └─ migrations/
-│        ├─ index.ts       # lista estática (imports ?raw)
+│        ├─ index.ts       # static list (imports ?raw)
 │        └─ 001_initial.sql
 ├─ preload/
 │  ├─ index.ts             # contextBridge -> window.fmusic
-│  └─ index.d.ts           # tipos globales para el renderer
+│  └─ index.d.ts           # global types for the renderer
 └─ renderer/               # React + Vite
    ├─ index.html
    └─ src/
       ├─ main.tsx
-      ├─ App.tsx           # HashRouter + suscripciones IPC
+      ├─ App.tsx           # HashRouter + IPC subscriptions
       ├─ styles.css
       ├─ util.ts
       ├─ components/
@@ -66,169 +66,178 @@ src/
          └─ player.ts      # Howler
 ```
 
-Regla de oro: **el renderer nunca llama a APIs de Node ni al filesystem
-directamente**. Toda operación privilegiada pasa por IPC → handler en
-`src/main/ipc.ts` → servicio de dominio.
+Golden rule: **the renderer never calls Node APIs or the filesystem
+directly**. All privileged operations go through IPC → handler in
+`src/main/ipc.ts` → domain service.
 
-## 3. Flujos principales
+## 3. Main flows
 
-### Descarga
-1. UI llama `window.fmusic.enqueueDownload({ url })` (preload).
-2. `ipc.ts` reenvía a `DownloadManager.enqueue()`.
-3. Manager spawnéа `yt-dlp -x --audio-format mp3 ...` y parsea
-   `--progress-template` vía un prefijo `__FMP__` para emitir eventos
-   `job-update` al renderer.
-4. Al terminar, lee ID3 con `music-metadata`, inserta en SQLite
-   (`insertTrack`), emite `track-added` → la biblioteca se refresca.
+### Download
+1. The UI calls `window.fmusic.enqueueDownload({ url })` (preload).
+2. `ipc.ts` forwards to `DownloadManager.enqueue()`.
+3. The manager spawns `yt-dlp -x --audio-format mp3 ...` and parses the
+   `--progress-template` lines (prefixed with `__FMP__`) to emit
+   `job-update` events to the renderer.
+4. When done, ID3 tags are read with `music-metadata`, the row is
+   inserted in SQLite (`insertTrack`), and a `track-added` event is
+   emitted → the library refreshes.
 
-### Búsqueda
-`yt-dlp --flat-playlist --dump-json "ytsearch10:<query>"` → una línea
-JSON por resultado. No dependemos de la API oficial de YouTube.
+### Search
+`yt-dlp --flat-playlist --dump-json "ytsearch10:<query>"` → one JSON
+line per result. We do not rely on YouTube's official API.
 
-### Previsualización
-Se usa un `<iframe>` de `https://www.youtube.com/embed/<id>`. La CSP de
-`src/main/index.ts` permite ese origen.
+### Preview
+We embed an `<iframe>` pointing at
+`https://www.youtube.com/embed/<id>`. The CSP in
+`src/main/index.ts` allows that origin.
 
-### Reproducción
-Howler con `trackStreamUrl()` (main devuelve un `file://` válido del
-MP3 local). El store Zustand mantiene cola e índice.
+### Playback
+Howler with `trackStreamUrl()` (main returns a valid `file://` URL for
+the local MP3). The Zustand store keeps the queue and current index.
 
-## 4. Persistencia y migraciones
+## 4. Persistence and migrations
 
-- Base SQLite `library.sqlite` bajo `app.getPath('userData')`.
-- Tablas: `tracks`, `playlists`, `playlist_tracks`, `schema_history`.
-- **Migraciones forward-only** registradas estáticamente en
-  `src/main/library/migrations/index.ts` como `{ version, name, sql }`
-  con SQL importado vía Vite `?raw` (así se empaquetan sin copiar
-  archivos sueltos al build).
-- Cada arranque: leer `PRAGMA user_version`, ejecutar pendientes en
-  transacción, registrar en `schema_history`, actualizar `user_version`.
-- **Antes de migrar** una DB existente se hace backup automático a
+- SQLite database `library.sqlite` under `app.getPath('userData')`.
+- Tables: `tracks`, `playlists`, `playlist_tracks`, `schema_history`.
+- **Forward-only migrations** registered statically in
+  `src/main/library/migrations/index.ts` as `{ version, name, sql }`
+  entries with SQL imported via Vite's `?raw`, so they are bundled
+  without shipping loose files.
+- On every startup: read `PRAGMA user_version`, run pending migrations
+  in a transaction, record each in `schema_history`, then update
+  `user_version`.
+- **Before migrating** an existing DB we take an automatic backup to
   `<userData>/backups/library-<ISO>.sqlite`.
 
-**Para añadir una migración**:
-1. Crea `src/main/library/migrations/NNN_descripcion.sql`.
-2. `import mNNN from './NNN_descripcion.sql?raw';` en `index.ts`.
-3. Añade `{ version: NNN, name: 'NNN_descripcion', sql: mNNN }` al array.
+**To add a migration**:
+1. Create `src/main/library/migrations/NNN_description.sql`.
+2. `import mNNN from './NNN_description.sql?raw';` in `index.ts`.
+3. Add `{ version: NNN, name: 'NNN_description', sql: mNNN }` to the array.
 
-## 5. Distribución de binarios nativos
+## 5. Native binary distribution
 
-- `scripts/postinstall.js` corre tras `npm install`:
-  - Detecta plataforma/arch (o lee `FMUSIC_TARGET_PLATFORM`/`ARCH`).
-  - Descarga el asset correspondiente de `github.com/yt-dlp/yt-dlp`
+- `scripts/postinstall.js` runs after `npm install`:
+  - Detects platform/arch (or reads `FMUSIC_TARGET_PLATFORM`/`ARCH`).
+  - Downloads the right asset from `github.com/yt-dlp/yt-dlp`
     (`yt-dlp.exe`, `yt-dlp_macos`, `yt-dlp_linux` [+ aarch64/x86/arm64]).
-  - Copia `ffmpeg-static/ffmpeg[.exe]` a `resources/bin/`.
-  - `FMUSIC_SKIP_BINARIES=1` omite toda la descarga (usado en CI/typecheck).
-- `electron-builder.yml` declara `extraResources: resources/bin` →
-  `bin`. En runtime `paths.binDir()` resuelve:
+  - Copies `ffmpeg-static/ffmpeg[.exe]` to `resources/bin/`.
+  - `FMUSIC_SKIP_BINARIES=1` skips the entire download (used in
+    CI/typecheck).
+- `electron-builder.yml` declares `extraResources: resources/bin` →
+  `bin`. At runtime `paths.binDir()` resolves:
   - Dev: `app.getAppPath()/resources/bin`
   - Prod: `process.resourcesPath/bin`
-- Hay un **updater in-app** (`src/main/updater.ts`) que re-descarga el
-  binario desde Ajustes → "Actualizar motor de descarga" cuando yt-dlp
-  se rompe por cambios en YouTube.
+- There is an **in-app updater** (`src/main/updater.ts`) that
+  re-downloads the binary from Settings → "Update download engine"
+  whenever yt-dlp breaks due to YouTube player changes.
 
-## 6. Convenciones y decisiones
+## 6. Conventions and decisions
 
-- **TypeScript estricto** en todo (`strict: true`).
-- **ESM en el código fuente**, pero el bundle de main/preload se genera
-  como **CJS** (lo que hace `electron-vite`). Por eso:
-  - `electron-store@8` (CJS). `@10` es ESM-only y rompe `require()`.
-  - `better-sqlite3@12.x` (tiene prebuilds para Node 24). `@11` caía a
-    `node-gyp`, que rompe con Python 3.12+ (sin `distutils`).
-  - Para que `music-metadata` exponga `parseFile`, `tsconfig.node.json`
-    usa `customConditions: ["node"]`.
-- **React Router** en modo `HashRouter` (Electron carga `file://`).
-- **Zustand** sin middleware — estado simple.
-- **Howler** para audio; no usamos Web Audio directamente.
+- **Strict TypeScript** everywhere (`strict: true`).
+- **ESM in the source code**, but the main/preload bundle is produced
+  as **CJS** (that's what `electron-vite` emits). Because of that:
+  - `electron-store@8` (CJS). `@10` is ESM-only and breaks `require()`.
+  - `better-sqlite3@12.x` (has prebuilds for Node 24). `@11` would fall
+    back to `node-gyp`, which breaks with Python 3.12+ (no
+    `distutils`).
+  - To make `music-metadata` expose `parseFile`, `tsconfig.node.json`
+    uses `customConditions: ["node"]`.
+- **React Router** in `HashRouter` mode (Electron loads `file://`).
+- **Zustand** without middleware — plain state.
+- **Howler** for audio; we don't use the Web Audio API directly.
 - **`contextIsolation: true`**, `nodeIntegration: false`, preload
-  expone solo la API mínima (`window.fmusic`).
-- **CSP** restrictiva; solo se permiten `https://www.youtube.com`
-  y `https://*.ytimg.com` externos (para el iframe de preview).
+  exposes only the minimum API (`window.fmusic`).
+- **Restrictive CSP**; only `https://www.youtube.com` and
+  `https://*.ytimg.com` are allowed as external origins (for the
+  preview iframe).
 
-## 7. Comandos
+## 7. Commands
 
 ```sh
-npm install                          # instala deps + postinstall + rebuild nativo
-FMUSIC_SKIP_BINARIES=1 npm install   # para CI/typecheck (omite yt-dlp/ffmpeg)
-npm run dev                          # Electron + Vite con HMR
-npm run build                        # compila main/preload/renderer a out/
-npm run typecheck                    # tsc --noEmit sobre node + web
+npm install                          # installs deps + postinstall + native rebuild
+FMUSIC_SKIP_BINARIES=1 npm install   # for CI/typecheck (skips yt-dlp/ffmpeg)
+npm run dev                          # Electron + Vite with HMR
+npm run build                        # compiles main/preload/renderer to out/
+npm run typecheck                    # tsc --noEmit over node + web
 npm run dist:win                     # NSIS .exe
-npm run dist:mac                     # DMG (requiere macOS)
-npm run dist:linux                   # AppImage + .deb (requiere Linux)
+npm run dist:mac                     # DMG (requires macOS)
+npm run dist:linux                   # AppImage + .deb (requires Linux)
 ```
 
-## 8. Gotchas observados
+## 8. Observed gotchas
 
-1. **macOS no se puede empaquetar desde Windows/Linux.** electron-builder
-   rechaza explícitamente (`Build for macOS is supported only on macOS`).
-   Usa el workflow de GitHub Actions (`.github/workflows/release.yml`)
-   que corre cada target en su propio runner.
-2. **Symlinks en Windows.** Sin Developer Mode ni admin, 7za falla al
-   extraer los bundles `winCodeSign-2.6.0.7z` (2 `.dylib` symlinks) y
-   AppImage (iconos hicolor). Soluciones:
-   - Activar Developer Mode en Windows, o
-   - Usar el workflow CI (corre en Ubuntu/macOS nativo), o
-   - Para Linux desde Windows, target `tar.gz` (sin symlinks).
-3. **`parseFile` de music-metadata.** Requiere la condición `node` del
-   `exports`. Si otro tsconfig lo pierde, fallará con "has no exported
-   member 'parseFile'".
-4. **`ERR_REQUIRE_ESM`**. Cualquier dep ESM-only importada por main
-   crashea en runtime. Antes de añadir una dep a `main/`, comprueba que
-   tenga `"exports"."require"` o `main` CJS.
-5. **Rebuild nativo.** `better-sqlite3` debe estar compilado contra la
-   ABI de Electron, no la de Node. `electron-builder install-app-deps`
-   lo hace automáticamente en `postinstall`. Si editas la versión de
-   Electron, borra `node_modules` y reinstala.
-6. **Progreso de yt-dlp.** Si cambias `--progress-template`, actualiza
-   también el parser en `src/main/ytdlp.ts` (busca `PROGRESS_PREFIX`).
-7. **Runtime JS de yt-dlp.** A partir de fin 2025 yt-dlp requiere un
-   runtime JS (Deno recomendado) para resolver retos de YouTube. Si el
-   usuario lo tiene en PATH, yt-dlp lo usa solo. Si no, hay errores de
-   descarga. Documentado en el README.
+1. **macOS cannot be packaged from Windows/Linux.** electron-builder
+   refuses explicitly (`Build for macOS is supported only on macOS`).
+   Use the GitHub Actions workflow (`.github/workflows/release.yml`)
+   which runs each target on its own runner.
+2. **Symlinks on Windows.** Without Developer Mode or admin, 7za fails
+   to extract the `winCodeSign-2.6.0.7z` bundle (two `.dylib` symlinks)
+   and AppImage (hicolor icons). Workarounds:
+   - Enable Developer Mode on Windows, or
+   - Use the CI workflow (runs on native Ubuntu/macOS), or
+   - For Linux from Windows, target `tar.gz` (no symlinks).
+3. **`parseFile` from music-metadata.** It requires the `node`
+   condition in `exports`. If another tsconfig loses it, you'll get
+   "has no exported member 'parseFile'".
+4. **`ERR_REQUIRE_ESM`**. Any ESM-only dependency imported from main
+   crashes at runtime. Before adding a new main-process dep, check it
+   has `"exports"."require"` or a CJS `main`.
+5. **Native rebuild.** `better-sqlite3` must be compiled against
+   Electron's ABI, not Node's. `electron-builder install-app-deps`
+   does it automatically in `postinstall`. If you change the Electron
+   version, delete `node_modules` and reinstall.
+6. **yt-dlp progress.** If you change `--progress-template`, update the
+   parser in `src/main/ytdlp.ts` too (look for `PROGRESS_PREFIX`).
+7. **yt-dlp JS runtime.** As of late 2025 yt-dlp requires a JS runtime
+   (Deno recommended) to solve YouTube's challenges. If the user has it
+   in PATH, yt-dlp picks it up automatically. If not, downloads will
+   fail. Documented in the README.
 
-## 9. Añadir una nueva feature / canal IPC
+## 9. Adding a new feature / IPC channel
 
-1. Define el canal en `src/shared/channels.ts`.
-2. Añade tipos de payload/retorno a `src/shared/types.ts`.
-3. Implementa el handler en `src/main/ipc.ts` (`ipcMain.handle(...)`).
-4. Expón la función en `src/preload/index.ts` dentro del objeto `api`.
-5. Consume desde el renderer con `window.fmusic.<nuevaFuncion>(...)`.
-6. Si hace falta emitir eventos main → renderer, `broadcast()` en
-   `ipc.ts` y `onXxx` con `ipcRenderer.on` en preload.
+1. Define the channel in `src/shared/channels.ts`.
+2. Add the payload/return types to `src/shared/types.ts`.
+3. Implement the handler in `src/main/ipc.ts` (`ipcMain.handle(...)`).
+4. Expose the function in `src/preload/index.ts` inside the `api`
+   object.
+5. Consume it from the renderer with `window.fmusic.<newFunction>(...)`.
+6. If you need to emit events main → renderer, use `broadcast()` in
+   `ipc.ts` and `onXxx` with `ipcRenderer.on` in the preload.
 
 ## 10. CI / release
 
 Workflow `.github/workflows/release.yml`:
-- Dispara con tags `v*` o manualmente.
-- Job `typecheck` bloquea los builds si hay errores de tipos.
-- Matrix build en los 3 runners oficiales (`windows-latest`,
+- Triggered by `v*` tags or manual dispatch.
+- The `typecheck` job blocks the builds if type errors exist.
+- Matrix build on the three official runners (`windows-latest`,
   `macos-latest`, `ubuntu-latest`).
-- Job `release` (solo en tags) publica GitHub Release con los .exe,
-  .dmg, .AppImage, .deb y `latest*.yml` para electron-updater.
-- Firma de código deshabilitada (`CSC_IDENTITY_AUTO_DISCOVERY=false`);
-  se activará cuando se aporten certs vía secrets del repo.
+- The `release` job (tags only) publishes a GitHub Release with the
+  .exe, .dmg, .AppImage, .deb and `latest*.yml` files for
+  electron-updater.
+- Code signing is disabled (`CSC_IDENTITY_AUTO_DISCOVERY=false`); it
+  will be enabled once certs are provided via repo secrets.
 
-## 11. Cosas que NO hacer
+## 11. Things NOT to do
 
-- No importar `fs`, `child_process`, `path` u otros módulos Node desde
-  el renderer.
-- No añadir deps ESM-only a `main/` o `preload/` sin comprobar que
-  tienen fallback CJS.
-- No commitear binarios de `resources/bin/` (el postinstall los trae).
-- No meter SQL dinámico concatenando strings sin parametrizar — usar
-  siempre `prepare(...).run({ named })`.
-- No hacer que una migración dependa de código de runtime (p. ej. leer
-  datos desde la app para recomputar); debe ser SQL puro.
-- No romper la convención `forward-only` de migraciones; si necesitas
-  revertir un cambio, crea otra migración.
+- Don't import `fs`, `child_process`, `path` or other Node modules from
+  the renderer.
+- Don't add ESM-only deps to `main/` or `preload/` without checking
+  there is a CJS fallback.
+- Don't commit binaries to `resources/bin/` (the postinstall fetches
+  them).
+- Don't write dynamic SQL by concatenating strings without bind
+  parameters — always use `prepare(...).run({ named })`.
+- Don't make a migration depend on runtime code (e.g. reading data from
+  the app to recompute); it must be pure SQL.
+- Don't break the `forward-only` migration convention; if you need to
+  revert a change, create another migration.
 
-## 12. Referencias rápidas
+## 12. Quick references
 
-- Tipos compartidos: `src/shared/types.ts`
-- Canales IPC: `src/shared/channels.ts`
-- Defaults de settings: `src/main/settings.ts`
-- Esquema SQL: `src/main/library/migrations/001_initial.sql`
-- CSP: `src/main/index.ts` (función `configureSecurity`)
-- Plan original (análisis + trade-offs): ver historial de conversación
-  o artifact del plan si está disponible.
+- Shared types: `src/shared/types.ts`
+- IPC channels: `src/shared/channels.ts`
+- Settings defaults: `src/main/settings.ts`
+- SQL schema: `src/main/library/migrations/001_initial.sql`
+- CSP: `src/main/index.ts` (function `configureSecurity`)
+- Original plan (analysis + trade-offs): see the conversation history
+  or the plan artifact if available.

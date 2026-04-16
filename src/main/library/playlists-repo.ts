@@ -27,7 +27,7 @@ const SELECT_WITH_COUNT = `
 `;
 
 export function ensureBuiltinPlaylists(): void {
-  getDb().prepare('INSERT OR IGNORE INTO playlists(name) VALUES (?)').run('Favoritos');
+  getDb().prepare('INSERT OR IGNORE INTO playlists(name) VALUES (?)').run('Favorites');
 }
 
 export function listPlaylists(): Playlist[] {
@@ -59,7 +59,7 @@ export function renamePlaylist(id: number, name: string): Playlist | null {
 export function deletePlaylist(id: number): boolean {
   const db = getDb();
   const row = db.prepare('SELECT name FROM playlists WHERE id = ?').get(id) as { name: string } | undefined;
-  if (row?.name === 'Favoritos') return false;
+  if (row?.name === 'Favorites') return false;
   const res = db.prepare('DELETE FROM playlists WHERE id = ?').run(id);
   return res.changes > 0;
 }

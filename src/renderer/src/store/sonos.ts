@@ -50,7 +50,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
     try {
       const devices = await window.fmusic.sonosDiscover();
       set({ devices });
-      if (devices.length === 0) set({ error: 'No se encontraron dispositivos Sonos en la red.' });
+      if (devices.length === 0) set({ error: 'No Sonos devices found on the network.' });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     } finally {

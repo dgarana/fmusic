@@ -45,7 +45,7 @@ function decodeUtf8(chunk: Buffer | string): string {
 function assertBinaries() {
   if (!hasYtDlp()) {
     throw new Error(
-      'yt-dlp no est\u00e1 disponible. Ve a Ajustes y pulsa "Actualizar motor de descarga".'
+      'yt-dlp is not available. Go to Settings and click "Update download engine".'
     );
   }
 }
@@ -185,7 +185,7 @@ export async function fetchAudioStreamUrl(url: string): Promise<string> {
     url
   ]);
   const directUrl = stdout.split(/\r?\n/).map((l) => l.trim()).find(Boolean);
-  if (!directUrl) throw new Error('No se pudo resolver la URL del stream.');
+  if (!directUrl) throw new Error('Could not resolve the stream URL.');
   return directUrl;
 }
 
@@ -344,7 +344,7 @@ export class DownloadProcess extends EventEmitter {
       proc.on('error', reject);
       proc.on('close', (code) => {
         if (this.cancelled) {
-          reject(new Error('Descarga cancelada'));
+          reject(new Error('Download cancelled'));
           return;
         }
         if (code !== 0) {
@@ -352,7 +352,7 @@ export class DownloadProcess extends EventEmitter {
           return;
         }
         if (!this.finalFile || !this.info) {
-          reject(new Error('yt-dlp finaliz\u00f3 pero no se pudo resolver el fichero generado.'));
+          reject(new Error('yt-dlp finished but could not resolve the generated file.'));
           return;
         }
         // Normalise the path: yt-dlp sometimes emits NFD-decomposed Unicode

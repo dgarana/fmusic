@@ -128,7 +128,7 @@ export function DownloadPage() {
     const existingJob = videoId ? jobByYoutubeId.get(videoId) : undefined;
     const isActive = existingJob && ACTIVE_STATUSES.includes(existingJob.status);
     if (videoId && inLibrary.has(videoId)) {
-      setInfo('Ya tienes esta canción en tu biblioteca.');
+      setInfo('This song is already in your library.');
       return;
     }
     if (isActive) return;
@@ -166,10 +166,10 @@ export function DownloadPage() {
 
   return (
     <div>
-      <h1>Descargar</h1>
+      <h1>⬇️ Download</h1>
       <div className="search-row">
         <input
-          placeholder="Pega un enlace de YouTube o escribe para buscar..."
+          placeholder="🔍 Paste a YouTube link or type to search..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -177,7 +177,7 @@ export function DownloadPage() {
           }}
         />
         <button className="primary" onClick={() => void submit()} disabled={searching}>
-          {searching ? 'Buscando...' : 'Buscar / Descargar'}
+          {searching ? '⏳ Searching...' : '🔍 Search / Download'}
         </button>
       </div>
       {error && (
@@ -185,14 +185,14 @@ export function DownloadPage() {
           {error}
           {isSslError(error) && (
             <div style={{ marginTop: 6, fontSize: 13, color: 'var(--text-muted)' }}>
-              Parece un error de certificado SSL. Si estás en una VPN corporativa, activa{' '}
+              This looks like an SSL certificate error. If you are behind a corporate VPN, enable{' '}
               <button
                 style={{ padding: '1px 8px', fontSize: 12 }}
                 onClick={() => navigate('/settings')}
               >
-                Ignorar errores SSL
+                Ignore SSL errors
               </button>{' '}
-              en Ajustes &gt; Red.
+              in Settings &gt; Network.
             </div>
           )}
         </div>
@@ -201,7 +201,7 @@ export function DownloadPage() {
 
       {orphanJobs.length > 0 && (
         <>
-          <h2>Otras descargas</h2>
+          <h2>📦 Other downloads</h2>
           <div className="jobs">
             {orphanJobs.map((job) => (
               <div className="job" key={job.id}>
@@ -217,10 +217,10 @@ export function DownloadPage() {
                   <span className={`status-pill ${job.status}`}>{job.status}</span>
                   {ACTIVE_STATUSES.includes(job.status) ? (
                     <button onClick={() => void window.fmusic.cancelDownload(job.id)}>
-                      Cancelar
+                      ✖ Cancel
                     </button>
                   ) : (
-                    <button onClick={() => dismissJob(job.id)} title="Cerrar">×</button>
+                    <button onClick={() => dismissJob(job.id)} title="Dismiss">×</button>
                   )}
                 </div>
                 <div className="progress-bar">
@@ -234,7 +234,7 @@ export function DownloadPage() {
 
       {results.length > 0 && (
         <>
-          <h2>Resultados</h2>
+          <h2>🎶 Results</h2>
           <div className="results-grid">
             {results.map((r) => {
               const job = jobByYoutubeId.get(r.id);
@@ -258,7 +258,7 @@ export function DownloadPage() {
                       <div style={{ marginTop: 8 }}>
                         {preview!.loading && (
                           <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                            Obteniendo stream...
+                            Fetching stream...
                           </div>
                         )}
                         {preview!.error && (
@@ -269,7 +269,7 @@ export function DownloadPage() {
                                 onClick={() => void window.fmusic.openExternal(r.url)}
                                 style={{ marginTop: 6 }}
                               >
-                                Abrir en navegador
+                                Open in browser
                               </button>
                             </div>
                           </div>
@@ -318,14 +318,14 @@ export function DownloadPage() {
 
                     {job?.status === 'failed' && (
                       <div style={{ color: 'var(--danger)', fontSize: 12, marginTop: 6 }}>
-                        Error: {job.error ?? 'falló'}
+                        Error: {job.error ?? 'failed'}
                         {isSslError(job.error ?? '') && (
                           <div style={{ marginTop: 4, color: 'var(--text-muted)' }}>
                             <button
                               style={{ padding: '1px 6px', fontSize: 11 }}
                               onClick={() => navigate('/settings')}
                             >
-                              Activar "Ignorar SSL" en Ajustes
+                              Enable "Ignore SSL" in Settings
                             </button>
                           </div>
                         )}
@@ -334,24 +334,24 @@ export function DownloadPage() {
 
                     <div className="actions">
                       {isPreviewing ? (
-                        <button onClick={() => setPreview(null)}>Cerrar preview</button>
+                        <button onClick={() => setPreview(null)}>✖ Close preview</button>
                       ) : (
-                        <button onClick={() => void openPreview(r)}>Previsualizar</button>
+                        <button onClick={() => void openPreview(r)}>▶️ Preview</button>
                       )}
                       {already ? (
-                        <button disabled title="Ya la tienes en tu biblioteca">
-                          ✓ En biblioteca
+                        <button disabled title="Already in your library">
+                          ✅ In library
                         </button>
                       ) : active ? (
                         <button
                           className="danger"
                           onClick={() => void window.fmusic.cancelDownload(job!.id)}
                         >
-                          Cancelar
+                          ✖ Cancel
                         </button>
                       ) : (
                         <button className="primary" onClick={() => void enqueue(r.url, r.id)}>
-                          Descargar
+                          ⬇️ Download
                         </button>
                       )}
                     </div>
@@ -363,7 +363,7 @@ export function DownloadPage() {
           {results.length >= resultLimit && (
             <div style={{ textAlign: 'center', marginTop: 16 }}>
               <button onClick={() => void loadMore()} disabled={loadingMore}>
-                {loadingMore ? 'Cargando...' : 'Cargar más resultados'}
+                {loadingMore ? '⏳ Loading...' : '➕ Load more results'}
               </button>
             </div>
           )}

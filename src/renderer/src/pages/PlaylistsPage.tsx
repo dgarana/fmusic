@@ -30,10 +30,10 @@ export function PlaylistsPage() {
 
   return (
     <div>
-      <h1>Playlists</h1>
+      <h1>🎵 Playlists</h1>
       <div className="search-row">
         <input
-          placeholder="Nombre de la nueva playlist..."
+          placeholder="Name of the new playlist..."
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => {
@@ -41,12 +41,12 @@ export function PlaylistsPage() {
           }}
         />
         <button className="primary" onClick={() => void createPlaylist()}>
-          Crear playlist
+          ➕ Create playlist
         </button>
       </div>
 
       {playlists.length === 0 ? (
-        <div className="empty">Aún no tienes playlists.</div>
+        <div className="empty">📭 You don't have any playlists yet.</div>
       ) : (
         <div className="results-grid">
           {playlists.map((p) => (
@@ -54,21 +54,21 @@ export function PlaylistsPage() {
               <div className="title" style={{ fontSize: 16 }}>
                 {p.name}
               </div>
-              <div className="channel">{p.trackCount} canciones</div>
+              <div className="channel">🎶 {p.trackCount} tracks</div>
               <div className="actions" style={{ marginTop: 10 }}>
                 <a href={`#/playlists/${p.id}`}>
-                  <button>Abrir</button>
+                  <button>📂 Open</button>
                 </a>
-                {p.name !== 'Favoritos' && (
+                {p.name !== 'Favorites' && (
                   <button
                     className="danger"
                     onClick={async () => {
-                      if (!confirm(`¿Eliminar playlist "${p.name}"?`)) return;
+                      if (!confirm(`Delete playlist "${p.name}"?`)) return;
                       await window.fmusic.deletePlaylist(p.id);
                       await refreshPlaylists();
                     }}
                   >
-                    Eliminar
+                    🗑️ Delete
                   </button>
                 )}
               </div>
@@ -164,9 +164,9 @@ function PlaylistDetail({ id, name }: { id: number; name: string }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-        <h1 style={{ margin: 0 }}>{name}</h1>
+        <h1 style={{ margin: 0 }}>🎵 {name}</h1>
         <button className="primary" onClick={() => void openPicker()}>
-          + Añadir canciones
+          ➕ Add tracks
         </button>
       </div>
 
@@ -182,7 +182,7 @@ function PlaylistDetail({ id, name }: { id: number; name: string }) {
         >
           <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
             <input
-              placeholder="Filtrar por título, artista, álbum o género..."
+              placeholder="Filter by title, artist, album or genre..."
               value={pickerQuery}
               onChange={(e) => setPickerQuery(e.target.value)}
               style={{ flex: 1 }}
@@ -193,15 +193,15 @@ function PlaylistDetail({ id, name }: { id: number; name: string }) {
               onClick={() => void commitAdd()}
               disabled={selected.size === 0 || adding}
             >
-              {adding ? 'Añadiendo...' : `Añadir ${selected.size || ''}`.trim()}
+              {adding ? '⏳ Adding...' : `➕ Add ${selected.size || ''}`.trim()}
             </button>
-            <button onClick={() => setPickerOpen(false)}>Cancelar</button>
+            <button onClick={() => setPickerOpen(false)}>✖ Cancel</button>
           </div>
           {candidates.length === 0 ? (
             <div className="empty" style={{ padding: 12 }}>
               {allTracks.length === 0
-                ? 'Tu biblioteca está vacía.'
-                : 'Todas las canciones de la biblioteca ya están en esta playlist.'}
+                ? '📦 Your library is empty.'
+                : '✅ All tracks in your library are already in this playlist.'}
             </div>
           ) : (
             <div
@@ -244,16 +244,16 @@ function PlaylistDetail({ id, name }: { id: number; name: string }) {
 
       {tracks.length === 0 ? (
         <div className="empty">
-          Esta playlist está vacía. Añade canciones desde la Biblioteca o con el botón de arriba.
+          📭 This playlist is empty. Add tracks from the Library or with the button above.
         </div>
       ) : (
         <table className="track-table">
           <thead>
             <tr>
               <th>#</th>
-              <th>Título</th>
-              <th>Artista</th>
-              <th>Duración</th>
+              <th>Title</th>
+              <th>Artist</th>
+              <th>Duration</th>
               <th></th>
             </tr>
           </thead>
@@ -265,9 +265,9 @@ function PlaylistDetail({ id, name }: { id: number; name: string }) {
                 <td>{t.artist ?? '-'}</td>
                 <td>{formatDuration(t.durationSec)}</td>
                 <td className="actions">
-                  <button onClick={() => void playTrack(t, tracks)} title="Reproducir">▶</button>{' '}
-                  <button onClick={() => void moveUp(i)} disabled={i === 0} title="Subir">↑</button>{' '}
-                  <button className="danger" onClick={() => void remove(t.id)} title="Quitar">×</button>
+                  <button onClick={() => void playTrack(t, tracks)} title="Play">▶</button>{' '}
+                  <button onClick={() => void moveUp(i)} disabled={i === 0} title="Move up">↑</button>{' '}
+                  <button className="danger" onClick={() => void remove(t.id)} title="Remove">×</button>
                 </td>
               </tr>
             ))}

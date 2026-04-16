@@ -7,6 +7,7 @@
 
 import m001 from './001_initial.sql?raw';
 import m002 from './002_favorites.sql?raw';
+import m003 from './003_rename_favorites.sql?raw';
 
 export interface MigrationDefinition {
   version: number;
@@ -16,5 +17,6 @@ export interface MigrationDefinition {
 
 export const migrations: MigrationDefinition[] = [
   { version: 1, name: '001_initial', sql: m001 },
-  { version: 2, name: '002_favorites', sql: m002 }
+  { version: 2, name: '002_favorites', sql: m002 },
+  { version: 3, name: '003_rename_favorites', sql: m003 }
 ];

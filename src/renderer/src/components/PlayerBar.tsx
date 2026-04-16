@@ -73,7 +73,7 @@ export function PlayerBar() {
 
   const { playlists, refreshPlaylists } = useLibraryStore();
   const [isFavorited, setIsFavorited] = useState(false);
-  const favoritesPlaylist = playlists.find((p) => p.name === 'Favoritos');
+  const favoritesPlaylist = playlists.find((p) => p.name === 'Favorites');
 
   useEffect(() => {
     if (!current || !favoritesPlaylist) {
@@ -128,14 +128,14 @@ export function PlayerBar() {
           {cover ? <img src={cover} alt="" /> : null}
         </div>
         <div style={{ minWidth: 0 }}>
-          <div className="title">{current?.title ?? 'Nada reproduciéndose'}</div>
+          <div className="title">{current?.title ?? '🎵 Nothing playing'}</div>
           <div className="artist">{current?.artist ?? ''}</div>
         </div>
         <button
           className={`heart-btn${isFavorited ? ' is-favorited' : ''}`}
           onClick={() => void toggleFavorite()}
           disabled={!current || !favoritesPlaylist}
-          title={isFavorited ? 'Quitar de Favoritos' : 'Añadir a Favoritos'}
+          title={isFavorited ? 'Remove from Favorites' : 'Add to Favorites'}
         >
           {isFavorited ? '♥' : '♡'}
         </button>
@@ -144,7 +144,7 @@ export function PlayerBar() {
         <div className="buttons">
           <button
             onClick={() => void handlePrev()}
-            title="Anterior"
+            title="Previous"
             style={{ visibility: hasPrev ? 'visible' : 'hidden' }}
           >
             &laquo;
@@ -153,13 +153,13 @@ export function PlayerBar() {
             className="primary"
             onClick={handleTogglePlay}
             disabled={!current}
-            title={isPlaying ? 'Pausar' : 'Reproducir'}
+            title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? '\u275a\u275a' : '\u25b6'}
           </button>
           <button
             onClick={() => void handleNext()}
-            title="Siguiente"
+            title="Next"
             style={{ visibility: hasNext ? 'visible' : 'hidden' }}
           >
             &raquo;
@@ -185,7 +185,7 @@ export function PlayerBar() {
       </div>
       <div className="player-extras">
         {sonosEnabled && <SonosPanel />}
-        <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Volumen</span>
+        <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>🔊 Volume</span>
         <input
           type="range"
           min={0}

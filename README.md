@@ -1,126 +1,129 @@
 # fmusic
 
-App de escritorio multiplataforma (Windows, macOS y Linux) para **descargar música
-de YouTube**, **gestionar una biblioteca local** (playlists, géneros…) y
-**escucharla** sin salir de la app.
+Cross-platform desktop app (Windows, macOS and Linux) to **download music
+from YouTube**, **manage a local library** (playlists, genres…) and
+**listen to it** without leaving the app.
 
-Construida con **Electron + Vite + React + TypeScript** y apoyada en los
-binarios standalone de **yt-dlp** y **FFmpeg** — no requiere Python instalado
-en la máquina del usuario.
+Built with **Electron + Vite + React + TypeScript** and powered by the
+standalone **yt-dlp** and **FFmpeg** binaries — no Python installation
+required on the user's machine.
 
-## Funcionalidades
+## Features
 
-### Búsqueda y descarga
-- 🔎 **Buscar** canciones en YouTube por nombre, con **paginación** ("Cargar más" de 12 en 12) y previsualización de audio inline antes de descargar.
-- ⬇️ **Descargar** audio desde URL de YouTube (MP3 / M4A / Opus, calidad configurable) con cola de descargas, progreso en tiempo real y botón para descartar notificaciones terminadas.
-- 🔁 **Reanudar** descargas canceladas: volver a pulsar el botón en una descarga cancelada la reactiva.
-- ℹ️ **Aviso** cuando se intenta descargar una URL que ya está en la biblioteca.
-- 📋 La sección "Otras descargas" aparece por encima de los resultados de búsqueda para mayor visibilidad.
+### Search and download
+- 🔎 **Search** YouTube for songs by name, with **pagination** (12 at a time via "Load more") and inline audio preview before downloading.
+- ⬇️ **Download** audio from a YouTube URL (MP3 / M4A / Opus, configurable quality) with a download queue, live progress and a button to dismiss finished notifications.
+- 🔁 **Resume** cancelled downloads: clicking the button again on a cancelled download re-queues it.
+- ℹ️ **Notice** when trying to download a URL that is already in your library.
+- 📋 The "Other downloads" section appears above the search results for better visibility.
 
-### Biblioteca y playlists
-- 📚 **Biblioteca** en SQLite con tabla ordenable, búsqueda y filtro por género.
-- 📝 **Playlists** con añadir / quitar / reordenar canciones.
-- ♥ **Favoritos**: playlist especial protegida (no se puede eliminar); corazón en el reproductor para añadir o quitar la canción actual al instante.
-- 🔄 **Actualización en tiempo real**: abrir una playlist y añadir canciones desde otro punto de la app actualiza la vista sin recargar.
+### Library and playlists
+- 📚 **Library** stored in SQLite with sortable table, search, and genre filter.
+- 📝 **Playlists** with add / remove / reorder tracks.
+- ♥ **Favorites**: protected special playlist (cannot be deleted); heart button in the player toggles the current track in Favorites instantly.
+- 🔄 **Real-time refresh**: opening a playlist and adding tracks from elsewhere in the app updates the view without a reload.
 
-### Reproductor
-- 🎧 **Reproducción** integrada con cola, barra de progreso con **seek funcional** (arrastrar la barra lleva al punto exacto sin reiniciar la pista), controles y volumen (Howler.js).
-- ⏮⏭ Los botones de pista anterior/siguiente se ocultan cuando no hay pista adyacente, sin desplazar el botón de play.
-- 🎵 Metadatos enriquecidos de YouTube: portada, artista, álbum, género, año.
+### Player
+- 🎧 Integrated **playback** with queue, progress bar with **working seek** (dragging the bar jumps to the exact position without restarting the track), transport controls and volume (Howler.js).
+- ⏮⏭ Previous / next buttons are hidden when there is no adjacent track, without shifting the play button.
+- 🎵 Rich YouTube metadata: cover art, artist, album, genre, year.
 
 ### Sonos
-- 📡 **Streaming a Sonos**: descubre dispositivos Sonos en la red local y envía la pista actual a cualquiera de ellos con un clic.
-- 🔊 Controles de **play / pausa / siguiente / anterior / volumen / seek** enrutados al Sonos cuando está activo.
-- ■ Botón de **parar** por dispositivo individual sin afectar al resto.
-- 🌐 Servidor HTTP interno con soporte de **Range requests** para que Sonos pueda buscar en la pista sin descargarla completa.
-- 💾 **Dispositivos cacheados**: los Sonos encontrados se recuerdan entre sesiones y se reconectan automáticamente al abrir el panel; los que ya no respondan se eliminan solos de la caché.
-- 🔌 **Añadir por IP**: permite conectar a un dispositivo Sonos introduciendo su IP manualmente, útil cuando la VPN bloquea el descubrimiento SSDP multicast.
-- 🔇 Al iniciar el casting se pausa el reproductor local para evitar que suenen ambos a la vez.
+- 📡 **Streaming to Sonos**: discover Sonos devices on the local network and cast the current track to any of them with a click.
+- 🔊 **play / pause / next / previous / volume / seek** controls are routed to Sonos when active.
+- ■ Per-device **stop** button that doesn't affect the other devices.
+- 🌐 Internal HTTP server with **Range request** support so Sonos can seek inside the track without downloading it fully.
+- 💾 **Cached devices**: discovered Sonos devices are remembered across sessions and auto-reconnected when the panel opens; unreachable ones are automatically removed from the cache.
+- 🔌 **Add by IP**: connect to a Sonos device by typing its IP manually, useful when a VPN blocks SSDP multicast discovery.
+- 🔇 Starting to cast pauses the local player so both outputs don't play at once.
 
-### Bandeja del sistema y mini reproductor
-- 🖥️ **La app se mantiene en segundo plano** cuando se cierra la ventana principal (icono en la bandeja del sistema, sin cerrar realmente el proceso).
-- 🎛️ **Mini reproductor flotante** (340 × 96 px, siempre encima): se abre haciendo clic en el icono de la bandeja.
-  - Muestra portada, título, artista y controles básicos (anterior / play·pausa / siguiente).
-  - **Arrastrable**: se puede mover libremente por la pantalla.
-  - Botón **⤢** para recuperar la ventana principal y ocultar el mini reproductor.
-- 🗂️ **Menú contextual del tray**: play/pausa, anterior, siguiente, "Abrir fmusic" y "Salir", con el título de la pista actual y tooltip actualizado en tiempo real.
+### System tray and mini player
+- 🖥️ **The app stays in the background** when the main window is closed (system tray icon; the process is not actually killed).
+- 🎛️ **Floating mini player** (340 × 96 px, always-on-top): opens on tray icon click.
+  - Shows cover art, title, artist and basic controls (previous / play·pause / next).
+  - **Draggable**: can be moved anywhere on screen.
+  - **⤢** button to restore the main window and hide the mini player.
+- 🗂️ **Tray context menu**: play/pause, previous, next, "Open fmusic" and "Quit", with the current track title and tooltip updated in real time.
 
 ### General
-- ⚙️ **Ajustes**: carpeta de descarga, formato/calidad por defecto, estado de dependencias y botón para **actualizar yt-dlp** sin salir de la app.
-- 🔒 **Opción "Ignorar errores SSL"** en Ajustes → Red: útil en redes corporativas con inspección SSL (VPN). Cuando ocurre un error de certificado en la búsqueda o descarga, la UI muestra un aviso con acceso directo a la opción.
+- ⚙️ **Settings**: download folder, default format/quality, dependency status and a button to **update yt-dlp** without leaving the app.
+- 🔒 **"Ignore SSL errors" option** in Settings → Network: useful on corporate networks with SSL inspection (VPN). When a certificate error occurs on search or download, the UI shows a shortcut to this option.
 
 ## Stack
 
-| Capa | Tecnología |
-|------|-----------|
-| Shell | **Electron 33** con `contextIsolation` |
+| Layer | Technology |
+|-------|-----------|
+| Shell | **Electron 33** with `contextIsolation` |
 | Frontend | **React 18 + Vite** + **TypeScript** |
-| Bundler | **electron-vite** (main / preload / renderer unificados) |
-| Estado | **Zustand** (player, biblioteca, descargas, Sonos) |
-| Audio local | **Howler.js** + protocolo `fmusic-media:` con Range requests |
-| Base de datos | **better-sqlite3** con migraciones versionadas |
-| Descargas | **yt-dlp** + **FFmpeg** (binarios por plataforma, sin Python) |
+| Bundler | **electron-vite** (unified main / preload / renderer) |
+| State | **Zustand** (player, library, downloads, Sonos) |
+| Local audio | **Howler.js** + `fmusic-media:` protocol with Range requests |
+| Database | **better-sqlite3** with versioned migrations |
+| Downloads | **yt-dlp** + **FFmpeg** (per-platform binaries, no Python) |
 | Sonos | **@svrooij/sonos** (UPnP / AVTransport SOAP) |
-| Distribución | **electron-builder** (`.exe` NSIS, `.dmg` universal, `.AppImage`/`.deb`) |
+| Distribution | **electron-builder** (`.exe` NSIS, universal `.dmg`, `.AppImage`/`.deb`) |
 
-## Puesta en marcha
+## Getting started
 
 ```bash
 npm install
 npm run dev
 ```
 
-`npm install` lanza `scripts/postinstall.js` que descarga `yt-dlp` (plataforma
-actual) desde el release más reciente y copia `ffmpeg-static` a
-`resources/bin/`.
+`npm install` runs `scripts/postinstall.js` which downloads `yt-dlp` (for
+the current platform) from the latest release and copies `ffmpeg-static`
+to `resources/bin/`.
 
-### Saltarse la descarga de binarios (por ejemplo en CI de typecheck)
+### Skip binary downloads (e.g. for CI typecheck)
 
 ```bash
 FMUSIC_SKIP_BINARIES=1 npm install
 ```
 
-### Compilación cruzada
+### Cross-compilation
 
-Para preparar binarios para otra plataforma antes de empaquetar:
+To prepare binaries for a different platform before packaging:
 
 ```bash
 FMUSIC_TARGET_PLATFORM=linux FMUSIC_TARGET_ARCH=x64 npm run postinstall
 ```
 
-## Comandos
+## Commands
 
-| Comando | Descripción |
+| Command | Description |
 |---------|-------------|
-| `npm run dev` | Electron + Vite en modo desarrollo con DevTools |
-| `npm run build` | Compila main, preload y renderer |
-| `npm run typecheck` | Comprueba tipos (node + web) |
-| `npm run dist:win` | Genera instalable Windows (NSIS) |
-| `npm run dist:mac` | Genera instalable macOS (DMG universal) |
-| `npm run dist:linux` | Genera instalable Linux (AppImage + deb) |
+| `npm run dev` | Electron + Vite in development mode with DevTools |
+| `npm run build` | Compile main, preload and renderer |
+| `npm run typecheck` | Typecheck (node + web) |
+| `npm run dist:win` | Build a Windows installer (NSIS) |
+| `npm run dist:mac` | Build a macOS installer (universal DMG) |
+| `npm run dist:linux` | Build a Linux installer (AppImage + deb) |
 
-## Migraciones de la base de datos
+## Database migrations
 
-Al arrancar, la app aplica todas las migraciones con versión mayor que
-`PRAGMA user_version`. Las migraciones viven en
-`src/main/library/migrations/` y se registran estáticamente en
-`src/main/library/migrations/index.ts` (importadas como strings `?raw`, lo que
-permite empaquetarlas sin copiar archivos sueltos).
+On startup, the app applies all migrations with a version greater than
+`PRAGMA user_version`. Migrations live under
+`src/main/library/migrations/` and are registered statically in
+`src/main/library/migrations/index.ts` (imported as `?raw` strings so they
+can be bundled without shipping loose files).
 
-Para añadir una migración:
+To add a migration:
 
-1. Crea `src/main/library/migrations/NNN_descripcion.sql`.
-2. Impórtala y añádela al array de `migrations/index.ts`.
+1. Create `src/main/library/migrations/NNN_description.sql`.
+2. Import it and add it to the array in `migrations/index.ts`.
 
-Cada migración se ejecuta en una transacción y se registra en la tabla
-`schema_history`. Antes de aplicar migraciones sobre una base existente se hace
-un backup automático en `<userData>/backups/library-<timestamp>.sqlite`.
+Each migration runs inside a transaction and is recorded in the
+`schema_history` table. Before applying migrations on an existing
+database, an automatic backup is made at
+`<userData>/backups/library-<timestamp>.sqlite`.
 
-La migración `002_favorites.sql` siembra la playlist "Favoritos" con
-`INSERT OR IGNORE`, por lo que es idempotente. Además, `ensureBuiltinPlaylists()`
-la garantiza también en cada arranque.
+The `002_favorites.sql` migration seeds the "Favorites" playlist with
+`INSERT OR IGNORE`, so it is idempotent. `003_rename_favorites.sql`
+renames the legacy Spanish "Favoritos" row to "Favorites" for existing
+databases. Additionally, `ensureBuiltinPlaylists()` guarantees the
+Favorites row on every startup.
 
-## Estructura del proyecto
+## Project structure
 
 ```
 fmusic/
@@ -130,16 +133,16 @@ fmusic/
 │  └─ postinstall.js
 ├─ resources/bin/                  # yt-dlp + ffmpeg (gitignored)
 └─ src/
-   ├─ shared/                      # tipos y canales IPC compartidos
+   ├─ shared/                      # shared types and IPC channels
    │  ├─ channels.ts
    │  └─ types.ts
-   ├─ main/                        # proceso Electron main
-   │  ├─ index.ts                  # ventana principal, protocolo fmusic-media:, IPC
+   ├─ main/                        # Electron main process
+   │  ├─ index.ts                  # main window, fmusic-media: protocol, IPC
    │  ├─ ipc.ts
-   │  ├─ tray.ts                   # icono de bandeja + menú contextual
-   │  ├─ miniplayer.ts             # ventana flotante mini reproductor
-   │  ├─ sonos.ts                  # control UPnP de dispositivos Sonos
-   │  ├─ sonos-server.ts           # servidor HTTP interno para streaming a Sonos
+   │  ├─ tray.ts                   # tray icon + context menu
+   │  ├─ miniplayer.ts             # floating mini player window
+   │  ├─ sonos.ts                  # UPnP control of Sonos devices
+   │  ├─ sonos-server.ts           # internal HTTP server for Sonos streaming
    │  ├─ paths.ts
    │  ├─ settings.ts
    │  ├─ download-manager.ts
@@ -160,15 +163,15 @@ fmusic/
          ├─ styles.css
          ├─ components/
          │  ├─ Sidebar.tsx
-         │  ├─ PlayerBar.tsx       # reproductor con seek, favoritos, Sonos
-         │  ├─ TrayBridge.tsx      # sincroniza estado al tray y mini player
-         │  └─ SonosPanel.tsx      # panel de dispositivos Sonos
+         │  ├─ PlayerBar.tsx       # player with seek, favorites, Sonos
+         │  ├─ TrayBridge.tsx      # syncs state to tray and mini player
+         │  └─ SonosPanel.tsx      # Sonos devices panel
          ├─ pages/
          │  ├─ DownloadPage.tsx
          │  ├─ LibraryPage.tsx
          │  ├─ PlaylistsPage.tsx
          │  ├─ SettingsPage.tsx
-         │  └─ MiniPlayerPage.tsx  # UI del mini reproductor flotante
+         │  └─ MiniPlayerPage.tsx  # UI for the floating mini player
          └─ store/
             ├─ player.ts
             ├─ downloads.ts
@@ -176,11 +179,11 @@ fmusic/
             └─ sonos.ts
 ```
 
-## Arquitectura IPC (mini reproductor y tray)
+## IPC architecture (mini player and tray)
 
 ```
-Renderer principal          Main process              Mini reproductor
-─────────────────           ─────────────             ────────────────
+Main renderer               Main process               Mini player
+─────────────────           ─────────────              ────────────────
 TrayBridge
  sendTrayState()    ──►  tray:player-state  ──►  updateTray()
  sendMiniState()    ──►  mini:state-from-main ──►  mini:state  ──►  setState()
@@ -191,38 +194,45 @@ MiniPlayerPage
  prev/next ◄── tray:command ◄┘
 ```
 
-El mini reproductor pide estado al arrancar (`request-state`), y el proceso
-principal responde con el último estado cacheado para que nunca aparezca vacío.
+The mini player requests state on start (`request-state`), and the main
+process replies with the last cached state so the window never shows up
+blank.
 
-## Protocolo `fmusic-media:`
+## `fmusic-media:` protocol
 
-Las pistas locales se sirven con un esquema personalizado
-(`fmusic-media://track/<id>`) que incluye soporte completo de **Range requests**
-(`206 Partial Content`) para que tanto Howler.js como los dispositivos Sonos
-puedan buscar en el audio sin necesidad de descargarlo entero.
+Local tracks are served via a custom scheme
+(`fmusic-media://track/<id>`) with full **Range request** support
+(`206 Partial Content`), so both Howler.js and Sonos devices can seek
+inside the audio without downloading it fully.
 
-## Notas importantes
+## Important notes
 
-- **yt-dlp se rompe cuando YouTube cambia su player.** Desde Ajustes → "Actualizar
-  motor de descarga" se puede re-descargar el binario más reciente sin cerrar
-  la app.
-- **Deno / runtime JS.** yt-dlp está moviéndose a requerir Deno para resolver
-  los retos JS de YouTube. Si ves errores de descarga tras una actualización de
-  yt-dlp, instala Deno (`deno --version`) y estará disponible automáticamente.
-- **Firma de código.** Sin firmar, macOS mostrará el aviso de Gatekeeper y
-  Windows el de SmartScreen. Para distribución profesional considera un
-  Developer ID de Apple y un certificado EV de Windows.
-- **Uso personal.** Respeta los términos de servicio de YouTube y los derechos
-  de autor del material que descargues.
+- **yt-dlp breaks when YouTube changes its player.** From Settings →
+  "Update download engine" you can re-download the latest binary without
+  closing the app.
+- **Deno / JS runtime.** yt-dlp is moving towards requiring Deno to
+  solve YouTube's JS challenges. If you see download errors after a
+  yt-dlp update, install Deno (`deno --version`) and it will be picked
+  up automatically.
+- **Code signing.** Without signing, macOS will show the Gatekeeper
+  warning and Windows the SmartScreen one. For professional distribution
+  consider an Apple Developer ID and a Windows EV certificate.
+- **Personal use.** Respect YouTube's Terms of Service and the copyright
+  of any material you download.
 
 ## Disclaimer
 
-Este proyecto es de uso **personal y educativo**. No está afiliado ni respaldado por YouTube, Google ni ningún proveedor de contenido.
+This project is intended for **personal and educational use**. It is not
+affiliated with or endorsed by YouTube, Google or any content provider.
 
-- El autor no se hace responsable del uso que cada usuario haga de la aplicación.
-- Descargar contenido de YouTube puede violar sus [Términos de Servicio](https://www.youtube.com/t/terms). Consulta la legislación aplicable en tu país antes de descargar material protegido por derechos de autor.
-- Esta herramienta no elude ningún sistema de protección de copia (DRM). Únicamente descarga streams que el propio navegador recibiría al reproducir el vídeo.
+- The author is not responsible for how end users choose to use the app.
+- Downloading content from YouTube may violate its
+  [Terms of Service](https://www.youtube.com/t/terms). Check the laws
+  applicable in your country before downloading copyrighted material.
+- This tool does not circumvent any copy-protection system (DRM). It
+  only downloads the streams that a regular browser would receive while
+  playing the video.
 
-## Licencia
+## License
 
 MIT.

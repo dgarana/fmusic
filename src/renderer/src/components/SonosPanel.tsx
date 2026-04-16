@@ -73,7 +73,7 @@ export function SonosPanel() {
       <button
         className={`sonos-btn${isCasting ? ' is-casting' : ''}`}
         onClick={() => setOpen((v) => !v)}
-        title={isCasting ? 'Reproduciendo en Sonos' : 'Enviar a Sonos'}
+        title={isCasting ? 'Playing on Sonos' : 'Cast to Sonos'}
       >
         ⊕
       </button>
@@ -81,14 +81,14 @@ export function SonosPanel() {
       {open && (
         <div className="sonos-panel">
           <div className="sonos-panel-header">
-            <span>Sonos</span>
+            <span>📡 Sonos</span>
           </div>
 
-          {error && <div className="sonos-error">{error}</div>}
+          {error && <div className="sonos-error">⚠️ {error}</div>}
 
           {devices.length === 0 ? (
             <button onClick={() => void discover()} disabled={discovering} style={{ width: '100%' }}>
-              {discovering ? 'Buscando...' : 'Buscar dispositivos'}
+              {discovering ? '⏳ Searching...' : '🔍 Search for devices'}
             </button>
           ) : (
             <>
@@ -99,7 +99,7 @@ export function SonosPanel() {
                       className="sonos-device-cast"
                       onClick={() => void handleCast(d.host)}
                       disabled={!current}
-                      title="Reproducir aquí"
+                      title="Play here"
                     >
                       <span className="sonos-device-name">{d.name}</span>
                       <span className="sonos-device-host">{d.host}</span>
@@ -107,7 +107,7 @@ export function SonosPanel() {
                     <button
                       className="sonos-device-stop danger"
                       onClick={() => void handleStop(d.host)}
-                      title="Parar este dispositivo"
+                      title="Stop this device"
                     >
                       ■
                     </button>
@@ -119,14 +119,14 @@ export function SonosPanel() {
                 disabled={discovering}
                 style={{ marginTop: 8, width: '100%', fontSize: 11 }}
               >
-                {discovering ? 'Buscando...' : 'Volver a buscar'}
+                {discovering ? '⏳ Searching...' : '🔄 Search again'}
               </button>
             </>
           )}
 
           <div style={{ marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
-              Añadir por IP (útil con VPN)
+              🔌 Add by IP (useful with VPN)
             </div>
             <div style={{ display: 'flex', gap: 4 }}>
               <input
@@ -137,7 +137,7 @@ export function SonosPanel() {
                 style={{ flex: 1, fontSize: 12 }}
               />
               <button onClick={() => void handleAddByIp()} disabled={addingIp || !manualIp.trim()}>
-                {addingIp ? '...' : 'Añadir'}
+                {addingIp ? '⏳' : '➕ Add'}
               </button>
             </div>
             {ipError && (

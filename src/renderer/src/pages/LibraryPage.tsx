@@ -5,12 +5,12 @@ import { formatDuration } from '../util';
 import type { Track, TrackSortKey } from '../../../shared/types';
 
 const COLUMNS: Array<{ key: TrackSortKey; label: string }> = [
-  { key: 'title', label: 'Título' },
-  { key: 'artist', label: 'Artista' },
-  { key: 'album', label: 'Álbum' },
-  { key: 'genre', label: 'Género' },
-  { key: 'durationSec', label: 'Duración' },
-  { key: 'downloadedAt', label: 'Descargada' }
+  { key: 'title', label: 'Title' },
+  { key: 'artist', label: 'Artist' },
+  { key: 'album', label: 'Album' },
+  { key: 'genre', label: 'Genre' },
+  { key: 'durationSec', label: 'Duration' },
+  { key: 'downloadedAt', label: 'Downloaded' }
 ];
 
 export function LibraryPage() {
@@ -51,9 +51,9 @@ export function LibraryPage() {
   }
 
   async function handleDelete(t: Track) {
-    const ok = confirm(`¿Eliminar "${t.title}" de la biblioteca?`);
+    const ok = confirm(`Remove "${t.title}" from the library?`);
     if (!ok) return;
-    const alsoFile = confirm('¿También eliminar el archivo del disco?');
+    const alsoFile = confirm('Also delete the file from disk?');
     await window.fmusic.deleteTrack(t.id, alsoFile);
     await refreshTracks();
   }
@@ -66,10 +66,10 @@ export function LibraryPage() {
 
   return (
     <div>
-      <h1>Biblioteca</h1>
+      <h1>📚 Library</h1>
       <div className="library-toolbar">
         <input
-          placeholder="Buscar por título, artista, álbum o género..."
+          placeholder="🔍 Search by title, artist, album or genre..."
           value={query.search ?? ''}
           onChange={(e) => void setQuery({ search: e.target.value })}
           style={{ flex: 1 }}
@@ -78,7 +78,7 @@ export function LibraryPage() {
           value={query.genre ?? ''}
           onChange={(e) => void setQuery({ genre: e.target.value || undefined })}
         >
-          <option value="">Todos los géneros</option>
+          <option value="">All genres</option>
           {genres.map((g) => (
             <option key={g} value={g}>
               {g}
@@ -89,7 +89,7 @@ export function LibraryPage() {
 
       {tracks.length === 0 ? (
         <div className="empty">
-          Tu biblioteca está vacía. Descarga tu primera canción desde la pestaña Descargar.
+          📦 Your library is empty. Download your first song from the Download tab.
         </div>
       ) : (
         <table className="track-table">
@@ -132,12 +132,12 @@ export function LibraryPage() {
                   )}
                 </td>
                 <td className="actions">
-                  <button onClick={() => void playTrack(t, tracks)} title="Reproducir">▶</button>{' '}
+                  <button onClick={() => void playTrack(t, tracks)} title="Play">▶</button>{' '}
                   <button
                     onClick={() =>
                       setAddingTrackId(addingTrackId === t.id ? null : t.id)
                     }
-                    title="Añadir a playlist"
+                    title="Add to playlist"
                   >
                     +
                   </button>
@@ -152,7 +152,7 @@ export function LibraryPage() {
                       style={{ marginLeft: 6 }}
                     >
                       <option value="" disabled>
-                        Elige playlist...
+                        Choose playlist...
                       </option>
                       {playlists.map((p) => (
                         <option key={p.id} value={p.id}>
@@ -161,7 +161,7 @@ export function LibraryPage() {
                       ))}
                     </select>
                   )}{' '}
-                  <button className="danger" onClick={() => void handleDelete(t)} title="Eliminar">
+                  <button className="danger" onClick={() => void handleDelete(t)} title="Delete">
                     ×
                   </button>
                 </td>

@@ -69,33 +69,33 @@ function buildIcon(): Electron.NativeImage {
 function buildMenu(win: BrowserWindow, state: TrayPlayerState): Electron.Menu {
   const trackLabel = state.title
     ? `${state.title}${state.artist ? ` — ${state.artist}` : ''}`
-    : 'Nada reproduciéndose';
+    : 'Nothing playing';
 
   return Menu.buildFromTemplate([
     { label: trackLabel, enabled: false },
     { type: 'separator' },
     {
-      label: state.isPlaying ? '⏸  Pausar' : '▶  Reproducir',
+      label: state.isPlaying ? '⏸  Pause' : '▶  Play',
       enabled: state.title !== null,
       click: () => win.webContents.send('tray:command', 'toggle-play')
     },
     {
-      label: '⏮  Anterior',
+      label: '⏮  Previous',
       enabled: state.hasPrev,
       click: () => win.webContents.send('tray:command', 'prev')
     },
     {
-      label: '⏭  Siguiente',
+      label: '⏭  Next',
       enabled: state.hasNext,
       click: () => win.webContents.send('tray:command', 'next')
     },
     { type: 'separator' },
     {
-      label: 'Abrir fmusic',
+      label: 'Open fmusic',
       click: () => { win.show(); win.focus(); }
     },
     {
-      label: 'Salir',
+      label: 'Quit',
       click: () => app.quit()
     }
   ]);

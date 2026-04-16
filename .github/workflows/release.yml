@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_release:
-        description: 'Publicar GitHub Release con los artefactos'
+        description: 'Publish GitHub Release with the artifacts'
         type: boolean
         default: false
 

@@ -137,7 +137,7 @@ export class DownloadManager extends EventEmitter {
       this.emit('track-added', track);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      const status: DownloadStatus = message.includes('cancelada')
+      const status: DownloadStatus = message.includes('cancelled')
         ? 'cancelled'
         : 'failed';
       this.updateJob(job, { status, error: message });

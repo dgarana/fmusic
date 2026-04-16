@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import type { Track, TrackQuery, TrackSortKey } from '../../shared/types.js';
 import { getDb } from './db.js';
 
@@ -154,6 +156,43 @@ export function findByYoutubeId(youtubeId: string): Track | null {
     .prepare('SELECT * FROM tracks WHERE youtube_id = ?')
     .get(youtubeId) as TrackRow | undefined;
   return row ? rowToTrack(row) : null;
+}
+
+function updateFilePath(id: number, nextPath: string): void {
+  getDb().prepare('UPDATE tracks SET file_path = ? WHERE id = ?').run(nextPath, id);
+}
+
+/**
+ * Attempts to locate a track file on disk when the stored path no longer
+ * matches. This typically happens if the path was written with a wrong
+ * encoding (e.g. the Windows console code page mangled non-ASCII bytes on an
+ * older download). We scan the parent directory for a file whose name contains
+ * the `[youtubeId]` marker emitted by our yt-dlp output template.
+ * On success, the DB row is patched so subsequent lookups are free.
+ */
+export function resolveTrackFilePath(track: Track): string | null {
+  const stored = track.filePath;
+  const normalized = path.normalize(stored).normalize('NFC');
+  if (fs.existsSync(stored)) return stored;
+  if (normalized !== stored && fs.existsSync(normalized)) {
+    updateFilePath(track.id, normalized);
+    return normalized;
+  }
+  if (!track.youtubeId) return null;
+  const dir = path.dirname(stored);
+  if (!fs.existsSync(dir)) return null;
+  const marker = `[${track.youtubeId}]`;
+  let entries: string[];
+  try {
+    entries = fs.readdirSync(dir);
+  } catch {
+    return null;
+  }
+  const match = entries.find((name) => name.normalize('NFC').includes(marker));
+  if (!match) return null;
+  const recovered = path.join(dir, match);
+  updateFilePath(track.id, recovered);
+  return recovered;
 }
 
 /**

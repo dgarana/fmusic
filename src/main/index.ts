@@ -1,9 +1,57 @@
-import { app, BrowserWindow, session, shell } from 'electron';
+import { app, BrowserWindow, net, protocol, session, shell } from 'electron';
+import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { registerIpc } from './ipc.js';
 import { getDb, closeDb } from './library/db.js';
+import { getTrack, resolveTrackFilePath } from './library/tracks-repo.js';
 
 let mainWindow: BrowserWindow | null = null;
+
+export const MEDIA_SCHEME = 'fmusic-media';
+
+// Register the scheme as privileged before the app is ready so the renderer
+// can load it from `<audio>` elements regardless of its own origin (which in
+// dev mode is http://localhost and would otherwise reject file:// URLs).
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: MEDIA_SCHEME,
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+      corsEnabled: true
+    }
+  }
+]);
+
+function registerMediaProtocol(): void {
+  // URL shape: fmusic-media://track/<id>  →  local audio file for that track.
+  // Delegating to `net.fetch(file://...)` lets Electron's network stack
+  // handle range requests, which HTML audio elements rely on for seeking.
+  protocol.handle(MEDIA_SCHEME, async (request) => {
+    try {
+      const url = new URL(request.url);
+      if (url.hostname !== 'track') {
+        return new Response('unknown resource', { status: 404 });
+      }
+      const id = parseInt(url.pathname.replace(/^\//, ''), 10);
+      if (!Number.isFinite(id)) {
+        return new Response('invalid id', { status: 400 });
+      }
+      const track = getTrack(id);
+      if (!track) return new Response('track not found', { status: 404 });
+      const actualPath = resolveTrackFilePath(track);
+      if (!actualPath) {
+        return new Response('file missing on disk', { status: 404 });
+      }
+      return net.fetch(pathToFileURL(actualPath).toString());
+    } catch (err) {
+      console.error('[fmusic-media] handler error:', err);
+      return new Response('internal error', { status: 500 });
+    }
+  });
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -56,10 +104,10 @@ function configureSecurity(): void {
         'Content-Security-Policy': [
           "default-src 'self' 'unsafe-inline' data: blob: file: https://www.youtube.com https://*.ytimg.com; " +
             "img-src 'self' data: blob: https: file:; " +
-            "media-src 'self' blob: file: https://*.googlevideo.com https://*.youtube.com; " +
+            "media-src 'self' blob: file: fmusic-media: https://*.googlevideo.com https://*.youtube.com; " +
             "frame-src https://www.youtube.com https://www.youtube-nocookie.com; " +
             "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-            "connect-src 'self' https: wss:;"
+            "connect-src 'self' https: wss: fmusic-media:;"
         ]
       }
     });
@@ -74,6 +122,7 @@ app.whenReady().then(() => {
     console.error('[fmusic] Failed to initialize library database:', err);
   }
 
+  registerMediaProtocol();
   configureSecurity();
   registerIpc();
   createWindow();

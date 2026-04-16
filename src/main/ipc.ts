@@ -1,6 +1,5 @@
 import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import fs from 'node:fs';
-import { pathToFileURL } from 'node:url';
 import { Channels } from '../shared/channels.js';
 import type {
   AppSettings,
@@ -24,6 +23,7 @@ import {
   incrementPlayCount,
   listGenres,
   listTracks,
+  resolveTrackFilePath,
   updateTrack,
   getTrack
 } from './library/tracks-repo.js';
@@ -115,10 +115,11 @@ export function registerIpc(): void {
   );
   ipcMain.handle(Channels.TracksDelete, (_evt, id: number, deleteFile: boolean) => {
     const track = getTrack(id);
+    const resolvedPath = track ? resolveTrackFilePath(track) : null;
     const removed = deleteTrack(id);
-    if (removed && deleteFile && track && fs.existsSync(track.filePath)) {
+    if (removed && deleteFile && resolvedPath) {
       try {
-        fs.unlinkSync(track.filePath);
+        fs.unlinkSync(resolvedPath);
       } catch {
         // ignore
       }
@@ -130,8 +131,19 @@ export function registerIpc(): void {
   });
   ipcMain.handle(Channels.TracksStream, (_evt, id: number) => {
     const track = getTrack(id);
-    if (!track || !fs.existsSync(track.filePath)) return null;
-    return pathToFileURL(track.filePath).toString();
+    if (!track) return null;
+    // Probe the filesystem up-front so we can surface a friendly null to the
+    // renderer when the file is missing; actual streaming happens through the
+    // custom `fmusic-media://` protocol registered in main/index.ts, which
+    // works both in dev (http://localhost origin) and in production (file://).
+    const actualPath = resolveTrackFilePath(track);
+    if (!actualPath) {
+      console.warn(
+        `[tracks] Could not locate file for track ${id} (${track.title}). Stored path: ${track.filePath}`
+      );
+      return null;
+    }
+    return `fmusic-media://track/${id}`;
   });
   ipcMain.handle(Channels.TracksDownloadedIds, (_evt, ids: string[]) =>
     findDownloadedYoutubeIds(ids)

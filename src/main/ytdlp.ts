@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, type SpawnOptions } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,6 +12,30 @@ import type { AudioFormat, SearchResult } from '../shared/types.js';
 const PROGRESS_PREFIX = '__FMP__';
 const PROGRESS_TEMPLATE = `${PROGRESS_PREFIX}%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s`;
 
+/**
+ * Baseline spawn options used by every yt-dlp invocation. We force UTF-8 on
+ * the child's stdio so that titles / file paths with non-ASCII characters
+ * (e.g. "Tïesto", accented vowels, CJK) come back to us intact regardless of
+ * the system's active code page — otherwise Windows consoles can mangle them
+ * into the OEM code page, making fs.existsSync fail later on.
+ */
+function spawnOptions(): SpawnOptions {
+  return {
+    windowsHide: true,
+    env: {
+      ...process.env,
+      PYTHONIOENCODING: 'utf-8',
+      PYTHONUTF8: '1',
+      LC_ALL: 'C.UTF-8',
+      LANG: 'C.UTF-8'
+    }
+  };
+}
+
+function decodeUtf8(chunk: Buffer | string): string {
+  return Buffer.isBuffer(chunk) ? chunk.toString('utf8') : chunk;
+}
+
 function assertBinaries() {
   if (!hasYtDlp()) {
     throw new Error(
@@ -23,9 +47,9 @@ function assertBinaries() {
 export async function ytDlpVersion(): Promise<string | null> {
   if (!hasYtDlp()) return null;
   return new Promise((resolve) => {
-    const proc = spawn(ytDlpPath(), ['--version']);
+    const proc = spawn(ytDlpPath(), ['--version'], spawnOptions());
     let out = '';
-    proc.stdout.on('data', (chunk) => (out += chunk.toString()));
+    proc.stdout?.on('data', (chunk) => (out += decodeUtf8(chunk)));
     proc.on('error', () => resolve(null));
     proc.on('close', () => resolve(out.trim() || null));
   });
@@ -37,11 +61,11 @@ export async function ytDlpVersion(): Promise<string | null> {
 function runCollecting(args: string[]): Promise<string> {
   assertBinaries();
   return new Promise((resolve, reject) => {
-    const proc = spawn(ytDlpPath(), args, { windowsHide: true });
+    const proc = spawn(ytDlpPath(), args, spawnOptions());
     let stdout = '';
     let stderr = '';
-    proc.stdout.on('data', (chunk) => (stdout += chunk.toString()));
-    proc.stderr.on('data', (chunk) => (stderr += chunk.toString()));
+    proc.stdout?.on('data', (chunk) => (stdout += decodeUtf8(chunk)));
+    proc.stderr?.on('data', (chunk) => (stderr += decodeUtf8(chunk)));
     proc.on('error', reject);
     proc.on('close', (code) => {
       if (code === 0) resolve(stdout);
@@ -273,7 +297,7 @@ export class DownloadProcess extends EventEmitter {
     args.push(this.options.url);
 
     return new Promise<DownloadResult>((resolve, reject) => {
-      const proc = spawn(ytDlpPath(), args, { windowsHide: true });
+      const proc = spawn(ytDlpPath(), args, spawnOptions());
       this.proc = proc;
       let stderr = '';
 
@@ -300,15 +324,15 @@ export class DownloadProcess extends EventEmitter {
       };
 
       let stdoutBuffer = '';
-      proc.stdout.on('data', (chunk) => {
-        stdoutBuffer += chunk.toString();
+      proc.stdout?.on('data', (chunk) => {
+        stdoutBuffer += decodeUtf8(chunk);
         const parts = stdoutBuffer.split(/\r?\n/);
         stdoutBuffer = parts.pop() ?? '';
         for (const part of parts) onLine(part);
       });
 
-      proc.stderr.on('data', (chunk) => {
-        stderr += chunk.toString();
+      proc.stderr?.on('data', (chunk) => {
+        stderr += decodeUtf8(chunk);
       });
 
       proc.on('error', reject);
@@ -325,8 +349,13 @@ export class DownloadProcess extends EventEmitter {
           reject(new Error('yt-dlp finaliz\u00f3 pero no se pudo resolver el fichero generado.'));
           return;
         }
+        // Normalise the path: yt-dlp sometimes emits NFD-decomposed Unicode
+        // (e.g. 'i' + combining diaeresis) whereas NTFS stores NFC. Round-trip
+        // through path.normalize + String.normalize('NFC') so subsequent
+        // fs.existsSync lookups match the on-disk entry.
+        const normalizedPath = path.normalize(this.finalFile).normalize('NFC');
         resolve({
-          filePath: this.finalFile,
+          filePath: normalizedPath,
           title: this.info.title,
           youtubeId: this.info.id,
           durationSec: this.info.durationSec,

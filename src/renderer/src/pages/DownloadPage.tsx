@@ -27,7 +27,9 @@ export function DownloadPage() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [searching, setSearching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [info, setInfo] = useState<string | null>(null);
   const jobs = useDownloadsStore((s) => s.jobs);
+  const dismissJob = useDownloadsStore((s) => s.dismiss);
   const [inLibrary, setInLibrary] = useState<Set<string>>(new Set());
 
   // Build a lookup: youtubeId -> active job (the most recent one wins if there
@@ -85,6 +87,7 @@ export function DownloadPage() {
     const trimmed = query.trim();
     if (!trimmed) return;
     setError(null);
+    setInfo(null);
     if (isYouTubeUrl(trimmed)) {
       await enqueue(trimmed, extractYoutubeId(trimmed));
       return;
@@ -116,7 +119,13 @@ export function DownloadPage() {
   }
 
   async function enqueue(url: string, videoId: string | null) {
-    if (videoId && (inLibrary.has(videoId) || jobByYoutubeId.has(videoId))) return;
+    const existingJob = videoId ? jobByYoutubeId.get(videoId) : undefined;
+    const isActive = existingJob && ACTIVE_STATUSES.includes(existingJob.status);
+    if (videoId && inLibrary.has(videoId)) {
+      setInfo('Ya tienes esta canción en tu biblioteca.');
+      return;
+    }
+    if (isActive) return;
     try {
       await window.fmusic.enqueueDownload({ url });
     } catch (err) {
@@ -166,6 +175,40 @@ export function DownloadPage() {
         </button>
       </div>
       {error && <div style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</div>}
+      {info && <div style={{ color: 'var(--text-muted)', marginBottom: 12 }}>{info}</div>}
+
+      {orphanJobs.length > 0 && (
+        <>
+          <h2>Otras descargas</h2>
+          <div className="jobs">
+            {orphanJobs.map((job) => (
+              <div className="job" key={job.id}>
+                <div>
+                  <div className="title">{job.title ?? job.request.url}</div>
+                  <div className="meta">
+                    {job.status === 'downloading'
+                      ? `${Math.round(job.progress * 100)}% · ${job.speedHuman ?? ''} · ETA ${formatDuration(job.etaSeconds ?? null)}`
+                      : job.error ?? ''}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className={`status-pill ${job.status}`}>{job.status}</span>
+                  {ACTIVE_STATUSES.includes(job.status) ? (
+                    <button onClick={() => void window.fmusic.cancelDownload(job.id)}>
+                      Cancelar
+                    </button>
+                  ) : (
+                    <button onClick={() => dismissJob(job.id)} title="Cerrar">×</button>
+                  )}
+                </div>
+                <div className="progress-bar">
+                  <div style={{ width: `${Math.min(100, Math.max(0, job.progress * 100))}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {results.length > 0 && (
         <>
@@ -295,36 +338,6 @@ export function DownloadPage() {
         </>
       )}
 
-      {orphanJobs.length > 0 && (
-        <>
-          <h2>Otras descargas</h2>
-          <div className="jobs">
-            {orphanJobs.map((job) => (
-              <div className="job" key={job.id}>
-                <div>
-                  <div className="title">{job.title ?? job.request.url}</div>
-                  <div className="meta">
-                    {job.status === 'downloading'
-                      ? `${Math.round(job.progress * 100)}% · ${job.speedHuman ?? ''} · ETA ${formatDuration(job.etaSeconds ?? null)}`
-                      : job.error ?? ''}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className={`status-pill ${job.status}`}>{job.status}</span>
-                  {ACTIVE_STATUSES.includes(job.status) && (
-                    <button onClick={() => void window.fmusic.cancelDownload(job.id)}>
-                      Cancelar
-                    </button>
-                  )}
-                </div>
-                <div className="progress-bar">
-                  <div style={{ width: `${Math.min(100, Math.max(0, job.progress * 100))}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
     </div>
   );
 }

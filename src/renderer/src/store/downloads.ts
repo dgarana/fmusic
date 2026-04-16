@@ -5,6 +5,7 @@ interface DownloadsState {
   jobs: DownloadJob[];
   refresh: () => Promise<void>;
   applyUpdate: (job: DownloadJob) => void;
+  dismiss: (id: string) => void;
 }
 
 export const useDownloadsStore = create<DownloadsState>((set, get) => ({
@@ -25,5 +26,9 @@ export const useDownloadsStore = create<DownloadsState>((set, get) => ({
       next[idx] = job;
       set({ jobs: next });
     }
+  },
+
+  dismiss(id) {
+    set((s) => ({ jobs: s.jobs.filter((j) => j.id !== id) }));
   }
 }));

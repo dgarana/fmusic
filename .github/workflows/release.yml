@@ -1,154 +1,83 @@
-name: Release installers
+name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
-      publish_release:
-        description: 'Publish GitHub Release with the artifacts'
-        type: boolean
-        default: false
-      tag_name:
-        description: 'Tag name to use when publishing the release (required if publish_release=true and not running on a tag)'
-        type: string
-        required: false
-        default: ''
-
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
-
-permissions:
-  contents: write
+      version_bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 jobs:
-  typecheck:
-    name: Typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Install (skip binaries)
-        run: npm ci
-        env:
-          FMUSIC_SKIP_BINARIES: '1'
-      - name: Typecheck (node + web)
-        run: npm run typecheck
-
-  build:
-    name: Build ${{ matrix.target }}
-    needs: typecheck
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            target: win
-            script: 'dist:win'
-            artifact_glob: |
-              dist/*.exe
-              dist/*.exe.blockmap
-              dist/latest*.yml
-          - os: macos-latest
-            target: mac
-            script: 'dist:mac'
-            artifact_glob: |
-              dist/*.dmg
-              dist/*.dmg.blockmap
-              dist/*.zip
-              dist/latest*.yml
-          - os: ubuntu-latest
-            target: linux
-            script: 'dist:linux'
-            artifact_glob: |
-              dist/*.AppImage
-              dist/*.deb
-              dist/*.tar.gz
-              dist/latest*.yml
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      # Cache the yt-dlp + ffmpeg binaries that our postinstall writes to
-      # `resources/bin/`. They rarely change and shave ~30s off CI runs.
-      - name: Cache bundled binaries
-        uses: actions/cache@v4
-        with:
-          path: resources/bin
-          key: fmusic-bin-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/postinstall.js') }}
-
-      # Linux needs a handful of libraries so Electron can rebuild native
-      # modules and electron-builder can produce AppImage/deb.
-      - name: Install Linux system deps
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            rpm libarchive-tools fakeroot dpkg
-
-      - name: Install npm dependencies
-        run: npm ci
-
-      - name: Build distributables
-        run: npm run ${{ matrix.script }}
-        env:
-          # No code-signing certificates configured yet: make absolutely sure
-          # electron-builder does not try to auto-discover a keychain identity.
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-          # Avoid the GitHub-rate-limited electron download by using the token.
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: fmusic-${{ matrix.target }}
-          path: ${{ matrix.artifact_glob }}
-          if-no-files-found: ignore
-          retention-days: 30
-
   release:
-    name: Publish GitHub Release
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v') || inputs.publish_release == true
+    name: Bump version and tag
     runs-on: ubuntu-latest
+    # Prevent accidental releases from feature branches
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+
     steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
         with:
-          path: artifacts
-          merge-multiple: true
+          # A PAT is required so the tag push triggers build.yml.
+          # GITHUB_TOKEN pushes are intentionally blocked from triggering
+          # other workflows (GitHub security restriction).
+          token: ${{ secrets.RELEASE_PAT }}
+          fetch-depth: 0
 
-      - name: List artifacts
-        run: ls -lh artifacts
-
-      - name: Create / update GitHub Release
-        uses: softprops/action-gh-release@v2
+      - uses: actions/setup-node@v4
         with:
-          # When triggered by a tag push, github.ref_name is the tag (e.g. v1.2.3).
-          # When triggered manually, fall back to the tag_name input.
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.tag_name }}
-          draft: ${{ !startsWith(github.ref, 'refs/tags/v') }}
-          generate_release_notes: true
-          fail_on_unmatched_files: false
-          files: |
-            artifacts/*.exe
-            artifacts/*.exe.blockmap
-            artifacts/*.dmg
-            artifacts/*.dmg.blockmap
-            artifacts/*.zip
-            artifacts/*.AppImage
-            artifacts/*.deb
-            artifacts/*.tar.gz
-            artifacts/latest*.yml
+          node-version: '20'
+
+      - name: Bump version
+        id: bump
+        run: |
+          CURRENT=$(node -p "require('./package.json').version")
+
+          MAJOR=$(echo $CURRENT | cut -d. -f1)
+          MINOR=$(echo $CURRENT | cut -d. -f2)
+          PATCH=$(echo $CURRENT | cut -d. -f3)
+
+          case "${{ inputs.version_bump }}" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+
+          NEW="$MAJOR.$MINOR.$PATCH"
+          npm version "$NEW" --no-git-tag-version
+          echo "new_version=$NEW" >> $GITHUB_OUTPUT
+          echo "Bumped $CURRENT → $NEW"
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore: release v${{ steps.bump.outputs.new_version }}"
+
+      - name: Create and push tag
+        run: |
+          git tag "v${{ steps.bump.outputs.new_version }}"
+          git push origin HEAD
+          git push origin "v${{ steps.bump.outputs.new_version }}"
+
+      - name: Refresh changelog
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --verbose
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OUTPUT: CHANGELOG.md
+          GITHUB_REPO: ${{ github.repository }}
+
+      - name: Amend commit with changelog
+        run: |
+          git add CHANGELOG.md
+          git commit --amend --no-edit
+          git push origin HEAD --force-with-lease

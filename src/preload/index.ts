@@ -7,6 +7,7 @@ import type {
   DownloadRequest,
   Playlist,
   SearchResult,
+  SonosDevice,
   Track,
   TrackQuery
 } from '../shared/types.js';
@@ -100,7 +101,19 @@ const api = {
 
   // Schema
   schemaHistory: () =>
-    invoke<Array<{ version: number; name: string; applied_at: string }>>(Channels.SchemaHistory)
+    invoke<Array<{ version: number; name: string; applied_at: string }>>(Channels.SchemaHistory),
+
+  // Sonos
+  sonosDiscover: () => invoke<SonosDevice[]>(Channels.SonosDiscover),
+  sonosPlay: (host: string, trackId: number, title?: string, artist?: string) =>
+    invoke<void>(Channels.SonosPlay, host, trackId, title, artist),
+  sonosPause: (host: string) => invoke<void>(Channels.SonosPause, host),
+  sonosResume: (host: string) => invoke<void>(Channels.SonosResume, host),
+  sonosStop: (host: string) => invoke<void>(Channels.SonosStop, host),
+  sonosSetVolume: (host: string, volume: number) =>
+    invoke<void>(Channels.SonosVolume, host, volume),
+  sonosSeek: (host: string, seconds: number) =>
+    invoke<void>(Channels.SonosSeek, host, seconds)
 };
 
 export type FmusicAPI = typeof api;

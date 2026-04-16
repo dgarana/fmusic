@@ -63,3 +63,4 @@ coverage/
 *.temp
 tmp/
 scratch/
+.claude/

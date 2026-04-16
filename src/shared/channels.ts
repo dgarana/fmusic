@@ -46,7 +46,16 @@ export const Channels = {
   PlaylistsForTracks: 'playlists:for-tracks',
 
   // Schema
-  SchemaHistory: 'schema:history'
+  SchemaHistory: 'schema:history',
+
+  // Sonos
+  SonosDiscover: 'sonos:discover',
+  SonosPlay: 'sonos:play',
+  SonosPause: 'sonos:pause',
+  SonosResume: 'sonos:resume',
+  SonosStop: 'sonos:stop',
+  SonosVolume: 'sonos:volume',
+  SonosSeek: 'sonos:seek'
 } as const;
 
 export type ChannelName = (typeof Channels)[keyof typeof Channels];

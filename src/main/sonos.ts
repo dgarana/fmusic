@@ -1,0 +1,91 @@
+import { SonosManager, SonosDevice as SonosDeviceLib } from '@svrooij/sonos';
+import type { SonosDevice } from '../shared/types.js';
+
+let manager: SonosManager | null = null;
+let activeHost: string | null = null;
+
+export function getActiveSonosHost(): string | null {
+  return activeHost;
+}
+
+function toInfo(d: SonosDeviceLib): SonosDevice {
+  return { name: d.Name ?? d.Host, host: d.Host, port: d.Port };
+}
+
+export async function discoverSonos(timeoutSec = 5): Promise<SonosDevice[]> {
+  manager = new SonosManager();
+  await manager.InitializeWithDiscovery(timeoutSec);
+  return manager.Devices.map(toInfo);
+}
+
+function getDevice(host: string): SonosDeviceLib | undefined {
+  return manager?.Devices.find((d) => d.Host === host);
+}
+
+export async function sonosPlayTrack(
+  host: string,
+  trackUrl: string,
+  title?: string,
+  artist?: string
+): Promise<void> {
+  const device = getDevice(host);
+  if (!device) throw new Error(`Sonos device ${host} not found — run discover first`);
+  console.log(`[sonos] Playing on ${host}: ${trackUrl}`);
+  await device.AVTransportService.SetAVTransportURI({
+    InstanceID: 0,
+    CurrentURI: trackUrl,
+    CurrentURIMetaData: ''
+  });
+  activeHost = host;
+  await device.Play();
+  console.log(`[sonos] Play command sent (title=${title}, artist=${artist})`);
+}
+
+export async function sonosPause(host: string): Promise<void> {
+  const device = getDevice(host);
+  if (!device) throw new Error(`Sonos device ${host} not found`);
+  await device.Pause();
+}
+
+export async function sonosResume(host: string): Promise<void> {
+  const device = getDevice(host);
+  if (!device) throw new Error(`Sonos device ${host} not found`);
+  await device.Play();
+}
+
+export async function sonosStop(host: string): Promise<void> {
+  const device = getDevice(host);
+  if (!device) throw new Error(`Sonos device ${host} not found`);
+  await device.Stop();
+  if (activeHost === host) activeHost = null;
+}
+
+export async function stopActiveSonos(): Promise<void> {
+  if (!activeHost) return;
+  try {
+    await sonosStop(activeHost);
+  } catch {
+    // best-effort on quit
+  }
+}
+
+export async function sonosSeek(host: string, seconds: number): Promise<void> {
+  const device = getDevice(host);
+  if (!device) throw new Error(`Sonos device ${host} not found`);
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  const timestamp = `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  await device.AVTransportService.Seek({ InstanceID: 0, Unit: 'REL_TIME', Target: timestamp });
+}
+
+export async function sonosSetVolume(host: string, volume: number): Promise<void> {
+  const device = getDevice(host);
+  if (!device) throw new Error(`Sonos device ${host} not found`);
+  // volume is 0-1, Sonos expects 0-100
+  await device.RenderingControlService.SetVolume({
+    InstanceID: 0,
+    Channel: 'Master',
+    DesiredVolume: Math.round(volume * 100)
+  });
+}

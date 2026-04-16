@@ -5,6 +5,8 @@ import { registerIpc } from './ipc.js';
 import { getDb, closeDb } from './library/db.js';
 import { ensureBuiltinPlaylists } from './library/playlists-repo.js';
 import { getTrack, resolveTrackFilePath } from './library/tracks-repo.js';
+import { stopActiveSonos } from './sonos.js';
+import { stopAudioServer } from './sonos-server.js';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -142,5 +144,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  void stopActiveSonos();
+  stopAudioServer();
   closeDb();
 });

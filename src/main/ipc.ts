@@ -39,6 +39,8 @@ import {
   reorderPlaylist
 } from './library/playlists-repo.js';
 import { getSchemaHistory } from './library/db.js';
+import { discoverSonos, sonosPlayTrack, sonosPause, sonosResume, sonosStop, sonosSetVolume, sonosSeek } from './sonos.js';
+import { startAudioServer, getTrackHttpUrl } from './sonos-server.js';
 
 function broadcast(channel: string, payload: unknown) {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -179,4 +181,28 @@ export function registerIpc(): void {
 
   // ----- Schema -----
   ipcMain.handle(Channels.SchemaHistory, () => getSchemaHistory());
+
+  // ----- Sonos -----
+  ipcMain.handle(Channels.SonosDiscover, async () => {
+    await startAudioServer();
+    return discoverSonos();
+  });
+  ipcMain.handle(
+    Channels.SonosPlay,
+    async (_evt, host: string, trackId: number, title?: string, artist?: string) => {
+      const track = getTrack(trackId);
+      const filePath = track ? resolveTrackFilePath(track) : undefined;
+      const url = getTrackHttpUrl(trackId, filePath ?? undefined);
+      await sonosPlayTrack(host, url, title, artist);
+    }
+  );
+  ipcMain.handle(Channels.SonosPause, (_evt, host: string) => sonosPause(host));
+  ipcMain.handle(Channels.SonosResume, (_evt, host: string) => sonosResume(host));
+  ipcMain.handle(Channels.SonosStop, (_evt, host: string) => sonosStop(host));
+  ipcMain.handle(Channels.SonosVolume, (_evt, host: string, volume: number) =>
+    sonosSetVolume(host, volume)
+  );
+  ipcMain.handle(Channels.SonosSeek, (_evt, host: string, seconds: number) =>
+    sonosSeek(host, seconds)
+  );
 }

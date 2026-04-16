@@ -95,3 +95,9 @@ export interface TrackQuery {
   limit?: number;
   offset?: number;
 }
+
+export interface SonosDevice {
+  name: string;
+  host: string;
+  port: number;
+}

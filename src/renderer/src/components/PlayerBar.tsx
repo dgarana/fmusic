@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePlayerStore } from '../store/player';
 import { useLibraryStore } from '../store/library';
+import { useSonosStore } from '../store/sonos';
+import { SonosPanel } from './SonosPanel';
 import { formatDuration } from '../util';
 
 function coverUrl(current: { thumbnailPath: string | null; youtubeId: string | null } | null): string | null {
@@ -15,23 +17,60 @@ export function PlayerBar() {
     current,
     queue,
     index,
-    isPlaying,
+    isPlaying: localPlaying,
     position,
     duration,
     volume,
-    togglePlay,
-    next,
-    prev,
+    togglePlay: localToggle,
+    next: localNext,
+    prev: localPrev,
     seek,
-    setVolume
+    setVolume: localSetVolume
   } = usePlayerStore();
+
+  const sonos = useSonosStore();
+  const isCasting = sonos.activeHost !== null;
+
+  // When casting and the local player advances to a new track, forward it to Sonos.
+  const prevTrackId = useRef<number | null>(null);
+  useEffect(() => {
+    if (!isCasting || !current) return;
+    if (current.id !== prevTrackId.current) {
+      prevTrackId.current = current.id;
+      void sonos.sendTrack(current.id, current.title ?? undefined, current.artist ?? undefined);
+    }
+  }, [current?.id, isCasting]);
 
   const hasPrev = index > 0;
   const hasNext = index >= 0 && index < queue.length - 1;
 
+  // Controls: route to Sonos when casting, otherwise local.
+  const isPlaying = isCasting ? sonos.isPlaying : localPlaying;
+
+  function handleTogglePlay() {
+    if (isCasting) {
+      void sonos.togglePlay();
+    } else {
+      localToggle();
+    }
+  }
+
+  async function handleNext() {
+    await localNext(); // advances the queue index + updates current
+    // useEffect above will forward the new track to Sonos automatically
+  }
+
+  async function handlePrev() {
+    await localPrev();
+  }
+
+  function handleVolume(v: number) {
+    localSetVolume(v);
+    if (isCasting) void sonos.setVolume(v);
+  }
+
   const { playlists, refreshPlaylists } = useLibraryStore();
   const [isFavorited, setIsFavorited] = useState(false);
-
   const favoritesPlaylist = playlists.find((p) => p.name === 'Favoritos');
 
   useEffect(() => {
@@ -79,7 +118,7 @@ export function PlayerBar() {
       <div className="player-controls">
         <div className="buttons">
           <button
-            onClick={() => void prev()}
+            onClick={() => void handlePrev()}
             title="Anterior"
             style={{ visibility: hasPrev ? 'visible' : 'hidden' }}
           >
@@ -87,14 +126,14 @@ export function PlayerBar() {
           </button>
           <button
             className="primary"
-            onClick={togglePlay}
+            onClick={handleTogglePlay}
             disabled={!current}
             title={isPlaying ? 'Pausar' : 'Reproducir'}
           >
             {isPlaying ? '\u275a\u275a' : '\u25b6'}
           </button>
           <button
-            onClick={() => void next()}
+            onClick={() => void handleNext()}
             title="Siguiente"
             style={{ visibility: hasNext ? 'visible' : 'hidden' }}
           >
@@ -106,16 +145,21 @@ export function PlayerBar() {
           <input
             type="range"
             min={0}
-            max={duration || 0}
+            max={duration || current?.durationSec || 0}
             step={0.5}
             value={position}
-            onChange={(e) => seek(Number(e.target.value))}
+            onChange={(e) => {
+              const s = Number(e.target.value);
+              seek(s);
+              if (isCasting) void sonos.seek(s);
+            }}
             disabled={!current}
           />
           <span>{formatDuration(duration || current?.durationSec || 0)}</span>
         </div>
       </div>
       <div className="player-extras">
+        <SonosPanel />
         <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Volumen</span>
         <input
           type="range"
@@ -123,7 +167,7 @@ export function PlayerBar() {
           max={1}
           step={0.01}
           value={volume}
-          onChange={(e) => setVolume(Number(e.target.value))}
+          onChange={(e) => handleVolume(Number(e.target.value))}
           style={{ width: 120 }}
         />
       </div>

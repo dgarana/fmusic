@@ -419,6 +419,99 @@ a {
   cursor: default;
 }
 
+.sonos-wrap {
+  position: relative;
+}
+.sonos-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text-muted);
+  padding: 4px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.sonos-btn:hover {
+  color: var(--accent);
+}
+.sonos-btn.is-casting {
+  color: var(--accent);
+}
+.sonos-panel {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  width: 240px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 100;
+}
+.sonos-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.sonos-error {
+  color: var(--danger);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.sonos-devices {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sonos-device-row {
+  display: flex;
+  align-items: stretch;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: var(--bg-subtle);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.sonos-device-row.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, var(--bg-subtle));
+}
+.sonos-device-cast {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex: 1;
+  text-align: left;
+}
+.sonos-device-cast:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.sonos-device-stop {
+  padding: 0 10px;
+  border-radius: 0;
+  border: none;
+  border-left: 1px solid var(--border);
+  font-size: 12px;
+  cursor: pointer;
+}
+.sonos-device-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+.sonos-device-host {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 .empty {
   color: var(--text-muted);
   padding: 24px 0;

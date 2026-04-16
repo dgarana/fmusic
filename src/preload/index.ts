@@ -46,7 +46,13 @@ const api = {
       durationSec: number | null;
       thumbnail: string | null;
       url: string;
+      artist: string | null;
+      album: string | null;
+      track: string | null;
+      genre: string | null;
+      releaseYear: number | null;
     }>(Channels.YtInfo, url),
+  ytStreamUrl: (url: string) => invoke<string>(Channels.YtStreamUrl, url),
 
   // Downloads
   enqueueDownload: (req: DownloadRequest) => invoke<DownloadJob>(Channels.DownloadEnqueue, req),
@@ -80,6 +86,15 @@ const api = {
     invoke<void>(Channels.PlaylistsRemoveTrack, playlistId, trackId),
   reorderPlaylist: (playlistId: number, orderedTrackIds: number[]) =>
     invoke<void>(Channels.PlaylistsReorder, playlistId, orderedTrackIds),
+  playlistsForTrack: (trackId: number) =>
+    invoke<Playlist[]>(Channels.PlaylistsForTrack, trackId),
+  playlistsForTracks: async (trackIds: number[]) => {
+    const tuples = await invoke<Array<[number, number[]]>>(
+      Channels.PlaylistsForTracks,
+      trackIds
+    );
+    return new Map(tuples);
+  },
 
   // Schema
   schemaHistory: () =>

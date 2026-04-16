@@ -3,10 +3,17 @@ import type { SearchResult } from '../../../shared/types';
 import { useDownloadsStore } from '../store/downloads';
 import { formatDuration, isYouTubeUrl } from '../util';
 
+interface Preview {
+  result: SearchResult;
+  streamUrl: string | null;
+  loading: boolean;
+  error: string | null;
+}
+
 export function DownloadPage() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const jobs = useDownloadsStore((s) => s.jobs);
@@ -38,6 +45,21 @@ export function DownloadPage() {
     }
   }
 
+  async function openPreview(result: SearchResult) {
+    setPreview({ result, streamUrl: null, loading: true, error: null });
+    try {
+      const streamUrl = await window.fmusic.ytStreamUrl(result.url);
+      setPreview({ result, streamUrl, loading: false, error: null });
+    } catch (err) {
+      setPreview({
+        result,
+        streamUrl: null,
+        loading: false,
+        error: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
+
   return (
     <div>
       <h1>Descargar</h1>
@@ -57,16 +79,58 @@ export function DownloadPage() {
       {error && <div style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</div>}
 
       {preview && (
-        <div style={{ marginBottom: 18 }}>
-          <h2>Previsualización</h2>
-          <iframe
-            title="preview"
-            width="100%"
-            height={320}
-            style={{ border: 0, borderRadius: 8, maxWidth: 640 }}
-            src={`https://www.youtube.com/embed/${preview}?autoplay=1`}
-            allow="autoplay; encrypted-media"
-          />
+        <div
+          style={{
+            marginBottom: 18,
+            padding: 14,
+            border: '1px solid var(--border)',
+            borderRadius: 8,
+            background: 'var(--bg-elevated)',
+            display: 'flex',
+            gap: 14,
+            alignItems: 'center'
+          }}
+        >
+          {preview.result.thumbnail && (
+            <img
+              src={preview.result.thumbnail}
+              alt=""
+              style={{ width: 120, aspectRatio: '16/9', objectFit: 'cover', borderRadius: 6 }}
+            />
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="title" style={{ marginBottom: 2 }}>
+              {preview.result.title}
+            </div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 8 }}>
+              {preview.result.channel} &middot; {formatDuration(preview.result.durationSec)}
+            </div>
+            {preview.loading && <div style={{ color: 'var(--text-muted)' }}>Obteniendo stream...</div>}
+            {preview.error && (
+              <div style={{ color: 'var(--danger)', marginBottom: 6 }}>
+                {preview.error}
+                <div>
+                  <button
+                    onClick={() => void window.fmusic.openExternal(preview.result.url)}
+                    style={{ marginTop: 6 }}
+                  >
+                    Abrir en navegador
+                  </button>
+                </div>
+              </div>
+            )}
+            {preview.streamUrl && (
+              <audio
+                controls
+                autoPlay
+                src={preview.streamUrl}
+                style={{ width: '100%' }}
+              />
+            )}
+          </div>
+          <button onClick={() => setPreview(null)} title="Cerrar">
+            ×
+          </button>
         </div>
       )}
 
@@ -83,7 +147,7 @@ export function DownloadPage() {
                     {r.channel} &middot; {formatDuration(r.durationSec)}
                   </div>
                   <div className="actions">
-                    <button onClick={() => setPreview(r.id)}>Previsualizar</button>
+                    <button onClick={() => void openPreview(r)}>Previsualizar</button>
                     <button className="primary" onClick={() => void enqueue(r.url)}>
                       Descargar
                     </button>

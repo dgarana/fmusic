@@ -80,6 +80,11 @@ export function PlaylistsPage() {
 
 function PlaylistDetail({ id, name }: { id: number; name: string }) {
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [allTracks, setAllTracks] = useState<Track[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [adding, setAdding] = useState(false);
   const playTrack = usePlayerStore((s) => s.playTrack);
   const refreshPlaylists = useLibraryStore((s) => s.refreshPlaylists);
 
@@ -92,6 +97,32 @@ function PlaylistDetail({ id, name }: { id: number; name: string }) {
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  async function openPicker() {
+    setAdding(false);
+    setSelected(new Set());
+    setPickerQuery('');
+    setPickerOpen(true);
+    const all = await window.fmusic.listTracks({
+      sortBy: 'title',
+      sortDir: 'asc',
+      limit: 10_000
+    });
+    setAllTracks(all);
+  }
+
+  async function commitAdd() {
+    if (selected.size === 0) return;
+    setAdding(true);
+    for (const trackId of selected) {
+      await window.fmusic.addTrackToPlaylist(id, trackId);
+    }
+    setPickerOpen(false);
+    setSelected(new Set());
+    setAdding(false);
+    await refresh();
+    await refreshPlaylists();
+  }
 
   async function remove(trackId: number) {
     await window.fmusic.removeTrackFromPlaylist(id, trackId);
@@ -107,12 +138,110 @@ function PlaylistDetail({ id, name }: { id: number; name: string }) {
     await window.fmusic.reorderPlaylist(id, ordered.map((t) => t.id));
   }
 
+  const inPlaylist = useMemo(() => new Set(tracks.map((t) => t.id)), [tracks]);
+  const candidates = useMemo(() => {
+    const needle = pickerQuery.trim().toLowerCase();
+    return allTracks.filter((t) => {
+      if (inPlaylist.has(t.id)) return false;
+      if (!needle) return true;
+      const haystack = [t.title, t.artist, t.album, t.genre].filter(Boolean).join(' ').toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [allTracks, inPlaylist, pickerQuery]);
+
+  function toggle(trackId: number) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(trackId)) next.delete(trackId);
+      else next.add(trackId);
+      return next;
+    });
+  }
+
   return (
     <div>
-      <h1>{name}</h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+        <h1 style={{ margin: 0 }}>{name}</h1>
+        <button className="primary" onClick={() => void openPicker()}>
+          + Añadir canciones
+        </button>
+      </div>
+
+      {pickerOpen && (
+        <div
+          style={{
+            marginBottom: 18,
+            padding: 14,
+            border: '1px solid var(--border)',
+            borderRadius: 8,
+            background: 'var(--bg-elevated)'
+          }}
+        >
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <input
+              placeholder="Filtrar por título, artista, álbum o género..."
+              value={pickerQuery}
+              onChange={(e) => setPickerQuery(e.target.value)}
+              style={{ flex: 1 }}
+              autoFocus
+            />
+            <button
+              className="primary"
+              onClick={() => void commitAdd()}
+              disabled={selected.size === 0 || adding}
+            >
+              {adding ? 'Añadiendo...' : `Añadir ${selected.size || ''}`.trim()}
+            </button>
+            <button onClick={() => setPickerOpen(false)}>Cancelar</button>
+          </div>
+          {candidates.length === 0 ? (
+            <div className="empty" style={{ padding: 12 }}>
+              {allTracks.length === 0
+                ? 'Tu biblioteca está vacía.'
+                : 'Todas las canciones de la biblioteca ya están en esta playlist.'}
+            </div>
+          ) : (
+            <div
+              style={{
+                maxHeight: 320,
+                overflowY: 'auto',
+                border: '1px solid var(--border)',
+                borderRadius: 6
+              }}
+            >
+              {candidates.map((t) => (
+                <label
+                  key={t.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '8px 10px',
+                    borderBottom: '1px solid var(--border)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.has(t.id)}
+                    onChange={() => toggle(t.id)}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600 }}>{t.title}</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                      {t.artist ?? '-'} &middot; {formatDuration(t.durationSec)}
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {tracks.length === 0 ? (
         <div className="empty">
-          Esta playlist está vacía. Añade canciones desde la Biblioteca.
+          Esta playlist está vacía. Añade canciones desde la Biblioteca o con el botón de arriba.
         </div>
       ) : (
         <table className="track-table">

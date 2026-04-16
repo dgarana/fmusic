@@ -10,6 +10,7 @@ import type {
 } from '../shared/types.js';
 import { getSettings, updateSettings } from './settings.js';
 import {
+  fetchAudioStreamUrl,
   fetchVideoInfo,
   getDependencyStatus,
   searchYouTube,
@@ -30,6 +31,8 @@ import {
   createPlaylist,
   deletePlaylist,
   listPlaylists,
+  playlistsForTrack,
+  playlistsForTracks,
   removeTrackFromPlaylist,
   renamePlaylist,
   reorderPlaylist
@@ -86,6 +89,7 @@ export function registerIpc(): void {
     return searchYouTube(query, limit ?? 10);
   });
   ipcMain.handle(Channels.YtInfo, async (_evt, url: string) => fetchVideoInfo(url));
+  ipcMain.handle(Channels.YtStreamUrl, async (_evt, url: string) => fetchAudioStreamUrl(url));
 
   // ----- Downloads -----
   const dm = getDownloadManager();
@@ -148,6 +152,14 @@ export function registerIpc(): void {
     (_evt, playlistId: number, orderedTrackIds: number[]) =>
       reorderPlaylist(playlistId, orderedTrackIds)
   );
+  ipcMain.handle(Channels.PlaylistsForTrack, (_evt, trackId: number) =>
+    playlistsForTrack(trackId)
+  );
+  ipcMain.handle(Channels.PlaylistsForTracks, (_evt, trackIds: number[]) => {
+    const map = playlistsForTracks(trackIds);
+    // Map is not JSON-serializable across IPC; send as array of tuples.
+    return Array.from(map.entries());
+  });
 
   // ----- Schema -----
   ipcMain.handle(Channels.SchemaHistory, () => getSchemaHistory());

@@ -98,6 +98,28 @@ export interface VideoInfo {
   durationSec: number | null;
   thumbnail: string | null;
   url: string;
+  /** Best-effort metadata extracted from yt-dlp's JSON. */
+  artist: string | null;
+  album: string | null;
+  track: string | null;
+  genre: string | null;
+  releaseYear: number | null;
+}
+
+function firstString(...values: unknown[]): string | null {
+  for (const v of values) {
+    if (typeof v === 'string' && v.trim().length > 0) return v.trim();
+  }
+  return null;
+}
+
+function parseYear(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const match = value.match(/(\d{4})/);
+    if (match) return parseInt(match[1], 10);
+  }
+  return null;
 }
 
 export async function fetchVideoInfo(url: string): Promise<VideoInfo> {
@@ -109,8 +131,32 @@ export async function fetchVideoInfo(url: string): Promise<VideoInfo> {
     channel: data.channel ?? data.uploader ?? 'Unknown channel',
     durationSec: typeof data.duration === 'number' ? data.duration : null,
     thumbnail: data.thumbnail ?? null,
-    url: data.webpage_url ?? url
+    url: data.webpage_url ?? url,
+    artist: firstString(data.artist, data.creator, data.uploader, data.channel),
+    album: firstString(data.album),
+    track: firstString(data.track),
+    genre: firstString(data.genre, Array.isArray(data.genres) ? data.genres[0] : null, Array.isArray(data.categories) ? data.categories[0] : null),
+    releaseYear: parseYear(data.release_year ?? data.release_date ?? data.upload_date)
   };
+}
+
+/**
+ * Resolves the direct media URL for the best audio-only format. Used for
+ * previewing a track before downloading without relying on the YouTube
+ * embed iframe (which is blocked from `file://` origins).
+ */
+export async function fetchAudioStreamUrl(url: string): Promise<string> {
+  const stdout = await runCollecting([
+    '--no-warnings',
+    '--no-playlist',
+    '-f',
+    'bestaudio/best',
+    '-g',
+    url
+  ]);
+  const directUrl = stdout.split(/\r?\n/).map((l) => l.trim()).find(Boolean);
+  if (!directUrl) throw new Error('No se pudo resolver la URL del stream.');
+  return directUrl;
 }
 
 export interface DownloadProgress {
@@ -156,6 +202,10 @@ export interface DownloadResult {
   youtubeId: string;
   durationSec: number | null;
   thumbnail: string | null;
+  artist: string | null;
+  album: string | null;
+  genre: string | null;
+  releaseYear: number | null;
 }
 
 export class DownloadProcess extends EventEmitter {
@@ -195,6 +245,17 @@ export class DownloadProcess extends EventEmitter {
       `${this.options.quality}K`,
       '--embed-thumbnail',
       '--add-metadata',
+      // Promote yt-dlp fields into ID3 tags so other players pick them up.
+      '--parse-metadata',
+      '%(artist,creator,uploader)s:%(meta_artist)s',
+      '--parse-metadata',
+      '%(album)s:%(meta_album)s',
+      '--parse-metadata',
+      '%(track,title)s:%(meta_title)s',
+      '--parse-metadata',
+      '%(genre,categories.0)s:%(meta_genre)s',
+      '--parse-metadata',
+      '%(release_year,release_date>%Y,upload_date>%Y)s:%(meta_date)s',
       '--progress',
       '--newline',
       '--progress-template',
@@ -269,7 +330,11 @@ export class DownloadProcess extends EventEmitter {
           title: this.info.title,
           youtubeId: this.info.id,
           durationSec: this.info.durationSec,
-          thumbnail: this.info.thumbnail
+          thumbnail: this.info.thumbnail,
+          artist: this.info.artist,
+          album: this.info.album,
+          genre: this.info.genre,
+          releaseYear: this.info.releaseYear
         });
       });
     });

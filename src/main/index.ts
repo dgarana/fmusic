@@ -56,7 +56,7 @@ function configureSecurity(): void {
         'Content-Security-Policy': [
           "default-src 'self' 'unsafe-inline' data: blob: file: https://www.youtube.com https://*.ytimg.com; " +
             "img-src 'self' data: blob: https: file:; " +
-            "media-src 'self' blob: file:; " +
+            "media-src 'self' blob: file: https://*.googlevideo.com https://*.youtube.com; " +
             "frame-src https://www.youtube.com https://www.youtube-nocookie.com; " +
             "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
             "connect-src 'self' https: wss:;"

@@ -88,3 +88,35 @@ export function reorderPlaylist(playlistId: number, orderedTrackIds: number[]): 
     ids.forEach((trackId, index) => update.run(index, playlistId, trackId));
   })(orderedTrackIds);
 }
+
+export function playlistsForTrack(trackId: number): Playlist[] {
+  const rows = getDb()
+    .prepare(
+      `${SELECT_WITH_COUNT}
+       INNER JOIN playlist_tracks pt2 ON pt2.playlist_id = p.id AND pt2.track_id = ?
+       GROUP BY p.id ORDER BY p.name COLLATE NOCASE ASC`
+    )
+    .all(trackId) as PlaylistRow[];
+  return rows.map(rowToPlaylist);
+}
+
+/**
+ * Returns a map of `trackId -> playlistIds` for the given track ids. Used to
+ * render "in playlists" badges in the library table without N+1 queries.
+ */
+export function playlistsForTracks(trackIds: number[]): Map<number, number[]> {
+  const result = new Map<number, number[]>();
+  if (trackIds.length === 0) return result;
+  const placeholders = trackIds.map(() => '?').join(',');
+  const rows = getDb()
+    .prepare(
+      `SELECT track_id, playlist_id FROM playlist_tracks WHERE track_id IN (${placeholders})`
+    )
+    .all(...trackIds) as Array<{ track_id: number; playlist_id: number }>;
+  for (const row of rows) {
+    const arr = result.get(row.track_id) ?? [];
+    arr.push(row.playlist_id);
+    result.set(row.track_id, arr);
+  }
+  return result;
+}

@@ -16,6 +16,7 @@ export const Channels = {
   // YouTube
   YtSearch: 'yt:search',
   YtInfo: 'yt:info',
+  YtStreamUrl: 'yt:stream-url',
 
   // Downloads
   DownloadEnqueue: 'download:enqueue',
@@ -40,6 +41,8 @@ export const Channels = {
   PlaylistsAddTrack: 'playlists:add-track',
   PlaylistsRemoveTrack: 'playlists:remove-track',
   PlaylistsReorder: 'playlists:reorder',
+  PlaylistsForTrack: 'playlists:for-track',
+  PlaylistsForTracks: 'playlists:for-tracks',
 
   // Schema
   SchemaHistory: 'schema:history'

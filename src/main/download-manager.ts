@@ -95,17 +95,19 @@ export class DownloadManager extends EventEmitter {
       const result = await proc.start();
       this.updateJob(job, { status: 'processing', progress: 1 });
 
-      // Read metadata from the finished file and insert into the library.
-      let artist: string | null = null;
-      let album: string | null = null;
-      let genre: string | null = null;
+      // Prefer the metadata yt-dlp already resolved (music videos on YouTube
+      // expose structured artist/album/track); fall back to ID3 tags read
+      // from the final file for cases where yt-dlp could not find them.
+      let artist: string | null = result.artist;
+      let album: string | null = result.album;
+      let genre: string | null = result.genre;
       let durationSec = result.durationSec;
 
       try {
         const meta = await parseFile(result.filePath);
-        artist = meta.common.artist ?? (meta.common.artists?.[0] ?? null);
-        album = meta.common.album ?? null;
-        genre = meta.common.genre?.[0] ?? null;
+        artist = artist ?? meta.common.artist ?? meta.common.artists?.[0] ?? null;
+        album = album ?? meta.common.album ?? null;
+        genre = genre ?? meta.common.genre?.[0] ?? null;
         if (!durationSec && meta.format.duration) {
           durationSec = Math.round(meta.format.duration);
         }

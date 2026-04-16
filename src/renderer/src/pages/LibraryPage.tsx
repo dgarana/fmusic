@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLibraryStore } from '../store/library';
 import { usePlayerStore } from '../store/player';
 import { formatDuration } from '../util';
@@ -20,6 +20,29 @@ export function LibraryPage() {
   const playlists = useLibraryStore((s) => s.playlists);
   const refreshPlaylists = useLibraryStore((s) => s.refreshPlaylists);
   const refreshTracks = useLibraryStore((s) => s.refreshTracks);
+  const [playlistsByTrack, setPlaylistsByTrack] = useState<Map<number, number[]>>(new Map());
+
+  const playlistsById = useMemo(() => {
+    const map = new Map<number, string>();
+    playlists.forEach((p) => map.set(p.id, p.name));
+    return map;
+  }, [playlists]);
+
+  useEffect(() => {
+    if (tracks.length === 0) {
+      setPlaylistsByTrack(new Map());
+      return;
+    }
+    let cancelled = false;
+    void window.fmusic
+      .playlistsForTracks(tracks.map((t) => t.id))
+      .then((map) => {
+        if (!cancelled) setPlaylistsByTrack(map);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tracks, playlists]);
 
   function sortBy(key: TrackSortKey) {
     const sortDir =
@@ -78,11 +101,16 @@ export function LibraryPage() {
                   {query.sortBy === col.key && (query.sortDir === 'asc' ? ' ▲' : ' ▼')}
                 </th>
               ))}
+              <th>Playlists</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {tracks.map((t) => (
+            {tracks.map((t) => {
+              const trackPlaylists = (playlistsByTrack.get(t.id) ?? [])
+                .map((id) => playlistsById.get(id))
+                .filter((name): name is string => Boolean(name));
+              return (
               <tr key={t.id}>
                 <td>{t.title}</td>
                 <td>{t.artist ?? '-'}</td>
@@ -90,6 +118,19 @@ export function LibraryPage() {
                 <td>{t.genre ?? '-'}</td>
                 <td>{formatDuration(t.durationSec)}</td>
                 <td>{t.downloadedAt.slice(0, 10)}</td>
+                <td>
+                  {trackPlaylists.length === 0 ? (
+                    <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>
+                  ) : (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {trackPlaylists.map((name) => (
+                        <span key={name} className="status-pill" title={name}>
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </td>
                 <td className="actions">
                   <button onClick={() => void playTrack(t, tracks)} title="Reproducir">▶</button>{' '}
                   <button
@@ -125,7 +166,8 @@ export function LibraryPage() {
                   </button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       )}

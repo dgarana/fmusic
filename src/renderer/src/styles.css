@@ -518,3 +518,127 @@ a {
   text-align: center;
   font-style: italic;
 }
+
+/* ── Mini player window ───────────────────────────────────────── */
+.mini-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100vw;
+  height: 100vh;
+  background: #1a1d24;
+  color: var(--text);
+  padding: 0 10px;
+  box-sizing: border-box;
+  user-select: none;
+  overflow: hidden;
+  /* Whole window is draggable; buttons opt out below */
+  -webkit-app-region: drag;
+  cursor: grab;
+}
+
+.mini-drag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mini-cover {
+  width: 60px;
+  height: 60px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #2a2d38;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mini-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mini-cover-empty {
+  font-size: 22px;
+  opacity: 0.4;
+}
+
+.mini-info {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.mini-title {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mini-artist {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.mini-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+  cursor: default;
+}
+.mini-controls button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 13px;
+  padding: 4px 5px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: background 0.1s;
+}
+.mini-controls button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+.mini-controls button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.mini-play {
+  font-size: 14px !important;
+  padding: 5px 8px !important;
+  background: var(--accent) !important;
+  border-radius: 50% !important;
+  color: #fff !important;
+}
+.mini-play:hover:not(:disabled) {
+  background: #6a4dee !important;
+}
+
+.mini-expand {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  -webkit-app-region: no-drag;
+  font-size: 16px;
+  padding: 4px 5px;
+  border-radius: 4px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.1s, background 0.1s;
+}
+.mini-expand:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}

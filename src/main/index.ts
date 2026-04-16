@@ -1,20 +1,22 @@
-import { app, BrowserWindow, net, protocol, session, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, net, protocol, session, shell } from 'electron';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
+import fs from 'node:fs';
+import { Readable } from 'node:stream';
 import { registerIpc } from './ipc.js';
 import { getDb, closeDb } from './library/db.js';
 import { ensureBuiltinPlaylists } from './library/playlists-repo.js';
 import { getTrack, resolveTrackFilePath } from './library/tracks-repo.js';
 import { stopActiveSonos } from './sonos.js';
 import { stopAudioServer } from './sonos-server.js';
+import { createTray, destroyTray, updateTray, type TrayPlayerState } from './tray.js';
+import { createMiniPlayer, showMiniPlayer, hideMiniPlayer, getMiniPlayer } from './miniplayer.js';
 
 let mainWindow: BrowserWindow | null = null;
+let isQuitting = false;
 
 export const MEDIA_SCHEME = 'fmusic-media';
 
-// Register the scheme as privileged before the app is ready so the renderer
-// can load it from `<audio>` elements regardless of its own origin (which in
-// dev mode is http://localhost and would otherwise reject file:// URLs).
 protocol.registerSchemesAsPrivileged([
   {
     scheme: MEDIA_SCHEME,
@@ -28,10 +30,19 @@ protocol.registerSchemesAsPrivileged([
   }
 ]);
 
+function mimeForExt(ext: string): string {
+  switch (ext.toLowerCase()) {
+    case '.mp3': return 'audio/mpeg';
+    case '.m4a': case '.aac': return 'audio/aac';
+    case '.ogg': return 'audio/ogg';
+    case '.opus': return 'audio/ogg; codecs=opus';
+    case '.flac': return 'audio/flac';
+    case '.wav': return 'audio/wav';
+    default: return 'audio/mpeg';
+  }
+}
+
 function registerMediaProtocol(): void {
-  // URL shape: fmusic-media://track/<id>  →  local audio file for that track.
-  // Delegating to `net.fetch(file://...)` lets Electron's network stack
-  // handle range requests, which HTML audio elements rely on for seeking.
   protocol.handle(MEDIA_SCHEME, async (request) => {
     try {
       const url = new URL(request.url);
@@ -48,7 +59,42 @@ function registerMediaProtocol(): void {
       if (!actualPath) {
         return new Response('file missing on disk', { status: 404 });
       }
-      return net.fetch(pathToFileURL(actualPath).toString());
+
+      const stat = fs.statSync(actualPath);
+      const total = stat.size;
+      const mime = mimeForExt(path.extname(actualPath));
+      const rangeHeader = request.headers.get('range');
+
+      if (rangeHeader) {
+        const m = rangeHeader.match(/bytes=(\d+)-(\d*)/);
+        if (m) {
+          const start = parseInt(m[1], 10);
+          const end = m[2] ? parseInt(m[2], 10) : total - 1;
+          const chunkSize = end - start + 1;
+          const nodeStream = fs.createReadStream(actualPath, { start, end });
+          const webStream = Readable.toWeb(nodeStream) as ReadableStream;
+          return new Response(webStream, {
+            status: 206,
+            headers: {
+              'Content-Type': mime,
+              'Content-Range': `bytes ${start}-${end}/${total}`,
+              'Accept-Ranges': 'bytes',
+              'Content-Length': String(chunkSize)
+            }
+          });
+        }
+      }
+
+      const nodeStream = fs.createReadStream(actualPath);
+      const webStream = Readable.toWeb(nodeStream) as ReadableStream;
+      return new Response(webStream, {
+        status: 200,
+        headers: {
+          'Content-Type': mime,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': String(total)
+        }
+      });
     } catch (err) {
       console.error('[fmusic-media] handler error:', err);
       return new Response('internal error', { status: 500 });
@@ -75,6 +121,14 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => mainWindow?.show());
 
+  // Intercept close: hide to tray instead of quitting.
+  mainWindow.on('close', (e) => {
+    if (!isQuitting) {
+      e.preventDefault();
+      mainWindow?.hide();
+    }
+  });
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     void shell.openExternal(url);
     return { action: 'deny' };
@@ -89,8 +143,6 @@ function createWindow(): void {
 }
 
 function configureSecurity(): void {
-  // Only allow navigation to the dev server in development. In production we
-  // load a local file so any navigation attempt is already blocked.
   app.on('web-contents-created', (_event, contents) => {
     contents.on('will-navigate', (event, url) => {
       const devServer = process.env['ELECTRON_RENDERER_URL'];
@@ -118,7 +170,6 @@ function configureSecurity(): void {
 }
 
 app.whenReady().then(() => {
-  // Warm the library up front so migrations run immediately.
   try {
     getDb();
     ensureBuiltinPlaylists();
@@ -131,19 +182,68 @@ app.whenReady().then(() => {
   registerIpc();
   createWindow();
 
+  // Create tray + mini player after window exists.
+  // Left-click on tray: toggle mini player (show if hidden, hide if visible).
+  createTray(mainWindow!, () => {
+    const mini = getMiniPlayer();
+    if (!mini) return;
+    if (mini.isVisible()) {
+      mini.hide();
+    } else {
+      mini.show();
+      mini.focus();
+    }
+  });
+  createMiniPlayer();
+
+  // Main renderer → tray menu update.
+  ipcMain.on('tray:player-state', (_evt, state: TrayPlayerState) => {
+    if (mainWindow) updateTray(mainWindow, state);
+  });
+
+  // Main renderer → forward state to mini player window; cache for late subscribers.
+  let lastMiniState: unknown = null;
+  ipcMain.on('mini:state-from-main', (_evt, state: unknown) => {
+    lastMiniState = state;
+    getMiniPlayer()?.webContents.send('mini:state', state);
+  });
+
+  // Mini player → forward commands to main renderer (reuses tray:command channel).
+  ipcMain.on('mini:command', (_evt, cmd: string) => {
+    if (cmd === 'expand') {
+      hideMiniPlayer();
+      mainWindow?.show();
+      mainWindow?.focus();
+    } else if (cmd === 'request-state') {
+      // Mini player just mounted — replay last known state so it isn't blank.
+      if (lastMiniState !== null) {
+        getMiniPlayer()?.webContents.send('mini:state', lastMiniState);
+      }
+    } else {
+      mainWindow?.webContents.send('tray:command', cmd);
+    }
+  });
+
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+    } else {
+      createWindow();
+    }
   });
 });
 
+// Never fires when window just hides, only when app.quit() is called.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    closeDb();
-    app.quit();
+    // Don't quit here — the tray keeps the app alive.
   }
 });
 
 app.on('before-quit', () => {
+  isQuitting = true;
+  destroyTray();
   void stopActiveSonos();
   stopAudioServer();
   closeDb();

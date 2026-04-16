@@ -2,8 +2,10 @@ import { useEffect } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { PlayerBar } from './components/PlayerBar';
+import { TrayBridge } from './components/TrayBridge';
 import { DownloadPage } from './pages/DownloadPage';
 import { LibraryPage } from './pages/LibraryPage';
+import { MiniPlayerPage } from './pages/MiniPlayerPage';
 import { PlaylistsPage } from './pages/PlaylistsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { useLibraryStore } from './store/library';
@@ -29,20 +31,29 @@ export function App() {
 
   return (
     <HashRouter>
-      <div className="app-shell">
-        <Sidebar />
-        <main className="main">
-          <Routes>
-            <Route path="/" element={<Navigate to="/download" replace />} />
-            <Route path="/download" element={<DownloadPage />} />
-            <Route path="/library" element={<LibraryPage />} />
-            <Route path="/playlists" element={<PlaylistsPage />} />
-            <Route path="/playlists/:id" element={<PlaylistsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Routes>
-        </main>
-        <PlayerBar />
-      </div>
+      <Routes>
+        <Route path="/miniplayer" element={<MiniPlayerPage />} />
+        <Route
+          path="*"
+          element={
+            <div className="app-shell">
+              <TrayBridge />
+              <Sidebar />
+              <main className="main">
+                <Routes>
+                  <Route path="/" element={<Navigate to="/download" replace />} />
+                  <Route path="/download" element={<DownloadPage />} />
+                  <Route path="/library" element={<LibraryPage />} />
+                  <Route path="/playlists" element={<PlaylistsPage />} />
+                  <Route path="/playlists/:id" element={<PlaylistsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Routes>
+              </main>
+              <PlayerBar />
+            </div>
+          }
+        />
+      </Routes>
     </HashRouter>
   );
 }

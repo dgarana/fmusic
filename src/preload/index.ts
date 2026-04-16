@@ -103,6 +103,39 @@ const api = {
   schemaHistory: () =>
     invoke<Array<{ version: number; name: string; applied_at: string }>>(Channels.SchemaHistory),
 
+  // Tray
+  sendTrayState: (state: {
+    title: string | null;
+    artist: string | null;
+    isPlaying: boolean;
+    hasPrev: boolean;
+    hasNext: boolean;
+  }) => ipcRenderer.send('tray:player-state', state),
+  onTrayCommand: (handler: (cmd: 'toggle-play' | 'prev' | 'next') => void) =>
+    on<'toggle-play' | 'prev' | 'next'>('tray:command', handler),
+
+  // Mini player
+  onMiniState: (handler: (state: {
+    title: string | null;
+    artist: string | null;
+    thumbnailPath: string | null;
+    youtubeId: string | null;
+    isPlaying: boolean;
+    hasPrev: boolean;
+    hasNext: boolean;
+  }) => void) => on('mini:state', handler),
+  sendMiniCommand: (cmd: 'toggle-play' | 'prev' | 'next' | 'expand' | 'request-state') =>
+    ipcRenderer.send('mini:command', cmd),
+  sendMiniState: (state: {
+    title: string | null;
+    artist: string | null;
+    thumbnailPath: string | null;
+    youtubeId: string | null;
+    isPlaying: boolean;
+    hasPrev: boolean;
+    hasNext: boolean;
+  }) => ipcRenderer.send('mini:state-from-main', state),
+
   // Sonos
   sonosDiscover: () => invoke<SonosDevice[]>(Channels.SonosDiscover),
   sonosPlay: (host: string, trackId: number, title?: string, artist?: string) =>

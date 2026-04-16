@@ -96,6 +96,26 @@ export function PlayerBar() {
 
   const cover = coverUrl(current);
 
+  // Local scrub state: while dragging, show the drag value instead of live position.
+  const [scrubbing, setScrubbing] = useState(false);
+  const [scrubValue, setScrubValue] = useState(0);
+  const displayPosition = scrubbing ? scrubValue : position;
+  const maxDuration = duration || current?.durationSec || 0;
+
+  function handleScrubStart() {
+    setScrubValue(position);
+    setScrubbing(true);
+  }
+  function handleScrubChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setScrubValue(Number(e.target.value));
+  }
+  function handleScrubEnd(e: React.MouseEvent<HTMLInputElement> | React.TouchEvent<HTMLInputElement>) {
+    const s = Number((e.target as HTMLInputElement).value);
+    setScrubbing(false);
+    seek(s);
+    if (isCasting) void sonos.seek(s);
+  }
+
   return (
     <footer className="player-bar">
       <div className="player-current">
@@ -141,21 +161,21 @@ export function PlayerBar() {
           </button>
         </div>
         <div className="scrub">
-          <span>{formatDuration(position)}</span>
+          <span>{formatDuration(displayPosition)}</span>
           <input
             type="range"
             min={0}
-            max={duration || current?.durationSec || 0}
+            max={maxDuration}
             step={0.5}
-            value={position}
-            onChange={(e) => {
-              const s = Number(e.target.value);
-              seek(s);
-              if (isCasting) void sonos.seek(s);
-            }}
+            value={displayPosition}
+            onMouseDown={handleScrubStart}
+            onTouchStart={handleScrubStart}
+            onChange={handleScrubChange}
+            onMouseUp={handleScrubEnd}
+            onTouchEnd={handleScrubEnd}
             disabled={!current}
           />
-          <span>{formatDuration(duration || current?.durationSec || 0)}</span>
+          <span>{formatDuration(maxDuration)}</span>
         </div>
       </div>
       <div className="player-extras">

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePlayerStore } from '../store/player';
 import { useLibraryStore } from '../store/library';
 import { useSonosStore } from '../store/sonos';
+import { useSettingsStore } from '../store/settings';
 import { SonosPanel } from './SonosPanel';
 import { formatDuration } from '../util';
 
@@ -13,6 +14,7 @@ function coverUrl(current: { thumbnailPath: string | null; youtubeId: string | n
 }
 
 export function PlayerBar() {
+  const sonosEnabled = useSettingsStore((s) => s.settings?.sonosEnabled ?? true);
   const {
     current,
     queue,
@@ -182,7 +184,7 @@ export function PlayerBar() {
         </div>
       </div>
       <div className="player-extras">
-        <SonosPanel />
+        {sonosEnabled && <SonosPanel />}
         <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Volumen</span>
         <input
           type="range"

@@ -80,10 +80,16 @@ export interface AppSettings {
   skipCertCheck: boolean;
   /** Sonos device hosts remembered across sessions. */
   sonosKnownHosts: string[];
+  /** Enable Sonos integration (audio server + panel). Default: true. */
+  sonosEnabled: boolean;
+  /** Hide to tray instead of quitting when the main window is closed. Default: true. */
+  closeToTray: boolean;
+  /** Show mini player when clicking the tray icon (only applies when closeToTray is true). Default: true. */
+  miniPlayerEnabled: boolean;
 }
 
 export interface DependencyStatus {
-  ytDlp: { present: boolean; version: string | null; path: string | null };
+  ytDlp: { present: boolean; path: string | null };
   ffmpeg: { present: boolean; path: string | null };
 }
 

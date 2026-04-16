@@ -10,16 +10,19 @@ import { PlaylistsPage } from './pages/PlaylistsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { useLibraryStore } from './store/library';
 import { useDownloadsStore } from './store/downloads';
+import { useSettingsStore } from './store/settings';
 
 export function App() {
   const refreshAll = useLibraryStore((s) => s.refreshAll);
   const handleTrackAdded = useLibraryStore((s) => s.handleTrackAdded);
   const refreshDownloads = useDownloadsStore((s) => s.refresh);
   const applyDownloadUpdate = useDownloadsStore((s) => s.applyUpdate);
+  const loadSettings = useSettingsStore((s) => s.load);
 
   useEffect(() => {
     void refreshAll();
     void refreshDownloads();
+    void loadSettings();
 
     const offDownload = window.fmusic.onDownloadUpdate((job) => applyDownloadUpdate(job));
     const offTrack = window.fmusic.onTrackAdded((track) => handleTrackAdded(track));

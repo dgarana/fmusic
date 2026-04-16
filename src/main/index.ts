@@ -4,6 +4,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { Readable } from 'node:stream';
 import { registerIpc } from './ipc.js';
+import { getSettings } from './settings.js';
 import { getDb, closeDb } from './library/db.js';
 import { ensureBuiltinPlaylists } from './library/playlists-repo.js';
 import { getTrack, resolveTrackFilePath } from './library/tracks-repo.js';
@@ -121,11 +122,17 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => mainWindow?.show());
 
-  // Intercept close: hide to tray instead of quitting.
+  // Intercept close: hide to tray or quit depending on user setting.
   mainWindow.on('close', (e) => {
     if (!isQuitting) {
-      e.preventDefault();
-      mainWindow?.hide();
+      const { closeToTray } = getSettings();
+      if (closeToTray) {
+        e.preventDefault();
+        mainWindow?.hide();
+      } else {
+        isQuitting = true;
+        app.quit();
+      }
     }
   });
 
@@ -185,13 +192,19 @@ app.whenReady().then(() => {
   // Create tray + mini player after window exists.
   // Left-click on tray: toggle mini player (show if hidden, hide if visible).
   createTray(mainWindow!, () => {
-    const mini = getMiniPlayer();
-    if (!mini) return;
-    if (mini.isVisible()) {
-      mini.hide();
+    const { miniPlayerEnabled } = getSettings();
+    if (miniPlayerEnabled) {
+      const mini = getMiniPlayer();
+      if (!mini) return;
+      if (mini.isVisible()) {
+        mini.hide();
+      } else {
+        mini.show();
+        mini.focus();
+      }
     } else {
-      mini.show();
-      mini.focus();
+      mainWindow?.show();
+      mainWindow?.focus();
     }
   });
   createMiniPlayer();

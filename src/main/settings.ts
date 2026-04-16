@@ -20,7 +20,10 @@ function getStore(): Store<Schema> {
         concurrency: 1,
         theme: 'system',
         skipCertCheck: false,
-        sonosKnownHosts: []
+        sonosKnownHosts: [],
+        sonosEnabled: true,
+        closeToTray: true,
+        miniPlayerEnabled: true
       }
     }
   });

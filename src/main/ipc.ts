@@ -68,18 +68,9 @@ export function registerIpc(): void {
   });
 
   // ----- Dependencies -----
-  ipcMain.handle(Channels.DepsStatus, async () => {
-    const base = getDependencyStatus();
-    return {
-      ytDlp: { ...base.ytDlp, version: await ytDlpVersion() },
-      ffmpeg: base.ffmpeg
-    };
-  });
-  ipcMain.handle(Channels.DepsUpdateYtDlp, async () => {
-    const result = await updateYtDlp();
-    const version = await ytDlpVersion();
-    return { ...result, version };
-  });
+  ipcMain.handle(Channels.DepsStatus, () => getDependencyStatus());
+  ipcMain.handle(Channels.DepsVersion, () => ytDlpVersion());
+  ipcMain.handle(Channels.DepsUpdateYtDlp, () => updateYtDlp());
 
   // ----- Settings -----
   ipcMain.handle(Channels.SettingsGet, () => getSettings());

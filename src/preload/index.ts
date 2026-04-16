@@ -30,7 +30,8 @@ const api = {
 
   // Dependencies
   depsStatus: () => invoke<DependencyStatus>(Channels.DepsStatus),
-  updateYtDlp: () => invoke<{ path: string; version: string | null }>(Channels.DepsUpdateYtDlp),
+  depsVersion: () => invoke<string | null>(Channels.DepsVersion),
+  updateYtDlp: () => invoke<{ path: string }>(Channels.DepsUpdateYtDlp),
 
   // Settings
   getSettings: () => invoke<AppSettings>(Channels.SettingsGet),

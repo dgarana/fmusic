@@ -7,6 +7,7 @@ export const Channels = {
 
   // Dependencies
   DepsStatus: 'deps:status',
+  DepsVersion: 'deps:version',
   DepsUpdateYtDlp: 'deps:update-yt-dlp',
 
   // Settings

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useT } from '../i18n';
 
 interface MiniState {
   title: string | null;
@@ -17,6 +18,7 @@ function coverUrl(state: MiniState): string | null {
 }
 
 export function MiniPlayerPage() {
+  const t = useT();
   const [state, setState] = useState<MiniState>({
     title: null,
     artist: null,
@@ -45,7 +47,7 @@ export function MiniPlayerPage() {
           {cover ? <img src={cover} alt="" /> : <span className="mini-cover-empty">♪</span>}
         </div>
         <div className="mini-info">
-          <div className="mini-title">{state.title ?? '🎵 Nothing playing'}</div>
+          <div className="mini-title">{state.title ?? t('miniPlayer.nothingPlaying')}</div>
           <div className="mini-artist">{state.artist ?? ''}</div>
         </div>
       </div>
@@ -54,7 +56,7 @@ export function MiniPlayerPage() {
           onClick={() => send('prev')}
           disabled={!state.hasPrev}
           style={{ visibility: state.hasPrev ? 'visible' : 'hidden' }}
-          title="Previous"
+          title={t('miniPlayer.previous')}
         >
           ‹‹
         </button>
@@ -62,7 +64,7 @@ export function MiniPlayerPage() {
           className="primary mini-play"
           onClick={() => send('toggle-play')}
           disabled={!state.title}
-          title={state.isPlaying ? 'Pause' : 'Play'}
+          title={state.isPlaying ? t('miniPlayer.pause') : t('miniPlayer.play')}
         >
           {state.isPlaying ? '❚❚' : '▶'}
         </button>
@@ -70,12 +72,12 @@ export function MiniPlayerPage() {
           onClick={() => send('next')}
           disabled={!state.hasNext}
           style={{ visibility: state.hasNext ? 'visible' : 'hidden' }}
-          title="Next"
+          title={t('miniPlayer.next')}
         >
           ››
         </button>
       </div>
-      <button className="mini-expand" onClick={() => send('expand')} title="Open fmusic">
+      <button className="mini-expand" onClick={() => send('expand')} title={t('miniPlayer.openFmusic')}>
         ⤢
       </button>
     </div>

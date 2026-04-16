@@ -3,9 +3,11 @@ import { useParams } from 'react-router-dom';
 import { useLibraryStore } from '../store/library';
 import { usePlayerStore } from '../store/player';
 import { formatDuration } from '../util';
-import type { Track } from '../../../shared/types';
+import { useT, playlistDisplayName } from '../i18n';
+import type { Playlist, Track } from '../../../shared/types';
 
 export function PlaylistsPage() {
+  const t = useT();
   const params = useParams();
   const { playlists, refreshPlaylists } = useLibraryStore();
   const [newName, setNewName] = useState('');
@@ -25,15 +27,15 @@ export function PlaylistsPage() {
   }
 
   if (activePlaylist) {
-    return <PlaylistDetail id={activePlaylist.id} name={activePlaylist.name} />;
+    return <PlaylistDetail playlist={activePlaylist} />;
   }
 
   return (
     <div>
-      <h1>🎵 Playlists</h1>
+      <h1>{t('playlists.title')}</h1>
       <div className="search-row">
         <input
-          placeholder="Name of the new playlist..."
+          placeholder={t('playlists.newPlaceholder')}
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => {
@@ -41,46 +43,53 @@ export function PlaylistsPage() {
           }}
         />
         <button className="primary" onClick={() => void createPlaylist()}>
-          ➕ Create playlist
+          {t('playlists.create')}
         </button>
       </div>
 
       {playlists.length === 0 ? (
-        <div className="empty">📭 You don't have any playlists yet.</div>
+        <div className="empty">{t('playlists.none')}</div>
       ) : (
         <div className="results-grid">
-          {playlists.map((p) => (
-            <div key={p.id} className="result-card" style={{ padding: 16 }}>
-              <div className="title" style={{ fontSize: 16 }}>
-                {p.name}
+          {playlists.map((p) => {
+            const displayName = playlistDisplayName(p, t);
+            const isBuiltin = Boolean(p.slug);
+            return (
+              <div key={p.id} className="result-card" style={{ padding: 16 }}>
+                <div className="title" style={{ fontSize: 16 }}>
+                  {displayName}
+                </div>
+                <div className="channel">{t('playlists.tracks', { count: p.trackCount })}</div>
+                <div className="actions" style={{ marginTop: 10 }}>
+                  <a href={`#/playlists/${p.id}`}>
+                    <button>{t('playlists.open')}</button>
+                  </a>
+                  {!isBuiltin && (
+                    <button
+                      className="danger"
+                      onClick={async () => {
+                        if (!confirm(t('playlists.deleteConfirm', { name: displayName }))) return;
+                        await window.fmusic.deletePlaylist(p.id);
+                        await refreshPlaylists();
+                      }}
+                    >
+                      {t('playlists.delete')}
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="channel">🎶 {p.trackCount} tracks</div>
-              <div className="actions" style={{ marginTop: 10 }}>
-                <a href={`#/playlists/${p.id}`}>
-                  <button>📂 Open</button>
-                </a>
-                {p.name !== 'Favorites' && (
-                  <button
-                    className="danger"
-                    onClick={async () => {
-                      if (!confirm(`Delete playlist "${p.name}"?`)) return;
-                      await window.fmusic.deletePlaylist(p.id);
-                      await refreshPlaylists();
-                    }}
-                  >
-                    🗑️ Delete
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-function PlaylistDetail({ id, name }: { id: number; name: string }) {
+function PlaylistDetail({ playlist }: { playlist: Playlist }) {
+  const t = useT();
+  const { id } = playlist;
+  const name = playlistDisplayName(playlist, t);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [allTracks, setAllTracks] = useState<Track[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -166,7 +175,7 @@ function PlaylistDetail({ id, name }: { id: number; name: string }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
         <h1 style={{ margin: 0 }}>🎵 {name}</h1>
         <button className="primary" onClick={() => void openPicker()}>
-          ➕ Add tracks
+          {t('playlists.addTracks')}
         </button>
       </div>
 
@@ -182,7 +191,7 @@ function PlaylistDetail({ id, name }: { id: number; name: string }) {
         >
           <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
             <input
-              placeholder="Filter by title, artist, album or genre..."
+              placeholder={t('playlists.pickerFilter')}
               value={pickerQuery}
               onChange={(e) => setPickerQuery(e.target.value)}
               style={{ flex: 1 }}
@@ -193,15 +202,13 @@ function PlaylistDetail({ id, name }: { id: number; name: string }) {
               onClick={() => void commitAdd()}
               disabled={selected.size === 0 || adding}
             >
-              {adding ? '⏳ Adding...' : `➕ Add ${selected.size || ''}`.trim()}
+              {adding ? t('playlists.pickerAdding') : t('playlists.pickerAdd', { count: selected.size || '' })}
             </button>
-            <button onClick={() => setPickerOpen(false)}>✖ Cancel</button>
+            <button onClick={() => setPickerOpen(false)}>{t('playlists.pickerCancel')}</button>
           </div>
           {candidates.length === 0 ? (
             <div className="empty" style={{ padding: 12 }}>
-              {allTracks.length === 0
-                ? '📦 Your library is empty.'
-                : '✅ All tracks in your library are already in this playlist.'}
+              {allTracks.length === 0 ? t('playlists.libraryEmpty') : t('playlists.allAlreadyIn')}
             </div>
           ) : (
             <div
@@ -244,30 +251,30 @@ function PlaylistDetail({ id, name }: { id: number; name: string }) {
 
       {tracks.length === 0 ? (
         <div className="empty">
-          📭 This playlist is empty. Add tracks from the Library or with the button above.
+          {t('playlists.empty')}
         </div>
       ) : (
         <table className="track-table">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Title</th>
-              <th>Artist</th>
-              <th>Duration</th>
+              <th>{t('playlists.columns.index')}</th>
+              <th>{t('playlists.columns.title')}</th>
+              <th>{t('playlists.columns.artist')}</th>
+              <th>{t('playlists.columns.duration')}</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {tracks.map((t, i) => (
-              <tr key={t.id}>
+            {tracks.map((tr, i) => (
+              <tr key={tr.id}>
                 <td>{i + 1}</td>
-                <td>{t.title}</td>
-                <td>{t.artist ?? '-'}</td>
-                <td>{formatDuration(t.durationSec)}</td>
+                <td>{tr.title}</td>
+                <td>{tr.artist ?? '-'}</td>
+                <td>{formatDuration(tr.durationSec)}</td>
                 <td className="actions">
-                  <button onClick={() => void playTrack(t, tracks)} title="Play">▶</button>{' '}
-                  <button onClick={() => void moveUp(i)} disabled={i === 0} title="Move up">↑</button>{' '}
-                  <button className="danger" onClick={() => void remove(t.id)} title="Remove">×</button>
+                  <button onClick={() => void playTrack(tr, tracks)} title={t('playlists.playTooltip')}>▶</button>{' '}
+                  <button onClick={() => void moveUp(i)} disabled={i === 0} title={t('playlists.moveUpTooltip')}>↑</button>{' '}
+                  <button className="danger" onClick={() => void remove(tr.id)} title={t('playlists.removeTooltip')}>×</button>
                 </td>
               </tr>
             ))}

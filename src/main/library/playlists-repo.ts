@@ -4,6 +4,7 @@ import { getDb } from './db.js';
 interface PlaylistRow {
   id: number;
   name: string;
+  slug: string | null;
   created_at: string;
   cover_path: string | null;
   track_count: number;
@@ -13,6 +14,7 @@ function rowToPlaylist(row: PlaylistRow): Playlist {
   return {
     id: row.id,
     name: row.name,
+    slug: row.slug,
     createdAt: row.created_at,
     coverPath: row.cover_path,
     trackCount: row.track_count
@@ -20,14 +22,20 @@ function rowToPlaylist(row: PlaylistRow): Playlist {
 }
 
 const SELECT_WITH_COUNT = `
-  SELECT p.id, p.name, p.created_at, p.cover_path,
+  SELECT p.id, p.name, p.slug, p.created_at, p.cover_path,
          COUNT(pt.track_id) AS track_count
   FROM playlists p
   LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.id
 `;
 
 export function ensureBuiltinPlaylists(): void {
-  getDb().prepare('INSERT OR IGNORE INTO playlists(name) VALUES (?)').run('Favorites');
+  const db = getDb();
+  const existing = db
+    .prepare('SELECT id FROM playlists WHERE slug = ?')
+    .get('favorites') as { id: number } | undefined;
+  if (!existing) {
+    db.prepare('INSERT INTO playlists(name, slug) VALUES (?, ?)').run('Favorites', 'favorites');
+  }
 }
 
 export function listPlaylists(): Playlist[] {
@@ -58,8 +66,11 @@ export function renamePlaylist(id: number, name: string): Playlist | null {
 
 export function deletePlaylist(id: number): boolean {
   const db = getDb();
-  const row = db.prepare('SELECT name FROM playlists WHERE id = ?').get(id) as { name: string } | undefined;
-  if (row?.name === 'Favorites') return false;
+  const row = db.prepare('SELECT slug FROM playlists WHERE id = ?').get(id) as
+    | { slug: string | null }
+    | undefined;
+  // Built-in playlists (slug IS NOT NULL) cannot be deleted from the UI.
+  if (row?.slug) return false;
   const res = db.prepare('DELETE FROM playlists WHERE id = ?').run(id);
   return res.changes > 0;
 }

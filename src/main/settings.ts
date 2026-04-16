@@ -19,6 +19,7 @@ function getStore(): Store<Schema> {
         defaultQuality: 192,
         concurrency: 1,
         theme: 'system',
+        language: 'en',
         skipCertCheck: false,
         sonosKnownHosts: [],
         sonosEnabled: true,

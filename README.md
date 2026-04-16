@@ -48,6 +48,7 @@ required on the user's machine.
 ### General
 - ⚙️ **Settings**: download folder, default format/quality, dependency status and a button to **update yt-dlp** without leaving the app.
 - 🔒 **"Ignore SSL errors" option** in Settings → Network: useful on corporate networks with SSL inspection (VPN). When a certificate error occurs on search or download, the UI shows a shortcut to this option.
+- 🌍 **Multi-language UI** with an in-app language switcher (English / Español). The choice is persisted and applied on the fly (sidebar, player, tray, dialogs). Built-in playlists are renamed at render time so they also follow the active language.
 
 ## Stack
 
@@ -120,8 +121,11 @@ database, an automatic backup is made at
 The `002_favorites.sql` migration seeds the "Favorites" playlist with
 `INSERT OR IGNORE`, so it is idempotent. `003_rename_favorites.sql`
 renames the legacy Spanish "Favoritos" row to "Favorites" for existing
-databases. Additionally, `ensureBuiltinPlaylists()` guarantees the
-Favorites row on every startup.
+databases. `004_playlist_slug.sql` adds a stable `slug` column so built-in
+playlists (like Favorites) keep a language-independent identifier while
+their display name is translated on the fly. Additionally,
+`ensureBuiltinPlaylists()` guarantees the Favorites row on every startup
+(matched by slug, not by name).
 
 ## Project structure
 
@@ -198,6 +202,31 @@ The mini player requests state on start (`request-state`), and the main
 process replies with the last cached state so the window never shows up
 blank.
 
+## Internationalization
+The app ships with English and Spanish. The user's choice lives in
+`AppSettings.language` and is exposed from the UI in Settings → System.
+Translations are plain JSON files under `src/shared/i18n/`:
+```
+src/shared/i18n/
+├─ en.json
+├─ es.json
+└─ index.ts   # translate(locale, key, params?) + supportedLocales
+```
+Every renderer component calls a typed `useT()` hook, and the main
+process has its own `t()` helper for things like the tray menu. Keys are
+dot-separated (`settings.tabs.system`) and values support `{placeholder}`
+interpolation; missing keys fall back to English.
+To add another language:
+1. Copy `en.json` to `xx.json` and translate the values.
+2. Add the code to the `Locale` union in `src/shared/types.ts`.
+3. Register the bundle in `src/shared/i18n/index.ts` (`bundles` + `supportedLocales`).
+No code changes are needed in components.
+## Built-in playlists
+Built-in playlists (currently just *Favorites*) have a `slug` column in
+the `playlists` table. The name stored in the DB is a canonical English
+string; the UI resolves the displayed name via `playlistDisplayName(p, t)`
+so it always reflects the active language. User-created playlists leave
+`slug` as `NULL` and are shown verbatim.
 ## `fmusic-media:` protocol
 
 Local tracks are served via a custom scheme

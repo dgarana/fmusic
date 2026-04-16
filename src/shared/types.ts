@@ -61,6 +61,12 @@ export interface Track {
 export interface Playlist {
   id: number;
   name: string;
+  /**
+   * Stable identifier for built-in playlists (e.g. 'favorites'). Null for
+   * user-created playlists. The renderer uses this to translate the display
+   * name without breaking references to the row.
+   */
+  slug: string | null;
   createdAt: string;
   coverPath: string | null;
   trackCount: number;
@@ -70,12 +76,16 @@ export interface PlaylistWithTracks extends Playlist {
   tracks: Track[];
 }
 
+export type Locale = 'en' | 'es';
+
 export interface AppSettings {
   downloadDir: string;
   defaultFormat: AudioFormat;
   defaultQuality: number;
   concurrency: number;
   theme: 'system' | 'dark' | 'light';
+  /** UI language. Defaults to 'en'. */
+  language: Locale;
   /** Disable SSL certificate verification for yt-dlp (useful behind corporate VPNs). Default: false. */
   skipCertCheck: boolean;
   /** Sonos device hosts remembered across sessions. */

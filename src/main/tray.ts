@@ -1,5 +1,6 @@
 import { app, Menu, nativeImage, Tray, BrowserWindow } from 'electron';
 import zlib from 'node:zlib';
+import { t } from './i18n.js';
 
 export interface TrayPlayerState {
   title: string | null;
@@ -69,53 +70,62 @@ function buildIcon(): Electron.NativeImage {
 function buildMenu(win: BrowserWindow, state: TrayPlayerState): Electron.Menu {
   const trackLabel = state.title
     ? `${state.title}${state.artist ? ` — ${state.artist}` : ''}`
-    : 'Nothing playing';
+    : t('tray.nothingPlaying');
 
   return Menu.buildFromTemplate([
     { label: trackLabel, enabled: false },
     { type: 'separator' },
     {
-      label: state.isPlaying ? '⏸  Pause' : '▶  Play',
+      label: state.isPlaying ? t('tray.pause') : t('tray.play'),
       enabled: state.title !== null,
       click: () => win.webContents.send('tray:command', 'toggle-play')
     },
     {
-      label: '⏮  Previous',
+      label: t('tray.previous'),
       enabled: state.hasPrev,
       click: () => win.webContents.send('tray:command', 'prev')
     },
     {
-      label: '⏭  Next',
+      label: t('tray.next'),
       enabled: state.hasNext,
       click: () => win.webContents.send('tray:command', 'next')
     },
     { type: 'separator' },
     {
-      label: 'Open fmusic',
+      label: t('tray.openFmusic'),
       click: () => { win.show(); win.focus(); }
     },
     {
-      label: 'Quit',
+      label: t('tray.quit'),
       click: () => app.quit()
     }
   ]);
 }
 
+let lastWin: BrowserWindow | null = null;
+
 export function createTray(win: BrowserWindow, onLeftClick: () => void): void {
   tray = new Tray(buildIcon());
   tray.setToolTip('fmusic');
   tray.on('click', onLeftClick);
+  lastWin = win;
   updateTray(win, currentState);
 }
 
 export function updateTray(win: BrowserWindow, state: TrayPlayerState): void {
   if (!tray) return;
   currentState = state;
+  lastWin = win;
   tray.setContextMenu(buildMenu(win, state));
   const tooltip = state.title
     ? `fmusic — ${state.title}${state.isPlaying ? ' ▶' : ' ⏸'}`
     : 'fmusic';
   tray.setToolTip(tooltip);
+}
+
+/** Re-translates the tray menu/tooltip using the current cached state. */
+export function refreshTrayLanguage(): void {
+  if (tray && lastWin) updateTray(lastWin, currentState);
 }
 
 export function destroyTray(): void {

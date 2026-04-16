@@ -25,7 +25,8 @@ Three Electron processes plus a shared types module:
 src/
 ├─ shared/                 # types + IPC channels (no Node/DOM deps)
 │  ├─ types.ts
-│  └─ channels.ts
+│  ├─ channels.ts
+│  └─ i18n/                # translation registry (en.json, es.json, index.ts)
 ├─ main/                   # Node.js -- lifecycle, FS, SQLite, spawn yt-dlp
 │  ├─ index.ts             # app lifecycle, BrowserWindow, CSP, IPC init
 │  ├─ ipc.ts               # ipcMain.handle for every channel
@@ -34,6 +35,7 @@ src/
 │  ├─ ytdlp.ts             # wrapper: version/search/info/download
 │  ├─ download-manager.ts  # sequential queue, job-update/track-added events
 │  ├─ updater.ts           # re-downloads yt-dlp from Settings
+│  ├─ i18n.ts              # t() helper reading settings.language
 │  ├─ types.d.ts           # declares `*.sql?raw`
 │  └─ library/
 │     ├─ db.ts             # better-sqlite3 + migration runner
@@ -55,6 +57,7 @@ src/
       ├─ components/
       │  ├─ Sidebar.tsx
       │  └─ PlayerBar.tsx
+      ├─ i18n.ts              # useT() hook + playlistDisplayName helper
       ├─ pages/
       │  ├─ DownloadPage.tsx
       │  ├─ LibraryPage.tsx
@@ -114,6 +117,17 @@ the local MP3). The Zustand store keeps the queue and current index.
 2. `import mNNN from './NNN_description.sql?raw';` in `index.ts`.
 3. Add `{ version: NNN, name: 'NNN_description', sql: mNNN }` to the array.
 
+### Built-in playlists
+Built-in playlists (`Favorites`) carry a `slug` (e.g. `'favorites'`) in
+the `playlists` table. User-created playlists have `slug = NULL`.
+- DB stores a canonical English `name`; the UI never shows it directly
+  for built-ins. Instead, `playlistDisplayName(p, t)` resolves
+  `t('playlists.builtins.<slug>')`.
+- `ensureBuiltinPlaylists()` matches by slug, not by name, so the row is
+  re-created even if the `name` column was manually edited.
+- `deletePlaylist()` refuses any row where `slug IS NOT NULL` so
+  built-ins cannot be deleted from the UI.
+
 ## 5. Native binary distribution
 
 - `scripts/postinstall.js` runs after `npm install`:
@@ -150,6 +164,14 @@ the local MP3). The Zustand store keeps the queue and current index.
 - **Restrictive CSP**; only `https://www.youtube.com` and
   `https://*.ytimg.com` are allowed as external origins (for the
   preview iframe).
+- **Internationalization**: all user-facing strings live in
+  `src/shared/i18n/{en,es}.json`. Renderer uses `useT()` and subscribes
+  to `settings.language`; main uses `t()` which re-reads settings on
+  every call. When `language` changes the tray menu is re-built via
+  `refreshTrayLanguage()` (triggered from the `SettingsUpdate` handler
+  in `src/main/ipc.ts`). To add a locale, drop a new JSON, extend the
+  `Locale` union in `shared/types.ts`, and register the bundle in
+  `shared/i18n/index.ts`.
 
 ## 7. Commands
 

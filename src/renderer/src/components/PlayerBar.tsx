@@ -5,6 +5,7 @@ import { useSonosStore } from '../store/sonos';
 import { useSettingsStore } from '../store/settings';
 import { SonosPanel } from './SonosPanel';
 import { formatDuration } from '../util';
+import { useT, playlistDisplayName } from '../i18n';
 
 function coverUrl(current: { thumbnailPath: string | null; youtubeId: string | null } | null): string | null {
   if (!current) return null;
@@ -14,6 +15,7 @@ function coverUrl(current: { thumbnailPath: string | null; youtubeId: string | n
 }
 
 export function PlayerBar() {
+  const t = useT();
   const sonosEnabled = useSettingsStore((s) => s.settings?.sonosEnabled ?? true);
   const {
     current,
@@ -73,7 +75,8 @@ export function PlayerBar() {
 
   const { playlists, refreshPlaylists } = useLibraryStore();
   const [isFavorited, setIsFavorited] = useState(false);
-  const favoritesPlaylist = playlists.find((p) => p.name === 'Favorites');
+  const favoritesPlaylist = playlists.find((p) => p.slug === 'favorites');
+  const favoritesName = favoritesPlaylist ? playlistDisplayName(favoritesPlaylist, t) : '';
 
   useEffect(() => {
     if (!current || !favoritesPlaylist) {
@@ -128,14 +131,18 @@ export function PlayerBar() {
           {cover ? <img src={cover} alt="" /> : null}
         </div>
         <div style={{ minWidth: 0 }}>
-          <div className="title">{current?.title ?? '🎵 Nothing playing'}</div>
+          <div className="title">{current?.title ?? t('player.nothingPlaying')}</div>
           <div className="artist">{current?.artist ?? ''}</div>
         </div>
         <button
           className={`heart-btn${isFavorited ? ' is-favorited' : ''}`}
           onClick={() => void toggleFavorite()}
           disabled={!current || !favoritesPlaylist}
-          title={isFavorited ? 'Remove from Favorites' : 'Add to Favorites'}
+          title={
+            isFavorited
+              ? t('player.removeFromFavorites', { name: favoritesName })
+              : t('player.addToFavorites', { name: favoritesName })
+          }
         >
           {isFavorited ? '♥' : '♡'}
         </button>
@@ -144,7 +151,7 @@ export function PlayerBar() {
         <div className="buttons">
           <button
             onClick={() => void handlePrev()}
-            title="Previous"
+            title={t('player.previous')}
             style={{ visibility: hasPrev ? 'visible' : 'hidden' }}
           >
             &laquo;
@@ -153,13 +160,13 @@ export function PlayerBar() {
             className="primary"
             onClick={handleTogglePlay}
             disabled={!current}
-            title={isPlaying ? 'Pause' : 'Play'}
+            title={isPlaying ? t('player.pause') : t('player.play')}
           >
             {isPlaying ? '\u275a\u275a' : '\u25b6'}
           </button>
           <button
             onClick={() => void handleNext()}
-            title="Next"
+            title={t('player.next')}
             style={{ visibility: hasNext ? 'visible' : 'hidden' }}
           >
             &raquo;
@@ -185,7 +192,7 @@ export function PlayerBar() {
       </div>
       <div className="player-extras">
         {sonosEnabled && <SonosPanel />}
-        <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>🔊 Volume</span>
+        <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{t('player.volume')}</span>
         <input
           type="range"
           min={0}

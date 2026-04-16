@@ -41,6 +41,7 @@ import {
 import { getSchemaHistory } from './library/db.js';
 import { discoverSonos, addSonosByIp, initSonosFromCache, sonosPlayTrack, sonosPause, sonosResume, sonosStop, sonosSetVolume, sonosSeek, sonosGetPosition } from './sonos.js';
 import { startAudioServer, getTrackHttpUrl } from './sonos-server.js';
+import { refreshTrayLanguage } from './tray.js';
 
 function broadcast(channel: string, payload: unknown) {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -74,9 +75,13 @@ export function registerIpc(): void {
 
   // ----- Settings -----
   ipcMain.handle(Channels.SettingsGet, () => getSettings());
-  ipcMain.handle(Channels.SettingsUpdate, (_evt, patch: Partial<AppSettings>) =>
-    updateSettings(patch)
-  );
+  ipcMain.handle(Channels.SettingsUpdate, (_evt, patch: Partial<AppSettings>) => {
+    const next = updateSettings(patch);
+    if (Object.prototype.hasOwnProperty.call(patch, 'language')) {
+      refreshTrayLanguage();
+    }
+    return next;
+  });
 
   // ----- YouTube -----
   ipcMain.handle(Channels.YtSearch, async (_evt, query: string, limit?: number) => {

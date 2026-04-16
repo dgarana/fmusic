@@ -4,6 +4,7 @@ import type { DownloadJob, SearchResult } from '../../../shared/types';
 import { useDownloadsStore } from '../store/downloads';
 import { PAGE_SIZE, useSearchStore } from '../store/search';
 import { extractYoutubeId, formatDuration, isYouTubeUrl } from '../util';
+import { useT } from '../i18n';
 
 function isSslError(message: string): boolean {
   return message.includes('CERTIFICATE_VERIFY_FAILED') || message.includes('SSL');
@@ -28,6 +29,7 @@ function jobYoutubeId(job: DownloadJob): string | null {
 }
 
 export function DownloadPage() {
+  const t = useT();
   const navigate = useNavigate();
   const { query, results, resultLimit, error, setQuery, setResults, setError } = useSearchStore();
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -128,7 +130,7 @@ export function DownloadPage() {
     const existingJob = videoId ? jobByYoutubeId.get(videoId) : undefined;
     const isActive = existingJob && ACTIVE_STATUSES.includes(existingJob.status);
     if (videoId && inLibrary.has(videoId)) {
-      setInfo('This song is already in your library.');
+      setInfo(t('download.alreadyHave'));
       return;
     }
     if (isActive) return;
@@ -166,10 +168,10 @@ export function DownloadPage() {
 
   return (
     <div>
-      <h1>⬇️ Download</h1>
+      <h1>{t('download.title')}</h1>
       <div className="search-row">
         <input
-          placeholder="🔍 Paste a YouTube link or type to search..."
+          placeholder={t('download.searchPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -177,7 +179,7 @@ export function DownloadPage() {
           }}
         />
         <button className="primary" onClick={() => void submit()} disabled={searching}>
-          {searching ? '⏳ Searching...' : '🔍 Search / Download'}
+          {searching ? t('common.searching') : t('download.searchButton')}
         </button>
       </div>
       {error && (
@@ -185,14 +187,14 @@ export function DownloadPage() {
           {error}
           {isSslError(error) && (
             <div style={{ marginTop: 6, fontSize: 13, color: 'var(--text-muted)' }}>
-              This looks like an SSL certificate error. If you are behind a corporate VPN, enable{' '}
+              {t('download.sslHintBefore')}
               <button
                 style={{ padding: '1px 8px', fontSize: 12 }}
                 onClick={() => navigate('/settings')}
               >
-                Ignore SSL errors
-              </button>{' '}
-              in Settings &gt; Network.
+                {t('download.ignoreSslErrors')}
+              </button>
+              {t('download.sslHintAfter')}
             </div>
           )}
         </div>
@@ -201,7 +203,7 @@ export function DownloadPage() {
 
       {orphanJobs.length > 0 && (
         <>
-          <h2>📦 Other downloads</h2>
+          <h2>{t('download.otherDownloads')}</h2>
           <div className="jobs">
             {orphanJobs.map((job) => (
               <div className="job" key={job.id}>
@@ -217,10 +219,10 @@ export function DownloadPage() {
                   <span className={`status-pill ${job.status}`}>{job.status}</span>
                   {ACTIVE_STATUSES.includes(job.status) ? (
                     <button onClick={() => void window.fmusic.cancelDownload(job.id)}>
-                      ✖ Cancel
+                      {t('download.cancelJob')}
                     </button>
                   ) : (
-                    <button onClick={() => dismissJob(job.id)} title="Dismiss">×</button>
+                    <button onClick={() => dismissJob(job.id)} title={t('download.dismissJob')}>×</button>
                   )}
                 </div>
                 <div className="progress-bar">
@@ -234,7 +236,7 @@ export function DownloadPage() {
 
       {results.length > 0 && (
         <>
-          <h2>🎶 Results</h2>
+          <h2>{t('download.results')}</h2>
           <div className="results-grid">
             {results.map((r) => {
               const job = jobByYoutubeId.get(r.id);
@@ -258,7 +260,7 @@ export function DownloadPage() {
                       <div style={{ marginTop: 8 }}>
                         {preview!.loading && (
                           <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                            Fetching stream...
+                            {t('download.fetchingStream')}
                           </div>
                         )}
                         {preview!.error && (
@@ -269,7 +271,7 @@ export function DownloadPage() {
                                 onClick={() => void window.fmusic.openExternal(r.url)}
                                 style={{ marginTop: 6 }}
                               >
-                                Open in browser
+                                {t('download.openInBrowser')}
                               </button>
                             </div>
                           </div>
@@ -318,14 +320,14 @@ export function DownloadPage() {
 
                     {job?.status === 'failed' && (
                       <div style={{ color: 'var(--danger)', fontSize: 12, marginTop: 6 }}>
-                        Error: {job.error ?? 'failed'}
+                        {t('download.errorPrefix')} {job.error ?? t('download.failed')}
                         {isSslError(job.error ?? '') && (
                           <div style={{ marginTop: 4, color: 'var(--text-muted)' }}>
                             <button
                               style={{ padding: '1px 6px', fontSize: 11 }}
                               onClick={() => navigate('/settings')}
                             >
-                              Enable "Ignore SSL" in Settings
+                              {t('download.enableIgnoreSsl')}
                             </button>
                           </div>
                         )}
@@ -334,24 +336,24 @@ export function DownloadPage() {
 
                     <div className="actions">
                       {isPreviewing ? (
-                        <button onClick={() => setPreview(null)}>✖ Close preview</button>
+                        <button onClick={() => setPreview(null)}>{t('download.closePreview')}</button>
                       ) : (
-                        <button onClick={() => void openPreview(r)}>▶️ Preview</button>
+                        <button onClick={() => void openPreview(r)}>{t('download.preview')}</button>
                       )}
                       {already ? (
-                        <button disabled title="Already in your library">
-                          ✅ In library
+                        <button disabled title={t('download.alreadyInLibraryTooltip')}>
+                          {t('download.inLibrary')}
                         </button>
                       ) : active ? (
                         <button
                           className="danger"
                           onClick={() => void window.fmusic.cancelDownload(job!.id)}
                         >
-                          ✖ Cancel
+                          {t('download.cancelJob')}
                         </button>
                       ) : (
                         <button className="primary" onClick={() => void enqueue(r.url, r.id)}>
-                          ⬇️ Download
+                          {t('download.download')}
                         </button>
                       )}
                     </div>
@@ -363,7 +365,7 @@ export function DownloadPage() {
           {results.length >= resultLimit && (
             <div style={{ textAlign: 'center', marginTop: 16 }}>
               <button onClick={() => void loadMore()} disabled={loadingMore}>
-                {loadingMore ? '⏳ Loading...' : '➕ Load more results'}
+                {loadingMore ? t('download.loading') : t('download.loadMore')}
               </button>
             </div>
           )}

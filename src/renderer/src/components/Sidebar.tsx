@@ -1,29 +1,31 @@
 import { NavLink } from 'react-router-dom';
 import { useLibraryStore } from '../store/library';
+import { useT, playlistDisplayName } from '../i18n';
 
 export function Sidebar() {
   const playlists = useLibraryStore((s) => s.playlists);
+  const t = useT();
 
   return (
     <aside className="sidebar">
       <div className="brand">fmusic</div>
       <nav>
         <NavLink to="/download" className={({ isActive }) => (isActive ? 'active' : '')}>
-          ⬇️  Download
+          {t('nav.download')}
         </NavLink>
         <NavLink to="/library" className={({ isActive }) => (isActive ? 'active' : '')}>
-          📚  Library
+          {t('nav.library')}
         </NavLink>
         <NavLink to="/playlists" className={({ isActive }) => (isActive ? 'active' : '')}>
-          🎵  Playlists
+          {t('nav.playlists')}
         </NavLink>
         <NavLink to="/settings" className={({ isActive }) => (isActive ? 'active' : '')}>
-          ⚙️  Settings
+          {t('nav.settings')}
         </NavLink>
       </nav>
       <div className="playlists">
-        <h3>🎶 Your playlists</h3>
-        {playlists.length === 0 && <div className="empty">📭 No playlists yet</div>}
+        <h3>{t('nav.yourPlaylists')}</h3>
+        {playlists.length === 0 && <div className="empty">{t('nav.noPlaylistsYet')}</div>}
         {playlists.map((p) => (
           <NavLink
             key={p.id}
@@ -32,7 +34,7 @@ export function Sidebar() {
               'playlist-item' + (isActive ? ' active' : '')
             }
           >
-            <span>{p.name}</span>
+            <span>{playlistDisplayName(p, t)}</span>
             <span style={{ color: 'var(--text-muted)' }}>{p.trackCount}</span>
           </NavLink>
         ))}

@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react';
-import type { DependencyStatus } from '../../../shared/types';
+import type { DependencyStatus, Locale } from '../../../shared/types';
 import { useSettingsStore } from '../store/settings';
+import { useT } from '../i18n';
+import { supportedLocales } from '../../../shared/i18n';
 
 type Tab = 'downloads' | 'system' | 'network' | 'dependencies';
 
-const TAB_LABELS: Record<Tab, string> = {
-  downloads: '⬇️ Downloads',
-  system: '🖥️ System',
-  network: '🌐 Network',
-  dependencies: '📦 Dependencies'
-};
-
 export function SettingsPage() {
+  const t = useT();
   const { settings, update } = useSettingsStore();
   const [tab, setTab] = useState<Tab>('downloads');
+  const tabLabels: Record<Tab, string> = {
+    downloads: t('settings.tabs.downloads'),
+    system: t('settings.tabs.system'),
+    network: t('settings.tabs.network'),
+    dependencies: t('settings.tabs.dependencies')
+  };
 
   // Deps state is local — it's only needed in this page
   const [deps, setDeps] = useState<DependencyStatus | null>(null);
@@ -49,38 +51,38 @@ export function SettingsPage() {
       const [d, v] = await Promise.all([window.fmusic.depsStatus(), window.fmusic.depsVersion()]);
       setDeps(d);
       setYtDlpVersion(v);
-      setMessage(`yt-dlp updated (version ${v ?? 'unknown'}).`);
+      setMessage(t('settings.dependencies.updated', { version: v ?? t('common.unknown') }));
     } catch (err) {
-      setMessage('Error: ' + (err instanceof Error ? err.message : String(err)));
+      setMessage(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setUpdating(false);
     }
   }
 
-  if (!settings) return <div>⏳ Loading...</div>;
+  if (!settings) return <div>{t('settings.loading')}</div>;
 
   return (
     <div>
-      <h1>⚙️ Settings</h1>
+      <h1>{t('settings.title')}</h1>
 
       <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
-        {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
+        {(Object.keys(tabLabels) as Tab[]).map((key) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={key}
+            onClick={() => setTab(key)}
             style={{
               background: 'none',
               border: 'none',
-              borderBottom: t === tab ? '2px solid var(--accent)' : '2px solid transparent',
+              borderBottom: key === tab ? '2px solid var(--accent)' : '2px solid transparent',
               borderRadius: 0,
-              color: t === tab ? 'var(--accent)' : 'var(--text-muted)',
+              color: key === tab ? 'var(--accent)' : 'var(--text-muted)',
               cursor: 'pointer',
-              fontWeight: t === tab ? 600 : 400,
+              fontWeight: key === tab ? 600 : 400,
               marginBottom: -1,
               padding: '8px 18px'
             }}
           >
-            {TAB_LABELS[t]}
+            {tabLabels[key]}
           </button>
         ))}
       </div>
@@ -88,21 +90,21 @@ export function SettingsPage() {
       {tab === 'downloads' && (
         <div style={{ display: 'grid', gap: 14, maxWidth: 520 }}>
           <label>
-            📁 Download folder
+            {t('settings.downloads.folder')}
             <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
               <input
                 readOnly
                 value={settings.downloadDir}
                 style={{ flex: 1, fontFamily: 'monospace' }}
               />
-              <button onClick={() => void pickFolder()}>✏️ Change</button>
+              <button onClick={() => void pickFolder()}>{t('settings.downloads.change')}</button>
               <button onClick={() => void window.fmusic.openPath(settings.downloadDir)}>
-                📂 Open
+                {t('settings.downloads.open')}
               </button>
             </div>
           </label>
           <label>
-            🎧 Default format
+            {t('settings.downloads.format')}
             <select
               value={settings.defaultFormat}
               onChange={(e) =>
@@ -116,7 +118,7 @@ export function SettingsPage() {
             </select>
           </label>
           <label>
-            🎚️ Default quality
+            {t('settings.downloads.quality')}
             <select
               value={settings.defaultQuality}
               onChange={(e) => void update({ defaultQuality: Number(e.target.value) })}
@@ -133,9 +135,26 @@ export function SettingsPage() {
 
       {tab === 'system' && (
         <div style={{ display: 'grid', gap: 16, maxWidth: 520 }}>
+          <label style={{ display: 'grid', gap: 4 }}>
+            <span style={{ fontWeight: 500 }}>{t('settings.system.language')}</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+              {t('settings.system.languageDescription')}
+            </span>
+            <select
+              value={settings.language ?? 'en'}
+              onChange={(e) => void update({ language: e.target.value as Locale })}
+              style={{ width: 'fit-content', marginTop: 4 }}
+            >
+              {supportedLocales.map((loc) => (
+                <option key={loc.code} value={loc.code}>
+                  {loc.flag} {loc.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <ToggleSetting
-            label="🗔️ Minimize on close"
-            description="When clicking × the app hides to the system tray instead of quitting."
+            label={t('settings.system.minimize')}
+            description={t('settings.system.minimizeDescription')}
             checked={settings.closeToTray ?? true}
             onChange={(v) => {
               // when disabling tray, also disable mini player
@@ -143,8 +162,8 @@ export function SettingsPage() {
             }}
           />
           <ToggleSetting
-            label="🎛️ Mini player"
-            description="Clicking the tray icon opens the floating mini player."
+            label={t('settings.system.miniPlayer')}
+            description={t('settings.system.miniPlayerDescription')}
             checked={settings.miniPlayerEnabled ?? true}
             disabled={!(settings.closeToTray ?? true)}
             onChange={(v) => void update({ miniPlayerEnabled: v })}
@@ -155,14 +174,14 @@ export function SettingsPage() {
       {tab === 'network' && (
         <div style={{ display: 'grid', gap: 16, maxWidth: 520 }}>
           <ToggleSetting
-            label="🔒 Ignore SSL certificate errors"
-            description="Enable this if you are behind a corporate VPN with SSL inspection. Disable it on trusted networks."
+            label={t('settings.network.skipCert')}
+            description={t('settings.network.skipCertDescription')}
             checked={settings.skipCertCheck ?? false}
             onChange={(v) => void update({ skipCertCheck: v })}
           />
           <ToggleSetting
-            label="📡 Sonos integration"
-            description="Enables streaming to Sonos speakers. Starts an internal HTTP server on the local network."
+            label={t('settings.network.sonos')}
+            description={t('settings.network.sonosDescription')}
             checked={settings.sonosEnabled ?? true}
             onChange={(v) => void update({ sonosEnabled: v })}
           />
@@ -175,11 +194,11 @@ export function SettingsPage() {
             <>
               <div>
                 <strong>yt-dlp</strong>:{' '}
-                {deps.ytDlp.present ? '✅ available' : '❌ not found'}
+                {deps.ytDlp.present ? t('settings.dependencies.available') : t('settings.dependencies.notFound')}
                 {ytDlpVersion
                   ? ` (v${ytDlpVersion})`
                   : deps.ytDlp.present
-                  ? ' (checking version...)'
+                  ? ' ' + t('settings.dependencies.checkingVersion')
                   : ''}
                 {deps.ytDlp.path && (
                   <div style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 11 }}>
@@ -189,7 +208,7 @@ export function SettingsPage() {
               </div>
               <div style={{ marginTop: 6 }}>
                 <strong>ffmpeg</strong>:{' '}
-                {deps.ffmpeg.present ? '✅ available' : '❌ not found'}
+                {deps.ffmpeg.present ? t('settings.dependencies.available') : t('settings.dependencies.notFound')}
                 {deps.ffmpeg.path && (
                   <div style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 11 }}>
                     {deps.ffmpeg.path}
@@ -198,7 +217,7 @@ export function SettingsPage() {
               </div>
               <div style={{ marginTop: 12 }}>
                 <button className="primary" onClick={() => void updateYtDlp()} disabled={updating}>
-                  {updating ? '⏳ Updating...' : '🔄 Update download engine'}
+                  {updating ? t('settings.dependencies.updating') : t('settings.dependencies.updateEngine')}
                 </button>
                 {message && (
                   <span style={{ marginLeft: 10, color: 'var(--text-muted)' }}>{message}</span>
@@ -206,16 +225,16 @@ export function SettingsPage() {
               </div>
             </>
           ) : (
-            <div style={{ color: 'var(--text-muted)' }}>⏳ Loading...</div>
+            <div style={{ color: 'var(--text-muted)' }}>{t('settings.loading')}</div>
           )}
 
-          <h2>🗃️ Library schema</h2>
+          <h2>{t('settings.dependencies.schemaTitle')}</h2>
           <table className="track-table" style={{ maxWidth: 520 }}>
             <thead>
               <tr>
-                <th>Version</th>
-                <th>Migration</th>
-                <th>Applied</th>
+                <th>{t('settings.dependencies.version')}</th>
+                <th>{t('settings.dependencies.migration')}</th>
+                <th>{t('settings.dependencies.applied')}</th>
               </tr>
             </thead>
             <tbody>

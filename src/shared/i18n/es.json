@@ -1,0 +1,182 @@
+{
+  "nav": {
+    "download": "⬇️  Descargar",
+    "library": "📚  Biblioteca",
+    "playlists": "🎵  Playlists",
+    "settings": "⚙️  Ajustes",
+    "yourPlaylists": "🎶 Tus playlists",
+    "noPlaylistsYet": "📭 Aún no hay playlists"
+  },
+  "common": {
+    "loading": "⏳ Cargando...",
+    "searching": "⏳ Buscando...",
+    "cancel": "✖ Cancelar",
+    "add": "➕ Añadir",
+    "adding": "⏳ Añadiendo...",
+    "delete": "🗑️ Eliminar",
+    "open": "📂 Abrir",
+    "change": "✏️ Cambiar",
+    "updating": "⏳ Actualizando...",
+    "error": "Error",
+    "unknown": "desconocida"
+  },
+  "player": {
+    "nothingPlaying": "🎵 Nada reproduciéndose",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "play": "Reproducir",
+    "pause": "Pausar",
+    "volume": "🔊 Volumen",
+    "addToFavorites": "Añadir a {name}",
+    "removeFromFavorites": "Quitar de {name}"
+  },
+  "download": {
+    "title": "⬇️ Descargar",
+    "searchPlaceholder": "🔍 Pega un enlace de YouTube o escribe para buscar...",
+    "searchButton": "🔍 Buscar / Descargar",
+    "alreadyHave": "Ya tienes esta canción en tu biblioteca.",
+    "sslHintBefore": "Parece un error de certificado SSL. Si estás en una VPN corporativa, activa ",
+    "sslHintAfter": " en Ajustes > Red.",
+    "ignoreSslErrors": "Ignorar errores SSL",
+    "otherDownloads": "📦 Otras descargas",
+    "cancelJob": "✖ Cancelar",
+    "dismissJob": "Cerrar",
+    "results": "🎶 Resultados",
+    "fetchingStream": "Obteniendo stream...",
+    "openInBrowser": "Abrir en el navegador",
+    "errorPrefix": "Error:",
+    "failed": "falló",
+    "enableIgnoreSsl": "Activar \"Ignorar SSL\" en Ajustes",
+    "closePreview": "✖ Cerrar previsualización",
+    "preview": "▶️ Previsualizar",
+    "alreadyInLibraryTooltip": "Ya la tienes en tu biblioteca",
+    "inLibrary": "✅ En biblioteca",
+    "download": "⬇️ Descargar",
+    "loadMore": "➕ Cargar más resultados",
+    "loading": "⏳ Cargando..."
+  },
+  "library": {
+    "title": "📚 Biblioteca",
+    "searchPlaceholder": "🔍 Busca por título, artista, álbum o género...",
+    "allGenres": "Todos los géneros",
+    "empty": "📦 Tu biblioteca está vacía. Descarga tu primera canción desde la pestaña Descargar.",
+    "columns": {
+      "title": "Título",
+      "artist": "Artista",
+      "album": "Álbum",
+      "genre": "Género",
+      "duration": "Duración",
+      "downloaded": "Descargada",
+      "playlists": "Playlists"
+    },
+    "deleteConfirm": "¿Eliminar \"{title}\" de la biblioteca?",
+    "alsoDeleteFile": "¿También eliminar el archivo del disco?",
+    "playTooltip": "Reproducir",
+    "addToPlaylistTooltip": "Añadir a playlist",
+    "choosePlaylist": "Elige playlist...",
+    "deleteTooltip": "Eliminar"
+  },
+  "playlists": {
+    "title": "🎵 Playlists",
+    "builtins": {
+      "favorites": "Favoritos"
+    },
+    "newPlaceholder": "Nombre de la nueva playlist...",
+    "create": "➕ Crear playlist",
+    "none": "📭 Aún no tienes playlists.",
+    "tracks": "🎶 {count} canciones",
+    "open": "📂 Abrir",
+    "delete": "🗑️ Eliminar",
+    "deleteConfirm": "¿Eliminar playlist \"{name}\"?",
+    "addTracks": "➕ Añadir canciones",
+    "pickerFilter": "Filtrar por título, artista, álbum o género...",
+    "pickerAdd": "➕ Añadir {count}",
+    "pickerAdding": "⏳ Añadiendo...",
+    "pickerCancel": "✖ Cancelar",
+    "libraryEmpty": "📦 Tu biblioteca está vacía.",
+    "allAlreadyIn": "✅ Todas las canciones de la biblioteca ya están en esta playlist.",
+    "empty": "📭 Esta playlist está vacía. Añade canciones desde la Biblioteca o con el botón de arriba.",
+    "columns": {
+      "index": "#",
+      "title": "Título",
+      "artist": "Artista",
+      "duration": "Duración"
+    },
+    "playTooltip": "Reproducir",
+    "moveUpTooltip": "Subir",
+    "removeTooltip": "Quitar"
+  },
+  "settings": {
+    "title": "⚙️ Ajustes",
+    "loading": "⏳ Cargando...",
+    "tabs": {
+      "downloads": "⬇️ Descargas",
+      "system": "🖥️ Sistema",
+      "network": "🌐 Red",
+      "dependencies": "📦 Dependencias"
+    },
+    "downloads": {
+      "folder": "📁 Carpeta de descarga",
+      "change": "✏️ Cambiar",
+      "open": "📂 Abrir",
+      "format": "🎧 Formato por defecto",
+      "quality": "🎚️ Calidad por defecto"
+    },
+    "system": {
+      "language": "🌍 Idioma",
+      "languageDescription": "Idioma de la app. No hace falta reiniciar.",
+      "minimize": "🗔 Minimizar al cerrar",
+      "minimizeDescription": "Al pulsar × la app se oculta en la bandeja del sistema en lugar de cerrarse.",
+      "miniPlayer": "🎛️ Mini reproductor",
+      "miniPlayerDescription": "Al hacer clic en el icono del tray se abre el mini reproductor flotante."
+    },
+    "network": {
+      "skipCert": "🔒 Ignorar errores de certificado SSL",
+      "skipCertDescription": "Actívalo si estás detrás de una VPN corporativa con inspección SSL. Desactívalo en redes de confianza.",
+      "sonos": "📡 Integración con Sonos",
+      "sonosDescription": "Habilita el streaming a altavoces Sonos. Levanta un servidor HTTP interno en la red local."
+    },
+    "dependencies": {
+      "available": "✅ disponible",
+      "notFound": "❌ no encontrado",
+      "checkingVersion": "(comprobando versión...)",
+      "updateEngine": "🔄 Actualizar motor de descarga",
+      "updating": "⏳ Actualizando...",
+      "updated": "yt-dlp actualizado (versión {version}).",
+      "schemaTitle": "🗃️ Esquema de la biblioteca",
+      "version": "Versión",
+      "migration": "Migración",
+      "applied": "Aplicada"
+    }
+  },
+  "sonos": {
+    "title": "📡 Sonos",
+    "castTooltip": "Enviar a Sonos",
+    "playingTooltip": "Reproduciendo en Sonos",
+    "errorPrefix": "⚠️",
+    "search": "🔍 Buscar dispositivos",
+    "searchAgain": "🔄 Volver a buscar",
+    "playHere": "Reproducir aquí",
+    "stopDevice": "Parar este dispositivo",
+    "addByIp": "🔌 Añadir por IP (útil con VPN)",
+    "add": "➕ Añadir",
+    "noDevicesFound": "No se encontraron dispositivos Sonos en la red."
+  },
+  "miniPlayer": {
+    "nothingPlaying": "🎵 Nada reproduciéndose",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "play": "Reproducir",
+    "pause": "Pausar",
+    "openFmusic": "Abrir fmusic"
+  },
+  "tray": {
+    "nothingPlaying": "Nada reproduciéndose",
+    "play": "▶  Reproducir",
+    "pause": "⏸  Pausar",
+    "previous": "⏮  Anterior",
+    "next": "⏭  Siguiente",
+    "openFmusic": "Abrir fmusic",
+    "quit": "Salir"
+  }
+}

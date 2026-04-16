@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ffmpegPath, hasFfmpeg, hasYtDlp, ytDlpPath } from './paths.js';
+import { getSettings } from './settings.js';
 import type { AudioFormat, SearchResult } from '../shared/types.js';
 
 /**
@@ -30,6 +31,11 @@ function spawnOptions(): SpawnOptions {
       LANG: 'C.UTF-8'
     }
   };
+}
+
+/** Extra args prepended to every yt-dlp invocation. */
+function baseArgs(): string[] {
+  return getSettings().skipCertCheck ? ['--no-check-certificates'] : [];
 }
 
 function decodeUtf8(chunk: Buffer | string): string {
@@ -61,7 +67,7 @@ export async function ytDlpVersion(): Promise<string | null> {
 function runCollecting(args: string[]): Promise<string> {
   assertBinaries();
   return new Promise((resolve, reject) => {
-    const proc = spawn(ytDlpPath(), args, spawnOptions());
+    const proc = spawn(ytDlpPath(), [...baseArgs(), ...args], spawnOptions());
     let stdout = '';
     let stderr = '';
     proc.stdout?.on('data', (chunk) => (stdout += decodeUtf8(chunk)));
@@ -297,7 +303,7 @@ export class DownloadProcess extends EventEmitter {
     args.push(this.options.url);
 
     return new Promise<DownloadResult>((resolve, reject) => {
-      const proc = spawn(ytDlpPath(), args, spawnOptions());
+      const proc = spawn(ytDlpPath(), [...baseArgs(), ...args], spawnOptions());
       this.proc = proc;
       let stderr = '';
 

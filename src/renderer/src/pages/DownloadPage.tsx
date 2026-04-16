@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { DownloadJob, SearchResult } from '../../../shared/types';
 import { useDownloadsStore } from '../store/downloads';
 import { PAGE_SIZE, useSearchStore } from '../store/search';
 import { extractYoutubeId, formatDuration, isYouTubeUrl } from '../util';
+
+function isSslError(message: string): boolean {
+  return message.includes('CERTIFICATE_VERIFY_FAILED') || message.includes('SSL');
+}
 
 interface Preview {
   result: SearchResult;
@@ -23,6 +28,7 @@ function jobYoutubeId(job: DownloadJob): string | null {
 }
 
 export function DownloadPage() {
+  const navigate = useNavigate();
   const { query, results, resultLimit, error, setQuery, setResults, setError } = useSearchStore();
   const [preview, setPreview] = useState<Preview | null>(null);
   const [searching, setSearching] = useState(false);
@@ -174,7 +180,23 @@ export function DownloadPage() {
           {searching ? 'Buscando...' : 'Buscar / Descargar'}
         </button>
       </div>
-      {error && <div style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</div>}
+      {error && (
+        <div style={{ color: 'var(--danger)', marginBottom: 12 }}>
+          {error}
+          {isSslError(error) && (
+            <div style={{ marginTop: 6, fontSize: 13, color: 'var(--text-muted)' }}>
+              Parece un error de certificado SSL. Si estás en una VPN corporativa, activa{' '}
+              <button
+                style={{ padding: '1px 8px', fontSize: 12 }}
+                onClick={() => navigate('/settings')}
+              >
+                Ignorar errores SSL
+              </button>{' '}
+              en Ajustes &gt; Red.
+            </div>
+          )}
+        </div>
+      )}
       {info && <div style={{ color: 'var(--text-muted)', marginBottom: 12 }}>{info}</div>}
 
       {orphanJobs.length > 0 && (
@@ -297,6 +319,16 @@ export function DownloadPage() {
                     {job?.status === 'failed' && (
                       <div style={{ color: 'var(--danger)', fontSize: 12, marginTop: 6 }}>
                         Error: {job.error ?? 'falló'}
+                        {isSslError(job.error ?? '') && (
+                          <div style={{ marginTop: 4, color: 'var(--text-muted)' }}>
+                            <button
+                              style={{ padding: '1px 6px', fontSize: 11 }}
+                              onClick={() => navigate('/settings')}
+                            >
+                              Activar "Ignorar SSL" en Ajustes
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
 

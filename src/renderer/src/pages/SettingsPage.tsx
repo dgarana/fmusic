@@ -101,6 +101,23 @@ export function SettingsPage() {
         </label>
       </div>
 
+      <h2>Red</h2>
+      <div style={{ display: 'grid', gap: 10, maxWidth: 520 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={settings.skipCertCheck ?? false}
+            onChange={(e) => void update({ skipCertCheck: e.target.checked })}
+          />
+          <span>
+            Ignorar errores de certificado SSL
+            <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 2 }}>
+              Actívalo si estás detrás de una VPN corporativa con inspección SSL. Desactívalo en redes de confianza.
+            </div>
+          </span>
+        </label>
+      </div>
+
       <h2>Dependencias</h2>
       {deps && (
         <div>

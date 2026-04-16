@@ -76,6 +76,8 @@ export interface AppSettings {
   defaultQuality: number;
   concurrency: number;
   theme: 'system' | 'dark' | 'light';
+  /** Disable SSL certificate verification for yt-dlp (useful behind corporate VPNs). Default: false. */
+  skipCertCheck: boolean;
 }
 
 export interface DependencyStatus {

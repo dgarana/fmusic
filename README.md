@@ -44,6 +44,7 @@ en la máquina del usuario.
 
 ### General
 - ⚙️ **Ajustes**: carpeta de descarga, formato/calidad por defecto, estado de dependencias y botón para **actualizar yt-dlp** sin salir de la app.
+- 🔒 **Opción "Ignorar errores SSL"** en Ajustes → Red: útil en redes corporativas con inspección SSL (VPN). Cuando ocurre un error de certificado en la búsqueda o descarga, la UI muestra un aviso con acceso directo a la opción.
 
 ## Stack
 

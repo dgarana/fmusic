@@ -18,7 +18,8 @@ function getStore(): Store<Schema> {
         defaultFormat: 'mp3',
         defaultQuality: 192,
         concurrency: 1,
-        theme: 'system'
+        theme: 'system',
+        skipCertCheck: false
       }
     }
   });

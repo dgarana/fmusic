@@ -38,6 +38,10 @@ mac:
         - x64
   artifactName: ${productName}-${version}-${arch}.${ext}
 linux:
+  # Debian policy requires a maintainer in "Name <email>" format for .deb
+  # packages. Keep it here instead of in package.json so the author field
+  # stays simple. Replace with a real address when distributing.
+  maintainer: dgara <noreply@dgara.dev>
   target:
     - AppImage
     - deb

@@ -1,15 +1,17 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.1.1
+## v0.2.0
 
 ### Features
 
 - Show app version in sidebar and settings ([739427c](https://github.com/dgarana/fmusic/commit/739427c307d8a8794414c9d9e87c82dd33669821))
+- In-app auto-updater with manual download fallback ([33ce9f6](https://github.com/dgarana/fmusic/commit/33ce9f66e6e6ef432f32210259306f54311a459a))
 
 ### Miscellaneous
 
-- Release v0.1.1 ([0975d27](https://github.com/dgarana/fmusic/commit/0975d274b795a5d6f77b216c84b2a23abf253e85))
+- Release v0.1.1 ([0091097](https://github.com/dgarana/fmusic/commit/0091097f4fe1501eafcd3e2a5b1b3fdf1bb7ee6d))
+- Release v0.2.0 ([7c20310](https://github.com/dgarana/fmusic/commit/7c20310e5db479f9079f5fba70b3220d54524131))
 
 ### Other
 

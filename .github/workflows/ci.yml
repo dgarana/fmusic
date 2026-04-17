@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    tags-ignore: ['**']  # tags are handled by build.yml
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Typecheck & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install (skip binaries)
+        run: npm ci
+        env:
+          FMUSIC_SKIP_BINARIES: '1'
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test

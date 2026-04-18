@@ -72,9 +72,13 @@
     "deleteConfirm": "¿Eliminar \"{title}\" de la biblioteca?",
     "alsoDeleteFile": "¿También eliminar el archivo del disco?",
     "playTooltip": "Reproducir",
+    "editMetadataTooltip": "Editar metadatos",
     "addToPlaylistTooltip": "Añadir a playlist",
     "choosePlaylist": "Elige playlist...",
-    "deleteTooltip": "Eliminar"
+    "deleteTooltip": "Eliminar",
+    "saveMetadata": "Guardar metadatos",
+    "savingMetadata": "Guardando...",
+    "untitledFallback": "Sin título"
   },
   "playlists": {
     "title": "🎵 Playlists",

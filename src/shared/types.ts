@@ -58,6 +58,12 @@ export interface Track {
   lastPlayedAt: string | null;
 }
 
+export interface TrackMetadataSuggestions {
+  artists: string[];
+  albums: string[];
+  genres: string[];
+}
+
 export interface Playlist {
   id: number;
   name: string;

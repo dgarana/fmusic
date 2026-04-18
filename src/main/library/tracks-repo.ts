@@ -1,6 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Track, TrackQuery, TrackSortKey } from '../../shared/types.js';
+import NodeID3 from 'node-id3';
+import type {
+  Track,
+  TrackMetadataSuggestions,
+  TrackQuery,
+  TrackSortKey
+} from '../../shared/types.js';
 import { getDb } from './db.js';
 
 interface TrackRow {
@@ -123,6 +129,47 @@ export function listGenres(): string[] {
   return rows.map((r) => r.genre);
 }
 
+function listDistinctTextValues(column: 'artist' | 'album' | 'genre'): string[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT DISTINCT ${column} AS value
+       FROM tracks
+       WHERE ${column} IS NOT NULL AND TRIM(${column}) <> ''
+       ORDER BY ${column} COLLATE NOCASE`
+    )
+    .all() as Array<{ value: string }>;
+  return rows.map((row) => row.value);
+}
+
+export function getTrackMetadataSuggestions(): TrackMetadataSuggestions {
+  return {
+    artists: listDistinctTextValues('artist'),
+    albums: listDistinctTextValues('album'),
+    genres: listDistinctTextValues('genre')
+  };
+}
+
+function syncTrackTagsToFile(track: Track): void {
+  const filePath = resolveTrackFilePath(track);
+  if (!filePath || path.extname(filePath).toLowerCase() !== '.mp3') {
+    return;
+  }
+
+  const result = NodeID3.update(
+    {
+      title: track.title,
+      artist: track.artist ?? '',
+      album: track.album ?? '',
+      genre: track.genre ?? ''
+    },
+    filePath
+  );
+
+  if (result instanceof Error) {
+    throw result;
+  }
+}
+
 export function updateTrack(
   id: number,
   patch: Partial<Pick<Track, 'title' | 'artist' | 'album' | 'genre'>>
@@ -130,6 +177,9 @@ export function updateTrack(
   const current = getTrack(id);
   if (!current) return null;
   const next = { ...current, ...patch };
+  // Keep the on-disk ID3 tags in sync for MP3 files so edits made in fmusic
+  // are also visible in other players and file explorers.
+  syncTrackTagsToFile(next);
   getDb()
     .prepare(
       'UPDATE tracks SET title = ?, artist = ?, album = ?, genre = ? WHERE id = ?'

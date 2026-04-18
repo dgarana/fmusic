@@ -324,6 +324,29 @@ a {
   text-align: right;
   white-space: nowrap;
 }
+.track-editor-row td {
+  background: rgba(124, 92, 255, 0.08);
+}
+.track-editor {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+}
+.track-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.track-editor label span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.track-editor-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
 
 /* Player bar ----------------------------------------------------------- */
 

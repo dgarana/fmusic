@@ -19,6 +19,9 @@ required on the user's machine.
 
 ### Library and playlists
 - 📚 **Library** stored in SQLite with sortable table, search, and genre filter.
+- ✏️ **Editable metadata**: title, artist, album and genre can be edited directly from the Library table.
+- 💡 **Autocomplete while editing**: artist, album and genre fields suggest values already present in your library.
+- 💾 **Metadata persistence**: manual edits are saved to the app database and also written back to the audio file for **MP3** tracks (ID3 tags).
 - 📝 **Playlists** with add / remove / reorder tracks.
 - ♥ **Favorites**: protected special playlist (cannot be deleted); heart button in the player toggles the current track in Favorites instantly.
 - 🔄 **Real-time refresh**: opening a playlist and adding tracks from elsewhere in the app updates the view without a reload.
@@ -60,6 +63,7 @@ required on the user's machine.
 | State | **Zustand** (player, library, downloads, Sonos) |
 | Local audio | **Howler.js** + `fmusic-media:` protocol with Range requests |
 | Database | **better-sqlite3** with versioned migrations |
+| Metadata tags | **music-metadata** (read) + **node-id3** (write MP3 tags) |
 | Downloads | **yt-dlp** + **FFmpeg** (per-platform binaries, no Python) |
 | Sonos | **@svrooij/sonos** (UPnP / AVTransport SOAP) |
 | Distribution | **electron-builder** (`.exe` NSIS, universal `.dmg`, `.AppImage`/`.deb`) |
@@ -127,6 +131,11 @@ their display name is translated on the fly. Additionally,
 `ensureBuiltinPlaylists()` guarantees the Favorites row on every startup
 (matched by slug, not by name).
 
+Track metadata edits are not implemented as migrations: they update the
+existing `tracks` row in place. When the track resolves to an `.mp3`
+file, the same edit is also mirrored to the file's ID3 tags so other
+players can see the updated title / artist / album / genre.
+
 ## Project structure
 
 ```
@@ -154,7 +163,7 @@ fmusic/
    │  ├─ updater.ts
    │  └─ library/
    │     ├─ db.ts
-   │     ├─ tracks-repo.ts
+   │     ├─ tracks-repo.ts          # DB queries + MP3 metadata tag sync
    │     ├─ playlists-repo.ts
    │     └─ migrations/
    ├─ preload/
@@ -172,7 +181,7 @@ fmusic/
          │  └─ SonosPanel.tsx      # Sonos devices panel
          ├─ pages/
          │  ├─ DownloadPage.tsx
-         │  ├─ LibraryPage.tsx
+         │  ├─ LibraryPage.tsx       # library table + inline metadata editor
          │  ├─ PlaylistsPage.tsx
          │  ├─ SettingsPage.tsx
          │  └─ MiniPlayerPage.tsx  # UI for the floating mini player
@@ -236,6 +245,9 @@ inside the audio without downloading it fully.
 
 ## Important notes
 
+- **Manual metadata edits and file formats.** Writing metadata back to the
+  audio file currently happens for `mp3` tracks only. `m4a` / `opus`
+  edits are still saved in the app library and used by the player/UI.
 - **yt-dlp breaks when YouTube changes its player.** From Settings →
   "Update download engine" you can re-download the latest binary without
   closing the app.

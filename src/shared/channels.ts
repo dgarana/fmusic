@@ -29,6 +29,7 @@ export const Channels = {
   // Library - tracks
   TracksList: 'tracks:list',
   TracksGenres: 'tracks:genres',
+  TracksMetadataSuggestions: 'tracks:metadata-suggestions',
   TracksUpdate: 'tracks:update',
   TracksDelete: 'tracks:delete',
   TracksPlayed: 'tracks:played',

@@ -9,6 +9,7 @@ import type {
   SearchResult,
   SonosDevice,
   Track,
+  TrackMetadataSuggestions,
   TrackQuery,
   UpdateStatus
 } from '../shared/types.js';
@@ -76,6 +77,8 @@ const api = {
   // Tracks
   listTracks: (query?: TrackQuery) => invoke<Track[]>(Channels.TracksList, query),
   listGenres: () => invoke<string[]>(Channels.TracksGenres),
+  trackMetadataSuggestions: () =>
+    invoke<TrackMetadataSuggestions>(Channels.TracksMetadataSuggestions),
   updateTrack: (
     id: number,
     patch: Partial<Pick<Track, 'title' | 'artist' | 'album' | 'genre'>>

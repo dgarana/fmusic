@@ -11,7 +11,7 @@ A cross-platform **Electron + React + TypeScript** desktop app
 (Windows · macOS · Linux) that lets you:
 
 1. Download audio from YouTube, either by URL or by searching by name.
-2. Manage a local library (tracks, playlists, genres).
+2. Manage a local library (tracks, playlists, genres, editable metadata).
 3. Play the downloaded files with a built-in queue.
 
 The download engine is the standalone `yt-dlp` binary, bundled per
@@ -84,6 +84,14 @@ directly**. All privileged operations go through IPC → handler in
 4. When done, ID3 tags are read with `music-metadata`, the row is
    inserted in SQLite (`insertTrack`), and a `track-added` event is
    emitted → the library refreshes.
+
+### Metadata editing
+1. The Library UI calls `window.fmusic.updateTrack(id, patch)` (preload).
+2. `ipc.ts` forwards to `tracks-repo.updateTrack()`.
+3. The repository updates the SQLite row and, if the resolved file is an
+   `.mp3`, mirrors the edit into the file's ID3 tags with `node-id3`.
+4. The Library UI fetches fresh metadata suggestions from the repo so
+   artist / album / genre autocompletion stays up to date.
 
 ### Search
 `yt-dlp --flat-playlist --dump-json "ytsearch10:<query>"` → one JSON
@@ -159,6 +167,9 @@ the `playlists` table. User-created playlists have `slug = NULL`.
 - **React Router** in `HashRouter` mode (Electron loads `file://`).
 - **Zustand** without middleware — plain state.
 - **Howler** for audio; we don't use the Web Audio API directly.
+- **Metadata writes** use `node-id3`, so only MP3 files get on-disk tag
+  updates. Keep that limitation in mind when extending manual editing to
+  other formats.
 - **`contextIsolation: true`**, `nodeIntegration: false`, preload
   exposes only the minimum API (`window.fmusic`).
 - **Restrictive CSP**; only `https://www.youtube.com` and

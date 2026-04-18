@@ -20,6 +20,7 @@ import { updateYtDlp } from './updater.js';
 import {
   deleteTrack,
   findDownloadedYoutubeIds,
+  getTrackMetadataSuggestions,
   incrementPlayCount,
   listGenres,
   listTracks,
@@ -115,6 +116,7 @@ export function registerIpc(): void {
     listTracks(query)
   );
   ipcMain.handle(Channels.TracksGenres, () => listGenres());
+  ipcMain.handle(Channels.TracksMetadataSuggestions, () => getTrackMetadataSuggestions());
   ipcMain.handle(
     Channels.TracksUpdate,
     (_evt, id: number, patch: Parameters<typeof updateTrack>[1]) => updateTrack(id, patch)

@@ -21,6 +21,8 @@ required on the user's machine.
 - 📚 **Library** stored in SQLite with sortable table, search, and genre filter.
 - ✏️ **Editable metadata**: title, artist, album and genre can be edited directly from the Library table.
 - 💡 **Autocomplete while editing**: artist, album and genre fields suggest values already present in your library.
+- 🔄 **Online metadata sync**: each track can query **MusicBrainz** from the Library table to suggest title, artist, album and genre.
+- 🧠 **Smart metadata matching**: the lookup tries title + artist + album first, then progressively broader searches, and falls back across recording / release / release-group / artist genres.
 - 💾 **Metadata persistence**: manual edits are saved to the app database and also written back to the audio file for **MP3** tracks (ID3 tags).
 - 📝 **Playlists** with add / remove / reorder tracks.
 - ♥ **Favorites**: protected special playlist (cannot be deleted); heart button in the player toggles the current track in Favorites instantly.
@@ -159,6 +161,7 @@ fmusic/
    │  ├─ paths.ts
    │  ├─ settings.ts
    │  ├─ download-manager.ts
+   │  ├─ musicbrainz.ts            # online metadata lookup + genre fallback
    │  ├─ ytdlp.ts
    │  ├─ updater.ts
    │  └─ library/
@@ -248,6 +251,10 @@ inside the audio without downloading it fully.
 - **Manual metadata edits and file formats.** Writing metadata back to the
   audio file currently happens for `mp3` tracks only. `m4a` / `opus`
   edits are still saved in the app library and used by the player/UI.
+- **Online metadata source.** Metadata sync currently uses **MusicBrainz**
+  only. The app sends text metadata already present in your library
+  (`title`, `artist`, `album`) to search for a matching recording; it
+  does not upload the audio file itself.
 - **yt-dlp breaks when YouTube changes its player.** From Settings →
   "Update download engine" you can re-download the latest binary without
   closing the app.

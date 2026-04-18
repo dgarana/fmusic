@@ -64,6 +64,15 @@ export interface TrackMetadataSuggestions {
   genres: string[];
 }
 
+export interface TrackMetadataLookupResult {
+  title: string;
+  artist: string | null;
+  album: string | null;
+  genre: string | null;
+  source: string;
+  confidence: number;
+}
+
 export interface Playlist {
   id: number;
   name: string;

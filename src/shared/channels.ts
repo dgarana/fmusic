@@ -30,6 +30,7 @@ export const Channels = {
   TracksList: 'tracks:list',
   TracksGenres: 'tracks:genres',
   TracksMetadataSuggestions: 'tracks:metadata-suggestions',
+  TracksLookupMetadata: 'tracks:lookup-metadata',
   TracksUpdate: 'tracks:update',
   TracksDelete: 'tracks:delete',
   TracksPlayed: 'tracks:played',

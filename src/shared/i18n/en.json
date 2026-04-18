@@ -73,12 +73,16 @@
     "alsoDeleteFile": "Also delete the file from disk?",
     "playTooltip": "Play",
     "editMetadataTooltip": "Edit metadata",
+    "syncMetadataTooltip": "Look up and sync metadata",
     "addToPlaylistTooltip": "Add to playlist",
     "choosePlaylist": "Choose playlist...",
     "deleteTooltip": "Delete",
     "saveMetadata": "Save metadata",
     "savingMetadata": "Saving...",
-    "untitledFallback": "Untitled"
+    "untitledFallback": "Untitled",
+    "syncMetadataLoaded": "Metadata loaded from {source}. Review it and save if it looks right.",
+    "syncMetadataNotFound": "No reliable MusicBrainz match was found for this track.",
+    "syncMetadataError": "Online metadata lookup failed: {detail}"
   },
   "playlists": {
     "title": "🎵 Playlists",

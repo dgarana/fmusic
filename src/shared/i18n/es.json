@@ -73,12 +73,16 @@
     "alsoDeleteFile": "¿También eliminar el archivo del disco?",
     "playTooltip": "Reproducir",
     "editMetadataTooltip": "Editar metadatos",
+    "syncMetadataTooltip": "Buscar y sincronizar metadatos",
     "addToPlaylistTooltip": "Añadir a playlist",
     "choosePlaylist": "Elige playlist...",
     "deleteTooltip": "Eliminar",
     "saveMetadata": "Guardar metadatos",
     "savingMetadata": "Guardando...",
-    "untitledFallback": "Sin título"
+    "untitledFallback": "Sin título",
+    "syncMetadataLoaded": "Metadatos cargados desde {source}. Revisa y guarda si te encajan.",
+    "syncMetadataNotFound": "No he encontrado una coincidencia fiable en MusicBrainz para esta canción.",
+    "syncMetadataError": "No se han podido consultar los metadatos online: {detail}"
   },
   "playlists": {
     "title": "🎵 Playlists",

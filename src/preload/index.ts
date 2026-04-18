@@ -9,6 +9,7 @@ import type {
   SearchResult,
   SonosDevice,
   Track,
+  TrackMetadataLookupResult,
   TrackMetadataSuggestions,
   TrackQuery,
   UpdateStatus
@@ -79,6 +80,8 @@ const api = {
   listGenres: () => invoke<string[]>(Channels.TracksGenres),
   trackMetadataSuggestions: () =>
     invoke<TrackMetadataSuggestions>(Channels.TracksMetadataSuggestions),
+  lookupTrackMetadata: (id: number) =>
+    invoke<TrackMetadataLookupResult | null>(Channels.TracksLookupMetadata, id),
   updateTrack: (
     id: number,
     patch: Partial<Pick<Track, 'title' | 'artist' | 'album' | 'genre'>>

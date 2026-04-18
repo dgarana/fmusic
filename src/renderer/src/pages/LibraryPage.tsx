@@ -12,6 +12,12 @@ interface EditDraft {
   genre: string;
 }
 
+interface SyncFeedback {
+  trackId: number;
+  kind: 'info' | 'error';
+  message: string;
+}
+
 function draftFromTrack(track: Track): EditDraft {
   return {
     title: track.title,
@@ -42,6 +48,8 @@ export function LibraryPage() {
   const [editingTrackId, setEditingTrackId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
   const [savingTrackId, setSavingTrackId] = useState<number | null>(null);
+  const [syncingTrackId, setSyncingTrackId] = useState<number | null>(null);
+  const [syncFeedback, setSyncFeedback] = useState<SyncFeedback | null>(null);
   const playlists = useLibraryStore((s) => s.playlists);
   const refreshPlaylists = useLibraryStore((s) => s.refreshPlaylists);
   const refreshTracks = useLibraryStore((s) => s.refreshTracks);
@@ -119,6 +127,7 @@ export function LibraryPage() {
   function stopEditing() {
     setEditingTrackId(null);
     setEditDraft(null);
+    setSyncFeedback(null);
   }
 
   async function handleSaveMetadata(trackId: number) {
@@ -136,9 +145,49 @@ export function LibraryPage() {
         refreshGenres(),
         window.fmusic.trackMetadataSuggestions().then(setMetadataSuggestions)
       ]);
+      setSyncFeedback(null);
       stopEditing();
     } finally {
       setSavingTrackId(null);
+    }
+  }
+
+  async function handleLookupMetadata(track: Track) {
+    setAddingTrackId(null);
+    setSyncFeedback(null);
+    setSyncingTrackId(track.id);
+    try {
+      const result = await window.fmusic.lookupTrackMetadata(track.id);
+      if (!result) {
+        setSyncFeedback({
+          trackId: track.id,
+          kind: 'info',
+          message: t('library.syncMetadataNotFound')
+        });
+        return;
+      }
+
+      setEditingTrackId(track.id);
+      setEditDraft({
+        title: result.title || track.title,
+        artist: result.artist ?? track.artist ?? '',
+        album: result.album ?? track.album ?? '',
+        genre: result.genre ?? track.genre ?? ''
+      });
+      setSyncFeedback({
+        trackId: track.id,
+        kind: 'info',
+        message: t('library.syncMetadataLoaded', { source: result.source })
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      setSyncFeedback({
+        trackId: track.id,
+        kind: 'error',
+        message: t('library.syncMetadataError', { detail })
+      });
+    } finally {
+      setSyncingTrackId(null);
     }
   }
 
@@ -188,6 +237,8 @@ export function LibraryPage() {
               const trackPlaylists = (playlistsByTrack.get(tr.id) ?? [])
                 .map((id) => playlistsById.get(id))
                 .filter((name): name is string => Boolean(name));
+              const showEditor = editingTrackId === tr.id && editDraft;
+              const showFeedback = syncFeedback?.trackId === tr.id;
               return (
                 <Fragment key={tr.id}>
                   <tr key={tr.id}>
@@ -217,6 +268,13 @@ export function LibraryPage() {
                         title={t('library.editMetadataTooltip')}
                       >
                         ✎
+                      </button>{' '}
+                      <button
+                        onClick={() => void handleLookupMetadata(tr)}
+                        title={t('library.syncMetadataTooltip')}
+                        disabled={syncingTrackId === tr.id}
+                      >
+                        {syncingTrackId === tr.id ? '…' : '↻'}
                       </button>{' '}
                       <button
                         onClick={() => togglePlaylistPicker(tr.id)}
@@ -249,10 +307,15 @@ export function LibraryPage() {
                       </button>
                     </td>
                   </tr>
-                  {editingTrackId === tr.id && editDraft && (
+                  {showEditor && (
                     <tr key={`${tr.id}-editor`} className="track-editor-row">
                       <td colSpan={8}>
                         <div className="track-editor">
+                          {showFeedback && (
+                            <div className={`track-editor-feedback ${syncFeedback.kind}`}>
+                              {syncFeedback.message}
+                            </div>
+                          )}
                           <label>
                             <span>{t('library.columns.title')}</span>
                             <input
@@ -312,6 +375,15 @@ export function LibraryPage() {
                                 : t('library.saveMetadata')}
                             </button>
                           </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  {showFeedback && !showEditor && (
+                    <tr key={`${tr.id}-feedback`} className="track-editor-row">
+                      <td colSpan={8}>
+                        <div className={`track-editor-feedback ${syncFeedback.kind}`}>
+                          {syncFeedback.message}
                         </div>
                       </td>
                     </tr>

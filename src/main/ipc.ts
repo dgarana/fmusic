@@ -44,6 +44,7 @@ import { discoverSonos, addSonosByIp, initSonosFromCache, sonosPlayTrack, sonosP
 import { startAudioServer, getTrackHttpUrl } from './sonos-server.js';
 import { refreshTrayLanguage } from './tray.js';
 import { checkForUpdates, downloadUpdate, quitAndInstall, getLastUpdaterStatus } from './app-updater.js';
+import { lookupTrackMetadata } from './musicbrainz.js';
 
 function broadcast(channel: string, payload: unknown) {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -117,6 +118,11 @@ export function registerIpc(): void {
   );
   ipcMain.handle(Channels.TracksGenres, () => listGenres());
   ipcMain.handle(Channels.TracksMetadataSuggestions, () => getTrackMetadataSuggestions());
+  ipcMain.handle(Channels.TracksLookupMetadata, async (_evt, id: number) => {
+    const track = getTrack(id);
+    if (!track) return null;
+    return lookupTrackMetadata(track);
+  });
   ipcMain.handle(
     Channels.TracksUpdate,
     (_evt, id: number, patch: Parameters<typeof updateTrack>[1]) => updateTrack(id, patch)

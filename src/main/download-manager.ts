@@ -13,6 +13,32 @@ import { findByYoutubeId, insertTrack } from './library/tracks-repo.js';
 
 type Listener = (...args: unknown[]) => void;
 
+function stripArtistPrefixFromTitle(rawTitle: string, artist: string | null): string {
+  const normalizedArtist = artist?.trim();
+  const trimmedTitle = rawTitle.trim();
+  if (!normalizedArtist || !trimmedTitle) return trimmedTitle;
+
+  const separators = [' - ', ' – ', ' — ', ': '];
+  for (const separator of separators) {
+    const prefixed = `${normalizedArtist}${separator}`;
+    if (trimmedTitle.toLowerCase().startsWith(prefixed.toLowerCase())) {
+      return trimmedTitle.slice(prefixed.length).trim();
+    }
+  }
+
+  return trimmedTitle;
+}
+
+function resolveImportedTitle(
+  rawTitle: string,
+  structuredTrack: string | null,
+  artist: string | null
+): string {
+  const preferredTrack = structuredTrack?.trim();
+  if (preferredTrack) return preferredTrack;
+  return stripArtistPrefixFromTitle(rawTitle, artist);
+}
+
 export class DownloadManager extends EventEmitter {
   private queue: DownloadJob[] = [];
   private current: { job: DownloadJob; proc: DownloadProcess } | null = null;
@@ -103,10 +129,14 @@ export class DownloadManager extends EventEmitter {
       let album: string | null = result.album;
       let genre: string | null = result.genre;
       let durationSec = result.durationSec;
+      let title = resolveImportedTitle(result.title, result.track, artist);
 
       try {
         const meta = await parseFile(result.filePath);
         artist = artist ?? meta.common.artist ?? meta.common.artists?.[0] ?? null;
+        title =
+          meta.common.title?.trim() ||
+          resolveImportedTitle(result.title, result.track, artist);
         album = album ?? meta.common.album ?? null;
         genre = genre ?? meta.common.genre?.[0] ?? null;
         if (!durationSec && meta.format.duration) {
@@ -123,7 +153,7 @@ export class DownloadManager extends EventEmitter {
       } else {
         track = insertTrack({
           youtubeId: result.youtubeId,
-          title: result.title,
+          title,
           artist,
           album,
           genre,

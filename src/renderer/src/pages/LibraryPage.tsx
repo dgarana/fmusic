@@ -172,7 +172,7 @@ export function LibraryPage() {
         title: result.title || track.title,
         artist: result.artist ?? track.artist ?? '',
         album: result.album ?? track.album ?? '',
-        genre: result.genre ?? track.genre ?? ''
+        genre: result.genre ?? ''
       });
       setSyncFeedback({
         trackId: track.id,

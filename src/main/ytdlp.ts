@@ -229,6 +229,7 @@ export interface DownloadOptions {
 export interface DownloadResult {
   filePath: string;
   title: string;
+  track: string | null;
   youtubeId: string;
   durationSec: number | null;
   thumbnail: string | null;
@@ -363,6 +364,7 @@ export class DownloadProcess extends EventEmitter {
         resolve({
           filePath: normalizedPath,
           title: this.info.title,
+          track: this.info.track,
           youtubeId: this.info.id,
           durationSec: this.info.durationSec,
           thumbnail: this.info.thumbnail,

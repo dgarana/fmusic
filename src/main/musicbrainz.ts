@@ -3,6 +3,7 @@ import type { Track, TrackMetadataLookupResult } from '../shared/types.js';
 
 const MUSICBRAINZ_BASE = 'https://musicbrainz.org/ws/2';
 const MIN_REQUEST_INTERVAL_MS = 1100;
+const GENERIC_GENRE_VALUES = new Set(['music', 'unknown', 'other', 'misc', 'default']);
 let lastRequestAt = 0;
 
 interface MusicBrainzArtistCredit {
@@ -111,6 +112,28 @@ function chooseGenre(genres: MusicBrainzGenre[] | undefined): string | null {
   return sorted[0]?.name?.trim() || null;
 }
 
+function sanitizeFallbackGenre(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  return GENERIC_GENRE_VALUES.has(normalizeText(trimmed)) ? null : trimmed;
+}
+
+function tokenizeNormalized(value: string | null | undefined): string[] {
+  const normalized = normalizeText(value);
+  return normalized ? normalized.split(' ').filter(Boolean) : [];
+}
+
+function overlapScore(left: string | null | undefined, right: string | null | undefined): number {
+  const leftTokens = tokenizeNormalized(left);
+  const rightTokens = tokenizeNormalized(right);
+  if (leftTokens.length === 0 || rightTokens.length === 0) return 0;
+
+  const rightSet = new Set(rightTokens);
+  const intersection = leftTokens.filter((token) => rightSet.has(token)).length;
+  const union = new Set([...leftTokens, ...rightTokens]).size;
+  return union > 0 ? intersection / union : 0;
+}
+
 function scoreCandidate(track: Track, candidate: MusicBrainzSearchRecording): number {
   const baseScore =
     typeof candidate.score === 'string'
@@ -122,6 +145,9 @@ function scoreCandidate(track: Track, candidate: MusicBrainzSearchRecording): nu
   const candidateArtist = normalizeText(joinArtistCredits(candidate['artist-credit']));
   const trackAlbum = normalizeText(track.album);
   const candidateAlbum = normalizeText(chooseAlbum(candidate.releases));
+  const titleOverlap = overlapScore(track.title, candidate.title);
+  const artistOverlap = overlapScore(track.artist, joinArtistCredits(candidate['artist-credit']));
+  const albumOverlap = overlapScore(track.album, chooseAlbum(candidate.releases));
 
   let total = baseScore;
 
@@ -132,6 +158,8 @@ function scoreCandidate(track: Track, candidate: MusicBrainzSearchRecording): nu
     (candidateTitle.includes(trackTitle) || trackTitle.includes(candidateTitle))
   ) {
     total += 8;
+  } else if (trackTitle && candidateTitle) {
+    total -= titleOverlap >= 0.5 ? 2 : titleOverlap >= 0.25 ? 10 : 28;
   }
 
   if (trackArtist && candidateArtist === trackArtist) total += 12;
@@ -141,6 +169,8 @@ function scoreCandidate(track: Track, candidate: MusicBrainzSearchRecording): nu
     (candidateArtist.includes(trackArtist) || trackArtist.includes(candidateArtist))
   ) {
     total += 6;
+  } else if (trackArtist && candidateArtist) {
+    total -= artistOverlap >= 0.5 ? 2 : artistOverlap >= 0.25 ? 8 : 22;
   }
 
   if (trackAlbum && candidateAlbum === trackAlbum) total += 6;
@@ -150,6 +180,8 @@ function scoreCandidate(track: Track, candidate: MusicBrainzSearchRecording): nu
     (candidateAlbum.includes(trackAlbum) || trackAlbum.includes(candidateAlbum))
   ) {
     total += 3;
+  } else if (trackAlbum && candidateAlbum) {
+    total -= albumOverlap >= 0.5 ? 1 : albumOverlap >= 0.25 ? 4 : 10;
   }
 
   return total;
@@ -161,6 +193,19 @@ function isReliableMatch(track: Track, candidate: MusicBrainzSearchRecording): b
   const trackTitle = normalizeText(track.title);
   const candidateArtist = normalizeText(joinArtistCredits(candidate['artist-credit']));
   const trackArtist = normalizeText(track.artist);
+  const titleOverlap = overlapScore(track.title, candidate.title);
+  const artistOverlap = overlapScore(track.artist, joinArtistCredits(candidate['artist-credit']));
+  const albumOverlap = overlapScore(track.album, chooseAlbum(candidate.releases));
+
+  if (trackTitle && candidateTitle && titleOverlap < 0.34) {
+    return false;
+  }
+  if (trackArtist && candidateArtist && artistOverlap < 0.25) {
+    return false;
+  }
+  if (track.album && candidate.releases && candidate.releases.length > 0 && albumOverlap < 0.15) {
+    return false;
+  }
 
   if (candidateTitle && trackTitle && candidateTitle === trackTitle && candidateArtist === trackArtist) {
     return true;
@@ -355,7 +400,7 @@ export async function lookupTrackMetadata(track: Track): Promise<TrackMetadataLo
 
   const artistName = joinArtistCredits(lookup['artist-credit']) ?? track.artist;
   const genre =
-    (await resolveGenreFallbacks(lookup, artistName)) ?? track.genre;
+    (await resolveGenreFallbacks(lookup, artistName)) ?? sanitizeFallbackGenre(track.genre);
 
   return {
     title: lookup.title?.trim() || track.title,

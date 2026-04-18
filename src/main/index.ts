@@ -1,5 +1,4 @@
-import { app, BrowserWindow, ipcMain, net, protocol, session, shell } from 'electron';
-import { pathToFileURL } from 'node:url';
+import { app, BrowserWindow, ipcMain, protocol, session, shell } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import { Readable } from 'node:stream';
@@ -44,6 +43,19 @@ function mimeForExt(ext: string): string {
   }
 }
 
+function parseRange(
+  rangeHeader: string,
+  total: number
+): { start: number; end: number } | null {
+  const match = rangeHeader.match(/bytes=(\d+)-(\d*)/);
+  if (!match) return null;
+  const start = parseInt(match[1], 10);
+  const end = match[2] ? parseInt(match[2], 10) : total - 1;
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  if (start < 0 || end < start || start >= total) return null;
+  return { start, end: Math.min(end, total - 1) };
+}
+
 function registerMediaProtocol(): void {
   protocol.handle(MEDIA_SCHEME, async (request) => {
     try {
@@ -68,23 +80,28 @@ function registerMediaProtocol(): void {
       const rangeHeader = request.headers.get('range');
 
       if (rangeHeader) {
-        const m = rangeHeader.match(/bytes=(\d+)-(\d*)/);
-        if (m) {
-          const start = parseInt(m[1], 10);
-          const end = m[2] ? parseInt(m[2], 10) : total - 1;
-          const chunkSize = end - start + 1;
-          const nodeStream = fs.createReadStream(actualPath, { start, end });
-          const webStream = Readable.toWeb(nodeStream) as ReadableStream;
-          return new Response(webStream, {
-            status: 206,
+        const range = parseRange(rangeHeader, total);
+        if (!range) {
+          return new Response('invalid range', {
+            status: 416,
             headers: {
-              'Content-Type': mime,
-              'Content-Range': `bytes ${start}-${end}/${total}`,
-              'Accept-Ranges': 'bytes',
-              'Content-Length': String(chunkSize)
+              'Content-Range': `bytes */${total}`
             }
           });
         }
+        const { start, end } = range;
+        const chunkSize = end - start + 1;
+        const nodeStream = fs.createReadStream(actualPath, { start, end });
+        const webStream = Readable.toWeb(nodeStream) as ReadableStream;
+        return new Response(webStream, {
+          status: 206,
+          headers: {
+            'Content-Type': mime,
+            'Content-Range': `bytes ${start}-${end}/${total}`,
+            'Accept-Ranges': 'bytes',
+            'Content-Length': String(chunkSize)
+          }
+        });
       }
 
       const nodeStream = fs.createReadStream(actualPath);
@@ -117,7 +134,7 @@ function createWindow(): void {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false
+      sandbox: true
     }
   });
 

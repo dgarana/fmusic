@@ -203,8 +203,15 @@ export function registerIpc(): void {
     Channels.SonosPlay,
     async (_evt, host: string, trackId: number, title?: string, artist?: string) => {
       const track = getTrack(trackId);
-      const filePath = track ? resolveTrackFilePath(track) : undefined;
-      const url = getTrackHttpUrl(trackId, filePath ?? undefined);
+      if (!track) {
+        throw new Error(`Track ${trackId} not found.`);
+      }
+      const filePath = resolveTrackFilePath(track);
+      if (!filePath) {
+        throw new Error(`Track ${trackId} is missing on disk.`);
+      }
+      await startAudioServer();
+      const url = getTrackHttpUrl(trackId, filePath);
       await sonosPlayTrack(host, url, title, artist);
     }
   );

@@ -28,6 +28,18 @@ function mimeForExt(ext: string): string {
   return 'audio/mpeg';
 }
 
+function parseRange(
+  rangeHeader: string,
+  total: number
+): { start: number; end: number } | null {
+  const [startStr, endStr] = rangeHeader.replace(/bytes=/, '').split('-');
+  const start = parseInt(startStr, 10);
+  const end = endStr ? parseInt(endStr, 10) : total - 1;
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  if (start < 0 || end < start || start >= total) return null;
+  return { start, end: Math.min(end, total - 1) };
+}
+
 export function startAudioServer(): Promise<number> {
   return new Promise((resolve, reject) => {
     if (server) {
@@ -63,9 +75,15 @@ export function startAudioServer(): Promise<number> {
       const range = req.headers.range;
 
       if (range) {
-        const [startStr, endStr] = range.replace(/bytes=/, '').split('-');
-        const start = parseInt(startStr, 10);
-        const end = endStr ? parseInt(endStr, 10) : fileSize - 1;
+        const parsedRange = parseRange(range, fileSize);
+        if (!parsedRange) {
+          res.writeHead(416, {
+            'Content-Range': `bytes */${fileSize}`
+          });
+          res.end();
+          return;
+        }
+        const { start, end } = parsedRange;
         res.writeHead(206, {
           'Content-Range': `bytes ${start}-${end}/${fileSize}`,
           'Accept-Ranges': 'bytes',

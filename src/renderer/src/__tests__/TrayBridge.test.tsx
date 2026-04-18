@@ -66,13 +66,12 @@ describe('TrayBridge', () => {
   it('sends initial mini state on mount', () => {
     render(<TrayBridge />);
     expect(window.fmusic.sendMiniState).toHaveBeenCalledWith({
+      trackId: null,
       title: null,
       artist: null,
       isPlaying: false,
       hasPrev: false,
       hasNext: false,
-      thumbnailPath: null,
-      youtubeId: null,
     });
   });
 

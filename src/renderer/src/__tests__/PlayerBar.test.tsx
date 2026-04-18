@@ -125,7 +125,7 @@ describe('PlayerBar', () => {
     expect(screen.getByText('Queen')).toBeInTheDocument();
   });
 
-  it('shows YouTube thumbnail when track has a youtubeId', () => {
+  it('shows embedded artwork route when track is loaded', () => {
     vi.mocked(usePlayerStore).mockImplementation((selector?: unknown) => {
       const state = makePlayerState({ current: mockTrack });
       return typeof selector === 'function' ? selector(state) : state;
@@ -133,7 +133,7 @@ describe('PlayerBar', () => {
     render(<PlayerBar />);
     const img = document.querySelector('.cover img') as HTMLImageElement;
     expect(img).toBeInTheDocument();
-    expect(img.src).toContain('fJ9rUzIMcZQ');
+    expect(img.src).toContain('fmusic-media://artwork/42');
   });
 
   it('play button is disabled when no track is loaded', () => {

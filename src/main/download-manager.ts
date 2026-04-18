@@ -1,6 +1,8 @@
 import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
+import path from 'node:path';
 import { parseFile } from 'music-metadata';
+import NodeID3 from 'node-id3';
 import type {
   DownloadJob,
   DownloadRequest,
@@ -37,6 +39,65 @@ function resolveImportedTitle(
   const preferredTrack = structuredTrack?.trim();
   if (preferredTrack) return preferredTrack;
   return stripArtistPrefixFromTitle(rawTitle, artist);
+}
+
+async function hasEmbeddedArtwork(filePath: string): Promise<boolean> {
+  try {
+    const metadata = await parseFile(filePath);
+    return Boolean(metadata.common.picture?.length);
+  } catch {
+    return false;
+  }
+}
+
+async function fetchThumbnailBuffer(
+  thumbnailUrl: string
+): Promise<{ buffer: Buffer; mimeType: string } | null> {
+  const response = await fetch(thumbnailUrl);
+  if (!response.ok) {
+    throw new Error(`thumbnail request failed with ${response.status}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  if (buffer.length === 0) return null;
+
+  return {
+    buffer,
+    mimeType: response.headers.get('content-type') || 'image/jpeg'
+  };
+}
+
+async function ensureEmbeddedArtwork(filePath: string, thumbnailUrl: string | null): Promise<void> {
+  if (await hasEmbeddedArtwork(filePath)) return;
+  if (!thumbnailUrl) return;
+  if (path.extname(filePath).toLowerCase() !== '.mp3') return;
+
+  const thumbnail = await fetchThumbnailBuffer(thumbnailUrl);
+  if (!thumbnail) return;
+
+  const result = NodeID3.update(
+    {
+      image: {
+        mime: thumbnail.mimeType,
+        type: {
+          id: NodeID3.TagConstants.AttachedPicture.PictureType.FRONT_COVER,
+          name: 'front cover'
+        },
+        description: 'Cover',
+        imageBuffer: thumbnail.buffer
+      }
+    },
+    filePath
+  );
+
+  if (result instanceof Error) {
+    throw result;
+  }
+
+  if (!(await hasEmbeddedArtwork(filePath))) {
+    throw new Error('embedded artwork verification failed after fallback write');
+  }
 }
 
 export class DownloadManager extends EventEmitter {
@@ -144,6 +205,13 @@ export class DownloadManager extends EventEmitter {
         }
       } catch {
         // ignore tag read errors; we still have the filepath and title
+      }
+
+      try {
+        await ensureEmbeddedArtwork(result.filePath, result.thumbnail);
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err);
+        console.warn('[fmusic] Could not ensure embedded artwork:', detail);
       }
 
       let track: Track;

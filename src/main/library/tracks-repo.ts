@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import NodeID3 from 'node-id3';
+import { parseFile } from 'music-metadata';
+import { app } from 'electron';
 import type {
   Track,
   TrackMetadataSuggestions,
@@ -68,7 +70,10 @@ export function getTrack(id: number): Track | null {
   const row = getDb()
     .prepare('SELECT * FROM tracks WHERE id = ?')
     .get(id) as TrackRow | undefined;
-  return row ? rowToTrack(row) : null;
+  if (!row) return null;
+  const track = rowToTrack(row);
+  const thumbnailPath = ensureTrackArtworkCacheSync(track) ?? track.thumbnailPath;
+  return { ...track, thumbnailPath };
 }
 
 const SORT_COLUMN: Record<TrackSortKey, string> = {
@@ -117,6 +122,22 @@ export function listTracks(query: TrackQuery = {}): Track[] {
   params.offset = offset;
 
   const rows = db.prepare(sql).all(params) as TrackRow[];
+  return rows.map((row) => {
+    const track = rowToTrack(row);
+    const thumbnailPath = ensureTrackArtworkCacheSync(track) ?? track.thumbnailPath;
+    return { ...track, thumbnailPath };
+  });
+}
+
+export function listTracksForArtworkBackfill(limit = 500): Track[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT * FROM tracks
+       WHERE file_path IS NOT NULL AND TRIM(file_path) <> ''
+       ORDER BY downloaded_at DESC
+       LIMIT ?`
+    )
+    .all(limit) as TrackRow[];
   return rows.map(rowToTrack);
 }
 
@@ -212,6 +233,66 @@ function updateFilePath(id: number, nextPath: string): void {
   getDb().prepare('UPDATE tracks SET file_path = ? WHERE id = ?').run(nextPath, id);
 }
 
+function updateThumbnailPath(id: number, nextPath: string | null): void {
+  getDb().prepare('UPDATE tracks SET thumbnail_path = ? WHERE id = ?').run(nextPath, id);
+}
+
+function artworkCacheDir(): string {
+  const dir = path.join(app.getPath('userData'), 'artwork-cache');
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function artworkExtensionFromMime(mimeType: string | null | undefined): string {
+  if (mimeType === 'image/png') return '.png';
+  if (mimeType === 'image/webp') return '.webp';
+  return '.jpg';
+}
+
+function mimeTypeFromArtworkPath(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.png') return 'image/png';
+  if (ext === '.webp') return 'image/webp';
+  return 'image/jpeg';
+}
+
+function ensureTrackArtworkCacheSync(track: Track): string | null {
+  const cachedPath = track.thumbnailPath ? path.normalize(track.thumbnailPath) : null;
+  if (cachedPath && fs.existsSync(cachedPath)) {
+    return cachedPath;
+  }
+
+  const actualPath = resolveTrackFilePath(track);
+  if (!actualPath || path.extname(actualPath).toLowerCase() !== '.mp3') {
+    if (cachedPath) updateThumbnailPath(track.id, null);
+    return null;
+  }
+
+  try {
+    const tags = NodeID3.read(actualPath);
+    const image =
+      typeof tags.image === 'object' && tags.image && 'imageBuffer' in tags.image
+        ? tags.image
+        : null;
+    if (!image?.imageBuffer || image.imageBuffer.length === 0) {
+      if (cachedPath) updateThumbnailPath(track.id, null);
+      return null;
+    }
+
+    const artworkPath = path.join(
+      artworkCacheDir(),
+      `track-${track.id}${artworkExtensionFromMime(image.mime)}`
+    );
+    fs.writeFileSync(artworkPath, image.imageBuffer);
+    if (track.thumbnailPath !== artworkPath) {
+      updateThumbnailPath(track.id, artworkPath);
+    }
+    return artworkPath;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Attempts to locate a track file on disk when the stored path no longer
  * matches. This typically happens if the path was written with a wrong
@@ -243,6 +324,92 @@ export function resolveTrackFilePath(track: Track): string | null {
   const recovered = path.join(dir, match);
   updateFilePath(track.id, recovered);
   return recovered;
+}
+
+export interface TrackEmbeddedArtwork {
+  data: Uint8Array;
+  mimeType: string;
+}
+
+function pictureScore(picture: { type?: string; format?: string; description?: string }): number {
+  const type = (picture.type ?? '').toLowerCase();
+  const description = (picture.description ?? '').toLowerCase();
+  const format = (picture.format ?? '').toLowerCase();
+
+  let score = 0;
+  if (type.includes('front')) score += 50;
+  else if (type.includes('cover')) score += 35;
+  else if (type.includes('media')) score += 10;
+
+  if (description.includes('front')) score += 20;
+  else if (description.includes('cover')) score += 10;
+
+  if (format === 'image/jpeg' || format === 'image/jpg') score += 6;
+  else if (format === 'image/png') score += 4;
+
+  return score;
+}
+
+export async function getTrackEmbeddedArtwork(
+  track: Track
+): Promise<TrackEmbeddedArtwork | null> {
+  const actualPath = resolveTrackFilePath(track);
+  if (!actualPath) return null;
+
+  try {
+    const metadata = await parseFile(actualPath);
+    const pictures = metadata.common.picture ?? [];
+    if (pictures.length === 0) return null;
+    const picture = [...pictures].sort((a, b) => pictureScore(b) - pictureScore(a))[0];
+    if (!picture?.data || picture.data.length === 0) return null;
+    return {
+      data: picture.data,
+      mimeType: picture.format || 'image/jpeg'
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function getTrackEmbeddedArtworkDataUrl(track: Track): Promise<string | null> {
+  const cachedPath = track.thumbnailPath ? path.normalize(track.thumbnailPath) : null;
+  if (cachedPath && fs.existsSync(cachedPath)) {
+    const encoded = fs.readFileSync(cachedPath).toString('base64');
+    return `data:${mimeTypeFromArtworkPath(cachedPath)};base64,${encoded}`;
+  }
+
+  const artwork = await getTrackEmbeddedArtwork(track);
+  if (!artwork) {
+    if (cachedPath) updateThumbnailPath(track.id, null);
+    return null;
+  }
+
+  const ext =
+    artwork.mimeType === 'image/png'
+      ? '.png'
+      : artwork.mimeType === 'image/webp'
+        ? '.webp'
+        : '.jpg';
+  const artworkDir = path.join(app.getPath('userData'), 'artwork-cache');
+  fs.mkdirSync(artworkDir, { recursive: true });
+  const artworkPath = path.join(artworkDir, `track-${track.id}${ext}`);
+  fs.writeFileSync(artworkPath, Buffer.from(artwork.data));
+  if (track.thumbnailPath !== artworkPath) {
+    updateThumbnailPath(track.id, artworkPath);
+  }
+  const encoded = fs.readFileSync(artworkPath).toString('base64');
+  return `data:${artwork.mimeType};base64,${encoded}`;
+}
+
+export async function warmTrackArtworkCache(limit = 500): Promise<void> {
+  const tracks = listTracksForArtworkBackfill(limit);
+  for (const track of tracks) {
+    try {
+      await getTrackEmbeddedArtworkDataUrl(track);
+    } catch {
+      // Ignore per-track failures so one bad file does not block the rest.
+    }
+  }
 }
 
 /**

@@ -6,7 +6,7 @@ import { registerIpc } from './ipc.js';
 import { getSettings } from './settings.js';
 import { getDb, closeDb } from './library/db.js';
 import { ensureBuiltinPlaylists } from './library/playlists-repo.js';
-import { getTrack, resolveTrackFilePath } from './library/tracks-repo.js';
+import { getTrack, getTrackEmbeddedArtwork, resolveTrackFilePath, warmTrackArtworkCache } from './library/tracks-repo.js';
 import { stopActiveSonos } from './sonos.js';
 import { stopAudioServer } from './sonos-server.js';
 import { createTray, destroyTray, updateTray, type TrayPlayerState } from './tray.js';
@@ -60,7 +60,7 @@ function registerMediaProtocol(): void {
   protocol.handle(MEDIA_SCHEME, async (request) => {
     try {
       const url = new URL(request.url);
-      if (url.hostname !== 'track') {
+      if (url.hostname !== 'track' && url.hostname !== 'artwork') {
         return new Response('unknown resource', { status: 404 });
       }
       const id = parseInt(url.pathname.replace(/^\//, ''), 10);
@@ -69,6 +69,19 @@ function registerMediaProtocol(): void {
       }
       const track = getTrack(id);
       if (!track) return new Response('track not found', { status: 404 });
+
+      if (url.hostname === 'artwork') {
+        const artwork = await getTrackEmbeddedArtwork(track);
+        if (!artwork) return new Response('artwork not found', { status: 404 });
+        return new Response(Buffer.from(artwork.data), {
+          status: 200,
+          headers: {
+            'Content-Type': artwork.mimeType,
+            'Cache-Control': 'public, max-age=3600'
+          }
+        });
+      }
+
       const actualPath = resolveTrackFilePath(track);
       if (!actualPath) {
         return new Response('file missing on disk', { status: 404 });
@@ -183,7 +196,7 @@ function configureSecurity(): void {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           "default-src 'self' 'unsafe-inline' data: blob: file: https://www.youtube.com https://*.ytimg.com; " +
-            "img-src 'self' data: blob: https: file:; " +
+            "img-src 'self' data: blob: https: file: fmusic-media:; " +
             "media-src 'self' blob: file: fmusic-media: https://*.googlevideo.com https://*.youtube.com; " +
             "frame-src https://www.youtube.com https://www.youtube-nocookie.com; " +
             "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
@@ -201,6 +214,10 @@ app.whenReady().then(() => {
   } catch (err) {
     console.error('[fmusic] Failed to initialize library database:', err);
   }
+
+  void warmTrackArtworkCache().catch((err) => {
+    console.error('[fmusic] Failed to warm artwork cache:', err);
+  });
 
   registerMediaProtocol();
   configureSecurity();

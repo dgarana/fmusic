@@ -324,6 +324,35 @@ a {
   text-align: right;
   white-space: nowrap;
 }
+.track-title-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.track-thumb,
+.track-thumb-fallback {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.track-thumb {
+  object-fit: cover;
+  background: var(--bg-subtle);
+}
+.track-thumb-fallback {
+  display: grid;
+  place-items: center;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 16px;
+}
+.track-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .track-editor-row td {
   background: rgba(124, 92, 255, 0.08);
 }

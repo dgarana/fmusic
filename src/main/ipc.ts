@@ -26,7 +26,8 @@ import {
   listTracks,
   resolveTrackFilePath,
   updateTrack,
-  getTrack
+  getTrack,
+  getTrackEmbeddedArtworkDataUrl
 } from './library/tracks-repo.js';
 import {
   addTrackToPlaylist,
@@ -122,6 +123,11 @@ export function registerIpc(): void {
     const track = getTrack(id);
     if (!track) return null;
     return lookupTrackMetadata(track);
+  });
+  ipcMain.handle(Channels.TracksArtwork, async (_evt, id: number) => {
+    const track = getTrack(id);
+    if (!track) return null;
+    return getTrackEmbeddedArtworkDataUrl(track);
   });
   ipcMain.handle(
     Channels.TracksUpdate,

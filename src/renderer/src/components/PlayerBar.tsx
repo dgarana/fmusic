@@ -7,11 +7,8 @@ import { SonosPanel } from './SonosPanel';
 import { formatDuration } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
 
-function coverUrl(current: { thumbnailPath: string | null; youtubeId: string | null } | null): string | null {
-  if (!current) return null;
-  if (current.thumbnailPath) return current.thumbnailPath;
-  if (current.youtubeId) return `https://i.ytimg.com/vi/${current.youtubeId}/hqdefault.jpg`;
-  return null;
+function coverUrl(trackId: number | null | undefined): string | null {
+  return typeof trackId === 'number' ? String(trackId) : null;
 }
 
 export function PlayerBar() {
@@ -99,7 +96,23 @@ export function PlayerBar() {
     await refreshPlaylists();
   }
 
-  const cover = coverUrl(current);
+  const [cover, setCover] = useState<string | null>(null);
+
+  useEffect(() => {
+    const trackId = coverUrl(current?.id);
+    if (!trackId) {
+      setCover(null);
+      return;
+    }
+    let cancelled = false;
+    setCover(null);
+    void window.fmusic.trackArtworkDataUrl(Number(trackId)).then((url) => {
+      if (!cancelled) setCover(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [current?.id]);
 
   // Local scrub state: while dragging, show the drag value instead of live position.
   const [scrubbing, setScrubbing] = useState(false);

@@ -25,10 +25,9 @@ export function TrayBridge() {
     window.fmusic.sendTrayState(state);
     window.fmusic.sendMiniState({
       ...state,
-      thumbnailPath: current?.thumbnailPath ?? null,
-      youtubeId: current?.youtubeId ?? null
+      trackId: current?.id ?? null
     });
-  }, [current?.id, current?.thumbnailPath, current?.youtubeId, isPlaying, hasPrev, hasNext]);
+  }, [current?.id, isPlaying, hasPrev, hasNext]);
 
   // Listen for commands from tray or mini player.
   useEffect(() => {

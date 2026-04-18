@@ -82,6 +82,8 @@ const api = {
     invoke<TrackMetadataSuggestions>(Channels.TracksMetadataSuggestions),
   lookupTrackMetadata: (id: number) =>
     invoke<TrackMetadataLookupResult | null>(Channels.TracksLookupMetadata, id),
+  trackArtworkDataUrl: (id: number) =>
+    invoke<string | null>(Channels.TracksArtwork, id),
   updateTrack: (
     id: number,
     patch: Partial<Pick<Track, 'title' | 'artist' | 'album' | 'genre'>>
@@ -133,10 +135,9 @@ const api = {
 
   // Mini player
   onMiniState: (handler: (state: {
+    trackId: number | null;
     title: string | null;
     artist: string | null;
-    thumbnailPath: string | null;
-    youtubeId: string | null;
     isPlaying: boolean;
     hasPrev: boolean;
     hasNext: boolean;
@@ -144,10 +145,9 @@ const api = {
   sendMiniCommand: (cmd: 'toggle-play' | 'prev' | 'next' | 'expand' | 'request-state') =>
     ipcRenderer.send('mini:command', cmd),
   sendMiniState: (state: {
+    trackId: number | null;
     title: string | null;
     artist: string | null;
-    thumbnailPath: string | null;
-    youtubeId: string | null;
     isPlaying: boolean;
     hasPrev: boolean;
     hasNext: boolean;

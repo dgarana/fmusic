@@ -32,6 +32,37 @@ function normalizeOptionalText(value: string): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function TrackTitleCell({ track }: { track: Track }) {
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setThumbnailUrl(null);
+    void window.fmusic.trackArtworkDataUrl(track.id).then((url) => {
+      if (!cancelled) setThumbnailUrl(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [track.id]);
+
+  return (
+    <div className="track-title-cell">
+      {thumbnailUrl ? (
+        <img
+          className="track-thumb"
+          src={thumbnailUrl}
+          alt=""
+          loading="lazy"
+        />
+      ) : (
+        <div className="track-thumb-fallback" aria-hidden="true">♪</div>
+      )}
+      <span className="track-title-text">{track.title}</span>
+    </div>
+  );
+}
+
 export function LibraryPage() {
   const t = useT();
   const columns: Array<{ key: TrackSortKey; label: string }> = [
@@ -242,7 +273,7 @@ export function LibraryPage() {
               return (
                 <Fragment key={tr.id}>
                   <tr key={tr.id}>
-                    <td>{tr.title}</td>
+                    <td><TrackTitleCell track={tr} /></td>
                     <td>{tr.artist ?? '-'}</td>
                     <td>{tr.album ?? '-'}</td>
                     <td>{tr.genre ?? '-'}</td>

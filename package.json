@@ -1,6 +1,6 @@
 {
   "name": "fmusic",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Desktop app to download music from YouTube, manage a local library and play it back.",
   "main": "out/main/index.js",
   "author": "dgara",

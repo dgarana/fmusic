@@ -1,13 +1,14 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.4.0
+## v0.4.1
 
 ### Bug Fixes
 
 - Improve title import and sync matching ([91dcf6a](https://github.com/dgarana/fmusic/commit/91dcf6a9a42cd5c8a743c9e6dabe1d30e388445f))
 - Dependencies error ([adf52fd](https://github.com/dgarana/fmusic/commit/adf52fd9740db1607d939ac28a93b53bf3c4ed16))
 - Solve issues with tests ([0e9f8d0](https://github.com/dgarana/fmusic/commit/0e9f8d01fd7a0589b8583f7fc709c0710a999f35))
+- Updat node from 20 to 24 ([363111a](https://github.com/dgarana/fmusic/commit/363111a872166d91c77e4f6b35e54ce542335fd7))
 
 ### Documentation
 
@@ -30,7 +31,8 @@ _Generated from repository tags and commit history._
 - Update readme and fix issues ([39498d5](https://github.com/dgarana/fmusic/commit/39498d5f8b7bb8b589fd6e85d1be5d0aadae16b3))
 - Release v0.3.0 ([88cb101](https://github.com/dgarana/fmusic/commit/88cb1011b74640e9ddb5b75afe387eb9ae5310a4))
 - Release v0.3.1 ([c5a5724](https://github.com/dgarana/fmusic/commit/c5a5724cc857b9c705cb9fbb4f8421ec1e572f31))
-- Release v0.4.0 ([0d1d403](https://github.com/dgarana/fmusic/commit/0d1d4038ce5e809bd41d57b2a64b30ba2a5dc068))
+- Release v0.4.0 ([2720d94](https://github.com/dgarana/fmusic/commit/2720d94cf5a4681a3bc55ad681e5bb9d0c7af1c0))
+- Release v0.4.1 ([48a56a1](https://github.com/dgarana/fmusic/commit/48a56a162970f6c1c0e132b2b996183c28ba4610))
 
 ### Other
 

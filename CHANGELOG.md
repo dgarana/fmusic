@@ -1,7 +1,7 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.3.1
+## v0.4.0
 
 ### Bug Fixes
 
@@ -20,6 +20,7 @@ _Generated from repository tags and commit history._
 - Add editable track metadata ([0ee361b](https://github.com/dgarana/fmusic/commit/0ee361b948d8b6c980f6a6488819065d474ef47e))
 - Add MusicBrainz metadata sync ([b759dd0](https://github.com/dgarana/fmusic/commit/b759dd0de96ade5d0862b44d5ba58c87e4bf7491))
 - Show embedded track artwork ([8af77b3](https://github.com/dgarana/fmusic/commit/8af77b33ecd7dc23094b28236fc19ff6d03efb4d))
+- Add dedicated track editing workspace with trim, fade and volume controls ([218e1c5](https://github.com/dgarana/fmusic/commit/218e1c5f850019c77bc66e73a8f8ee08f5e10583))
 
 ### Miscellaneous
 
@@ -28,7 +29,8 @@ _Generated from repository tags and commit history._
 - Harden renderer and media streaming ([6f9c4c6](https://github.com/dgarana/fmusic/commit/6f9c4c67a924c6f230b65f5c2d72e7792a3c432b))
 - Update readme and fix issues ([39498d5](https://github.com/dgarana/fmusic/commit/39498d5f8b7bb8b589fd6e85d1be5d0aadae16b3))
 - Release v0.3.0 ([88cb101](https://github.com/dgarana/fmusic/commit/88cb1011b74640e9ddb5b75afe387eb9ae5310a4))
-- Release v0.3.1 ([9ca604e](https://github.com/dgarana/fmusic/commit/9ca604e089492fe82ebe10ffbec5b834a14e16ea))
+- Release v0.3.1 ([c5a5724](https://github.com/dgarana/fmusic/commit/c5a5724cc857b9c705cb9fbb4f8421ec1e572f31))
+- Release v0.4.0 ([0d1d403](https://github.com/dgarana/fmusic/commit/0d1d4038ce5e809bd41d57b2a64b30ba2a5dc068))
 
 ### Other
 
@@ -37,6 +39,9 @@ _Generated from repository tags and commit history._
 - Merge pull request #1 from dgarana/claude/add-component-tests-e8fh6
 
 test: add Vitest test suite for all renderer components ([9208601](https://github.com/dgarana/fmusic/commit/9208601d010c1744707c8069c30b2dbc25a80762))
+- Merge pull request #2 from dgarana/feature/add_support_for_editing_music
+
+feat: add dedicated track editing workspace ([b7a43e5](https://github.com/dgarana/fmusic/commit/b7a43e52ef04faf980d8c9eba9e1aba2b30c2ac2))
 
 ### Testing
 

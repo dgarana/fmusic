@@ -353,6 +353,20 @@ function pictureScore(picture: { type?: string; format?: string; description?: s
 export async function getTrackEmbeddedArtwork(
   track: Track
 ): Promise<TrackEmbeddedArtwork | null> {
+  // Prefer the cached thumbnail file if present (covers YouTube downloads
+  // whose artwork is stored alongside the audio rather than embedded in it).
+  const cachedPath = track.thumbnailPath ? path.normalize(track.thumbnailPath) : null;
+  if (cachedPath && fs.existsSync(cachedPath)) {
+    try {
+      return {
+        data: fs.readFileSync(cachedPath),
+        mimeType: mimeTypeFromArtworkPath(cachedPath)
+      };
+    } catch {
+      // fall through and try to read embedded artwork from the audio file
+    }
+  }
+
   const actualPath = resolveTrackFilePath(track);
   if (!actualPath) return null;
 

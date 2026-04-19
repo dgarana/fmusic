@@ -1,21 +1,43 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.2.0
+## v0.3.0
+
+### Bug Fixes
+
+- Improve title import and sync matching ([91dcf6a](https://github.com/dgarana/fmusic/commit/91dcf6a9a42cd5c8a743c9e6dabe1d30e388445f))
+
+### Documentation
+
+- Update README according to latest changes ([a03c875](https://github.com/dgarana/fmusic/commit/a03c875c779dc2d4c97201cd1c7e23f131ad9a9c))
 
 ### Features
 
 - Show app version in sidebar and settings ([739427c](https://github.com/dgarana/fmusic/commit/739427c307d8a8794414c9d9e87c82dd33669821))
 - In-app auto-updater with manual download fallback ([33ce9f6](https://github.com/dgarana/fmusic/commit/33ce9f66e6e6ef432f32210259306f54311a459a))
+- Add editable track metadata ([0ee361b](https://github.com/dgarana/fmusic/commit/0ee361b948d8b6c980f6a6488819065d474ef47e))
+- Add MusicBrainz metadata sync ([b759dd0](https://github.com/dgarana/fmusic/commit/b759dd0de96ade5d0862b44d5ba58c87e4bf7491))
+- Show embedded track artwork ([8af77b3](https://github.com/dgarana/fmusic/commit/8af77b33ecd7dc23094b28236fc19ff6d03efb4d))
 
 ### Miscellaneous
 
 - Release v0.1.1 ([0091097](https://github.com/dgarana/fmusic/commit/0091097f4fe1501eafcd3e2a5b1b3fdf1bb7ee6d))
-- Release v0.2.0 ([7c20310](https://github.com/dgarana/fmusic/commit/7c20310e5db479f9079f5fba70b3220d54524131))
+- Release v0.2.0 ([e0f33a6](https://github.com/dgarana/fmusic/commit/e0f33a626f808fc4e9624b576a7521a4655936a5))
+- Harden renderer and media streaming ([6f9c4c6](https://github.com/dgarana/fmusic/commit/6f9c4c67a924c6f230b65f5c2d72e7792a3c432b))
+- Update readme and fix issues ([39498d5](https://github.com/dgarana/fmusic/commit/39498d5f8b7bb8b589fd6e85d1be5d0aadae16b3))
+- Release v0.3.0 ([59b4006](https://github.com/dgarana/fmusic/commit/59b40069519278fc9cf05822465c3217b559d34e))
 
 ### Other
 
 - Add dispatch-based release workflow with changelog generation ([3c3e5e1](https://github.com/dgarana/fmusic/commit/3c3e5e12c24fd532678efeed8a9a8d7917d1052b))
+- Add test pipeline for PRs and production builds ([abc1951](https://github.com/dgarana/fmusic/commit/abc195174e3e76ac08be79157d9c73c66d0de42b))
+- Merge pull request #1 from dgarana/claude/add-component-tests-e8fh6
+
+test: add Vitest test suite for all renderer components ([9208601](https://github.com/dgarana/fmusic/commit/9208601d010c1744707c8069c30b2dbc25a80762))
+
+### Testing
+
+- Add Vitest test suite for all renderer components ([7408956](https://github.com/dgarana/fmusic/commit/7408956b1a3d477f182f95ede9641870e0d3cc17))
 
 ## 0.1.0
 

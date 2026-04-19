@@ -8,6 +8,7 @@ import { LibraryPage } from './pages/LibraryPage';
 import { MiniPlayerPage } from './pages/MiniPlayerPage';
 import { PlaylistsPage } from './pages/PlaylistsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { EditPage } from './pages/EditPage';
 import { useLibraryStore } from './store/library';
 import { useDownloadsStore } from './store/downloads';
 import { usePlayerStore } from './store/player';
@@ -160,6 +161,7 @@ export function App() {
                   <Route path="/" element={<Navigate to="/download" replace />} />
                   <Route path="/download" element={<DownloadPage />} />
                   <Route path="/library" element={<LibraryPage />} />
+                  <Route path="/edit/:id" element={<EditPage />} />
                   <Route path="/playlists" element={<PlaylistsPage />} />
                   <Route path="/playlists/:id" element={<PlaylistsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />

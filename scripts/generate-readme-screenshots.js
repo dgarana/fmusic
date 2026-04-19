@@ -3,13 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const rootDir = path.resolve(__dirname, '..');
-const electronPath = path.join(
-  rootDir,
-  'node_modules',
-  'electron',
-  'dist',
-  process.platform === 'win32' ? 'electron.exe' : 'electron'
-);
+const electronPath = require('electron');
 const outputDir = path.join(rootDir, 'docs', 'screenshots');
 const userDataDir = path.join(rootDir, '.tmp', 'readme-screenshots-userdata');
 

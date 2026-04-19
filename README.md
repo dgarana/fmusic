@@ -36,6 +36,16 @@ required on the user's machine.
 
 ![Playlist detail](docs/screenshots/playlist-detail.png)
 
+### Edit Audio
+- ✂️ **Workbench**: professional-grade audio manipulation workspace for every track.
+- 📏 **Trimming**: dual-handle visual slider to cut silence or unwanted parts from the start/end.
+- ✨ **Effects**: add **Fade-in** and **Fade-out** (0-10s) for smoother transitions.
+- 🔊 **Volume adjustment**: normalize or boost audio volume (0% to 200%).
+- 💾 **Export modes**: choose between **overwriting** the original track or **exporting as a new track** in your library.
+- 🎧 **Built-in preview**: listen to the track and see the playback position on the trim bar while editing.
+
+![Edit Audio](docs/screenshots/edit.png)
+
 ### Player
 - 🎧 Integrated **playback** with queue, progress bar with **working seek** (dragging the bar jumps to the exact position without restarting the track), transport controls and volume (Howler.js).
 - ⏮⏭ Previous / next buttons are hidden when there is no adjacent track, without shifting the play button.
@@ -199,6 +209,7 @@ fmusic/
          ├─ pages/
          │  ├─ DownloadPage.tsx
          │  ├─ LibraryPage.tsx     # library table + inline metadata editor
+         │  ├─ EditPage.tsx        # audio manipulation workbench (trim, fade, volume)
          │  ├─ PlaylistsPage.tsx
          │  ├─ SettingsPage.tsx
          │  └─ MiniPlayerPage.tsx  # UI for the floating mini player

@@ -27,7 +27,8 @@ import {
   resolveTrackFilePath,
   updateTrack,
   getTrack,
-  getTrackEmbeddedArtworkDataUrl
+  getTrackEmbeddedArtworkDataUrl,
+  editTrack
 } from './library/tracks-repo.js';
 import {
   addTrackToPlaylist,
@@ -165,6 +166,11 @@ export function registerIpc(): void {
     }
     return `fmusic-media://track/${id}`;
   });
+  ipcMain.handle(
+    Channels.TracksEdit,
+    (_evt, id: number, options: Parameters<typeof editTrack>[1]) =>
+      editTrack(id, options)
+  );
   ipcMain.handle(Channels.TracksDownloadedIds, (_evt, ids: string[]) =>
     findDownloadedYoutubeIds(ids)
   );

@@ -216,4 +216,14 @@ export async function runScreenshotCapture(win: BrowserWindow): Promise<void> {
     await captureRoute(win, `#/playlists/${seededData.playlistIds[0]}`, 'playlist-detail.png');
   }
   await captureRoute(win, '#/settings', 'settings.png');
+  if (seededData?.tracks[0]) {
+    await win.webContents.executeJavaScript(`(async () => {
+      window.location.hash = '#/edit/${seededData.tracks[0].id}';
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      await window.__fmusicScreenshot?.prepareSonosDemo?.(); // Use this to start playback for visual effect
+    })()`);
+    await wait(1200);
+    const editImage = await win.capturePage();
+    fs.writeFileSync(path.join(screenshotOutputDir, 'edit.png'), editImage.toPNG());
+  }
 }

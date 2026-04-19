@@ -1,15 +1,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import NodeID3 from 'node-id3';
 import { parseFile } from 'music-metadata';
 import { app } from 'electron';
 import type {
   Track,
+  TrackEditOptions,
   TrackMetadataSuggestions,
   TrackQuery,
   TrackSortKey
 } from '../../shared/types.js';
 import { getDb } from './db.js';
+import { ffmpegPath } from '../paths.js';
 
 interface TrackRow {
   id: number;
@@ -212,6 +215,106 @@ export function updateTrack(
 export function deleteTrack(id: number): boolean {
   const res = getDb().prepare('DELETE FROM tracks WHERE id = ?').run(id);
   return res.changes > 0;
+}
+
+export async function editTrack(
+  id: number,
+  options: TrackEditOptions
+): Promise<Track | null> {
+  const track = getTrack(id);
+  if (!track) return null;
+
+  const inputPath = resolveTrackFilePath(track);
+  if (!inputPath || !fs.existsSync(inputPath)) {
+    throw new Error('Track file not found');
+  }
+
+  const { startSec, endSec, fadeInSec, fadeOutSec, volumeFactor } = options;
+  const ext = path.extname(inputPath);
+  const tempPath = path.join(path.dirname(inputPath), `edit-temp-${Date.now()}${ext}`);
+
+  // Base args: Accurate seek after -i is better when applying filters
+  const args = ['-y', '-i', inputPath, '-ss', startSec.toString()];
+  if (endSec !== null) {
+    args.push('-to', endSec.toString());
+  }
+
+  // Audio filters
+  const filters: string[] = [];
+  if (fadeInSec > 0) {
+    filters.push(`afade=t=in:st=${startSec}:d=${fadeInSec}`);
+  }
+  if (fadeOutSec > 0 && endSec !== null) {
+    filters.push(`afade=t=out:st=${endSec - fadeOutSec}:d=${fadeOutSec}`);
+  }
+  if (volumeFactor !== 1) {
+    filters.push(`volume=${volumeFactor}`);
+  }
+
+  if (filters.length > 0) {
+    args.push('-af', filters.join(','));
+  }
+
+  // Re-encoding: filters REQUIRE re-encoding.
+  // We use libmp3lame for MP3, otherwise ffmpeg picks the default encoder.
+  if (ext.toLowerCase() === '.mp3') {
+    args.push('-c:a', 'libmp3lame', '-q:a', '2');
+  }
+
+  args.push(tempPath);
+
+  await new Promise<void>((resolve, reject) => {
+    const proc = spawn(ffmpegPath(), args, { windowsHide: true });
+    let stderr = '';
+    proc.stderr?.on('data', (chunk) => (stderr += chunk.toString()));
+    proc.on('error', reject);
+    proc.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`ffmpeg exited with code ${code}: ${stderr}`));
+    });
+  });
+
+  // Replace original with edited or create new
+  if (options.mode === 'overwrite') {
+    fs.renameSync(tempPath, inputPath);
+
+    // Update duration in DB
+    const metadata = await parseFile(inputPath);
+    const durationSec = metadata.format.duration ? Math.round(metadata.format.duration) : null;
+
+    getDb()
+      .prepare('UPDATE tracks SET duration_sec = ? WHERE id = ?')
+      .run(durationSec, id);
+
+    return getTrack(id);
+  } else {
+    // Export mode: create a new file and a new track entry
+    const parsed = path.parse(inputPath);
+    // Ensure we don't overwrite if -edited already exists? 
+    // Simple approach: timestamp or check existence
+    let newDestPath = path.join(parsed.dir, `${parsed.name}-edited${parsed.ext}`);
+    if (fs.existsSync(newDestPath)) {
+      newDestPath = path.join(parsed.dir, `${parsed.name}-edited-${Date.now()}${parsed.ext}`);
+    }
+
+    fs.renameSync(tempPath, newDestPath);
+
+    const metadata = await parseFile(newDestPath);
+    const durationSec = metadata.format.duration ? Math.round(metadata.format.duration) : null;
+
+    const newTrack = insertTrack({
+      youtubeId: null, // disconnect from original YouTube ID
+      title: `${track.title} (edited)`,
+      artist: track.artist,
+      album: track.album,
+      genre: track.genre,
+      durationSec,
+      filePath: newDestPath,
+      thumbnailPath: track.thumbnailPath
+    });
+
+    return newTrack;
+  }
 }
 
 export function incrementPlayCount(id: number): void {

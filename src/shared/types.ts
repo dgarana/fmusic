@@ -73,6 +73,15 @@ export interface TrackMetadataLookupResult {
   confidence: number;
 }
 
+export interface TrackEditOptions {
+  startSec: number;
+  endSec: number | null;
+  fadeInSec: number;
+  fadeOutSec: number;
+  volumeFactor: number;
+  mode: 'overwrite' | 'export';
+}
+
 export interface Playlist {
   id: number;
   name: string;

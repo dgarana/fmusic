@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLibraryStore } from '../store/library';
 import { usePlayerStore } from '../store/player';
 import { formatDuration } from '../util';
@@ -65,6 +66,7 @@ function TrackTitleCell({ track }: { track: Track }) {
 
 export function LibraryPage() {
   const t = useT();
+  const navigate = useNavigate();
   const columns: Array<{ key: TrackSortKey; label: string }> = [
     { key: 'title', label: t('library.columns.title') },
     { key: 'artist', label: t('library.columns.artist') },
@@ -75,6 +77,7 @@ export function LibraryPage() {
   ];
   const { tracks, genres, query, setQuery } = useLibraryStore();
   const playTrack = usePlayerStore((s) => s.playTrack);
+
   const [addingTrackId, setAddingTrackId] = useState<number | null>(null);
   const [editingTrackId, setEditingTrackId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
@@ -299,6 +302,12 @@ export function LibraryPage() {
                         title={t('library.editMetadataTooltip')}
                       >
                         ✎
+                      </button>{' '}
+                      <button
+                        onClick={() => navigate(`/edit/${tr.id}`)}
+                        title={t('library.editAudioTooltip')}
+                      >
+                        ✂
                       </button>{' '}
                       <button
                         onClick={() => void handleLookupMetadata(tr)}

@@ -42,11 +42,14 @@ button {
   border-radius: 6px;
   padding: 6px 12px;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: all 0.15s ease;
 }
 button:hover:not(:disabled) {
   background: var(--bg-subtle);
   border-color: var(--accent);
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 button:disabled {
   opacity: 0.5;
@@ -56,16 +59,22 @@ button.primary {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+  font-weight: 500;
 }
 button.primary:hover:not(:disabled) {
   background: #8f72ff;
+  box-shadow: 0 0 12px var(--accent-soft);
 }
 button.danger {
   border-color: var(--danger);
   color: var(--danger);
 }
+button.danger:hover:not(:disabled) {
+  background: rgba(240, 72, 88, 0.1);
+}
 
-input,
+input[type="text"],
+input[type="number"],
 select {
   font: inherit;
   color: inherit;
@@ -74,15 +83,42 @@ select {
   border-radius: 6px;
   padding: 6px 10px;
   outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 input:focus,
 select:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 a {
   color: var(--accent);
   text-decoration: none;
+}
+
+/* Range Input Reset ----------------------------------------------------- */
+
+input[type="range"] {
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  background: var(--bg-subtle);
+  height: 6px;
+  border-radius: 3px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  margin-top: -5px; /* Centers thumb on the 6px track */
+  background: var(--accent);
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-elevated);
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
 }
 
 /* Layout --------------------------------------------------------------- */
@@ -354,13 +390,14 @@ a {
   text-overflow: ellipsis;
 }
 .track-editor-row td {
-  background: rgba(124, 92, 255, 0.08);
+  background: rgba(124, 92, 255, 0.04);
 }
 .track-editor {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
-  gap: 10px;
+  gap: 12px;
   align-items: end;
+  padding: 4px;
 }
 .track-editor-feedback {
   grid-column: 1 / -1;
@@ -386,6 +423,7 @@ a {
 .track-editor label span {
   font-size: 12px;
   color: var(--text-muted);
+  font-weight: 500;
 }
 .track-editor-actions {
   display: flex;
@@ -709,4 +747,210 @@ a {
 .mini-expand:hover {
   color: var(--text);
   background: rgba(255, 255, 255, 0.08);
+}
+
+/* Visual Trimmer ------------------------------------------------------- */
+
+.trim-visual-container {
+  position: relative;
+  height: 60px;
+  background: #000;
+  border-radius: 10px;
+  margin: 16px 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: inset 0 2px 12px rgba(0,0,0,0.5);
+}
+
+.trim-bar-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 19px,
+    rgba(255,255,255,0.05) 20px
+  );
+}
+
+.trim-bar-active {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--accent-soft), transparent);
+  border-left: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.trim-bar-current {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: #fff;
+  box-shadow: 0 0 10px #fff, 0 0 20px var(--accent);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.trim-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  z-index: 4;
+}
+
+.trim-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 60px;
+  background: var(--accent);
+  cursor: ew-resize;
+  pointer-events: auto;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.8);
+  transition: background 0.2s;
+}
+.trim-slider::-webkit-slider-thumb:hover {
+  background: #8f72ff;
+}
+
+.trim-slider.start::-webkit-slider-thumb {
+  border-radius: 8px 0 0 8px;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 55%, 30% 50%, 0% 45%);
+}
+
+.trim-slider.end::-webkit-slider-thumb {
+  border-radius: 0 8px 8px 0;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 45%, -30% 50%, 0% 55%);
+  /* The clip path above is a bit tricky for the right side, simplified: */
+  clip-path: inset(0 0 0 0); 
+}
+
+/* Edit Page Player ---------------------------------------------------- */
+
+.edit-page h1 {
+  font-size: 24px;
+  font-weight: 700;
+  background: linear-gradient(90deg, #fff, var(--text-muted));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.edit-player-container {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.edit-player-top {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.edit-player-top h3 {
+  margin: 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+}
+
+.edit-player-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.edit-play-pause-btn {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px var(--accent-soft);
+  transition: all 0.2s;
+}
+
+.edit-play-pause-btn:hover {
+  background: #8f72ff;
+  transform: scale(1.05);
+}
+
+.edit-scrub-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.edit-scrub-bar {
+  flex: 1;
+}
+
+.time-display {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  color: var(--text-muted);
+  min-width: 45px;
+}
+
+.edit-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px;
+  padding: 20px;
+  background: rgba(0,0,0,0.15);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.edit-option-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.edit-option-card label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.edit-actions {
+  margin-top: 12px;
+}
+
+.back-button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 18px;
 }

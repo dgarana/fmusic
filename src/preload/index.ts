@@ -9,6 +9,7 @@ import type {
   SearchResult,
   SonosDevice,
   Track,
+  TrackEditOptions,
   TrackMetadataLookupResult,
   TrackMetadataSuggestions,
   TrackQuery,
@@ -92,6 +93,8 @@ const api = {
     invoke<boolean>(Channels.TracksDelete, id, deleteFile),
   markTrackPlayed: (id: number) => invoke<void>(Channels.TracksPlayed, id),
   trackStreamUrl: (id: number) => invoke<string | null>(Channels.TracksStream, id),
+  editTrack: (id: number, options: TrackEditOptions) =>
+    invoke<Track | null>(Channels.TracksEdit, id, options),
   downloadedYoutubeIds: (ids: string[]) =>
     invoke<string[]>(Channels.TracksDownloadedIds, ids),
   onTrackAdded: (handler: (track: Track) => void) => on<Track>(Channels.TracksAdded, handler),

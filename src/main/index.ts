@@ -12,11 +12,16 @@ import { stopAudioServer } from './sonos-server.js';
 import { createTray, destroyTray, updateTray, type TrayPlayerState } from './tray.js';
 import { createMiniPlayer, showMiniPlayer, hideMiniPlayer, getMiniPlayer } from './miniplayer.js';
 import { initUpdater } from './app-updater.js';
+import { runScreenshotCapture, screenshotMode, seedScreenshotDemoData } from './screenshot-mode.js';
 
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
 
 export const MEDIA_SCHEME = 'fmusic-media';
+
+if (process.env.FMUSIC_SCREENSHOT_USER_DATA_DIR) {
+  app.setPath('userData', process.env.FMUSIC_SCREENSHOT_USER_DATA_DIR);
+}
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -211,6 +216,9 @@ app.whenReady().then(() => {
   try {
     getDb();
     ensureBuiltinPlaylists();
+    if (screenshotMode) {
+      seedScreenshotDemoData(app.getPath('userData'));
+    }
   } catch (err) {
     console.error('[fmusic] Failed to initialize library database:', err);
   }
@@ -224,25 +232,39 @@ app.whenReady().then(() => {
   registerIpc();
   createWindow();
 
+  if (screenshotMode && mainWindow) {
+    void runScreenshotCapture(mainWindow)
+      .then(() => {
+        isQuitting = true;
+        app.quit();
+      })
+      .catch((err) => {
+        console.error('[fmusic] Screenshot capture failed:', err);
+        app.exit(1);
+      });
+  }
+
   // Create tray + mini player after window exists.
   // Left-click on tray: toggle mini player (show if hidden, hide if visible).
-  createTray(mainWindow!, () => {
-    const { miniPlayerEnabled } = getSettings();
-    if (miniPlayerEnabled) {
-      const mini = getMiniPlayer();
-      if (!mini) return;
-      if (mini.isVisible()) {
-        mini.hide();
+  if (!screenshotMode) {
+    createTray(mainWindow!, () => {
+      const { miniPlayerEnabled } = getSettings();
+      if (miniPlayerEnabled) {
+        const mini = getMiniPlayer();
+        if (!mini) return;
+        if (mini.isVisible()) {
+          mini.hide();
+        } else {
+          mini.show();
+          mini.focus();
+        }
       } else {
-        mini.show();
-        mini.focus();
+        mainWindow?.show();
+        mainWindow?.focus();
       }
-    } else {
-      mainWindow?.show();
-      mainWindow?.focus();
-    }
-  });
-  createMiniPlayer();
+    });
+    createMiniPlayer();
+  }
   initUpdater();
 
   // Main renderer → tray menu update.

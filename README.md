@@ -17,6 +17,8 @@ required on the user's machine.
 - ℹ️ **Notice** when trying to download a URL that is already in your library.
 - 📋 The "Other downloads" section appears above the search results for better visibility.
 
+![Downloads](docs/screenshots/downloads.png)
+
 ### Library and playlists
 - 📚 **Library** stored in SQLite with sortable table, search, and genre filter.
 - ✏️ **Editable metadata**: title, artist, album and genre can be edited directly from the Library table.
@@ -28,10 +30,16 @@ required on the user's machine.
 - ♥ **Favorites**: protected special playlist (cannot be deleted); heart button in the player toggles the current track in Favorites instantly.
 - 🔄 **Real-time refresh**: opening a playlist and adding tracks from elsewhere in the app updates the view without a reload.
 
+![Library](docs/screenshots/library.png)
+
+![Playlists](docs/screenshots/playlists.png)
+
+![Playlist detail](docs/screenshots/playlist-detail.png)
+
 ### Player
 - 🎧 Integrated **playback** with queue, progress bar with **working seek** (dragging the bar jumps to the exact position without restarting the track), transport controls and volume (Howler.js).
 - ⏮⏭ Previous / next buttons are hidden when there is no adjacent track, without shifting the play button.
-- 🎵 Rich YouTube metadata: cover art, artist, album, genre, year.
+- 🎵 Rich local metadata: cover art, artist, album, genre, year.
 
 ### Sonos
 - 📡 **Streaming to Sonos**: discover Sonos devices on the local network and cast the current track to any of them with a click.
@@ -41,6 +49,8 @@ required on the user's machine.
 - 💾 **Cached devices**: discovered Sonos devices are remembered across sessions and auto-reconnected when the panel opens; unreachable ones are automatically removed from the cache.
 - 🔌 **Add by IP**: connect to a Sonos device by typing its IP manually, useful when a VPN blocks SSDP multicast discovery.
 - 🔇 Starting to cast pauses the local player so both outputs don't play at once.
+
+![Sonos](docs/screenshots/sonos.png)
 
 ### System tray and mini player
 - 🖥️ **The app stays in the background** when the main window is closed (system tray icon; the process is not actually killed).
@@ -54,6 +64,8 @@ required on the user's machine.
 - ⚙️ **Settings**: download folder, default format/quality, dependency status and a button to **update yt-dlp** without leaving the app.
 - 🔒 **"Ignore SSL errors" option** in Settings → Network: useful on corporate networks with SSL inspection (VPN). When a certificate error occurs on search or download, the UI shows a shortcut to this option.
 - 🌍 **Multi-language UI** with an in-app language switcher (English / Español). The choice is persisted and applied on the fly (sidebar, player, tray, dialogs). Built-in playlists are renamed at render time so they also follow the active language.
+
+![Settings](docs/screenshots/settings.png)
 
 ## Stack
 
@@ -101,6 +113,7 @@ FMUSIC_TARGET_PLATFORM=linux FMUSIC_TARGET_ARCH=x64 npm run postinstall
 |---------|-------------|
 | `npm run dev` | Electron + Vite in development mode with DevTools |
 | `npm run build` | Compile main, preload and renderer |
+| `npm run screenshots:readme` | Build the app and regenerate the README screenshots under `docs/screenshots/` |
 | `npm run typecheck` | Typecheck (node + web) |
 | `npm run dist:win` | Build a Windows installer (NSIS) |
 | `npm run dist:mac` | Build a macOS installer (universal DMG) |
@@ -140,7 +153,7 @@ players can see the updated title / artist / album / genre.
 
 ## Project structure
 
-```
+```text
 fmusic/
 ├─ electron-builder.yml
 ├─ electron.vite.config.ts
@@ -162,11 +175,12 @@ fmusic/
    │  ├─ settings.ts
    │  ├─ download-manager.ts
    │  ├─ musicbrainz.ts            # online metadata lookup + genre fallback
+   │  ├─ screenshot-mode.ts        # demo data + automated README screenshots
    │  ├─ ytdlp.ts
    │  ├─ updater.ts
    │  └─ library/
    │     ├─ db.ts
-   │     ├─ tracks-repo.ts          # DB queries + MP3 metadata tag sync
+   │     ├─ tracks-repo.ts         # DB queries + MP3 metadata tag sync
    │     ├─ playlists-repo.ts
    │     └─ migrations/
    ├─ preload/
@@ -184,7 +198,7 @@ fmusic/
          │  └─ SonosPanel.tsx      # Sonos devices panel
          ├─ pages/
          │  ├─ DownloadPage.tsx
-         │  ├─ LibraryPage.tsx       # library table + inline metadata editor
+         │  ├─ LibraryPage.tsx     # library table + inline metadata editor
          │  ├─ PlaylistsPage.tsx
          │  ├─ SettingsPage.tsx
          │  └─ MiniPlayerPage.tsx  # UI for the floating mini player
@@ -197,7 +211,7 @@ fmusic/
 
 ## IPC architecture (mini player and tray)
 
-```
+```text
 Main renderer               Main process               Mini player
 ─────────────────           ─────────────              ────────────────
 TrayBridge
@@ -215,30 +229,39 @@ process replies with the last cached state so the window never shows up
 blank.
 
 ## Internationalization
+
 The app ships with English and Spanish. The user's choice lives in
 `AppSettings.language` and is exposed from the UI in Settings → System.
 Translations are plain JSON files under `src/shared/i18n/`:
-```
+
+```text
 src/shared/i18n/
 ├─ en.json
 ├─ es.json
 └─ index.ts   # translate(locale, key, params?) + supportedLocales
 ```
+
 Every renderer component calls a typed `useT()` hook, and the main
 process has its own `t()` helper for things like the tray menu. Keys are
 dot-separated (`settings.tabs.system`) and values support `{placeholder}`
 interpolation; missing keys fall back to English.
+
 To add another language:
+
 1. Copy `en.json` to `xx.json` and translate the values.
 2. Add the code to the `Locale` union in `src/shared/types.ts`.
 3. Register the bundle in `src/shared/i18n/index.ts` (`bundles` + `supportedLocales`).
+
 No code changes are needed in components.
+
 ## Built-in playlists
+
 Built-in playlists (currently just *Favorites*) have a `slug` column in
 the `playlists` table. The name stored in the DB is a canonical English
 string; the UI resolves the displayed name via `playlistDisplayName(p, t)`
 so it always reflects the active language. User-created playlists leave
 `slug` as `NULL` and are shown verbatim.
+
 ## `fmusic-media:` protocol
 
 Local tracks are served via a custom scheme

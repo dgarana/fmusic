@@ -191,6 +191,7 @@ npm install                          # installs deps + postinstall + native rebu
 FMUSIC_SKIP_BINARIES=1 npm install   # for CI/typecheck (skips yt-dlp/ffmpeg)
 npm run dev                          # Electron + Vite with HMR
 npm run build                        # compiles main/preload/renderer to out/
+npm run screenshots:readme           # builds the app and regenerates README screenshots in docs/screenshots/
 npm run typecheck                    # tsc --noEmit over node + web
 npm run dist:win                     # NSIS .exe
 npm run dist:mac                     # DMG (requires macOS)

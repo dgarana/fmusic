@@ -3,7 +3,6 @@ name: CI
 on:
   push:
     tags-ignore: ['**']  # tags are handled by build.yml
-  pull_request:
 
 concurrency:
   group: ci-${{ github.ref }}-${{ github.event_name }}

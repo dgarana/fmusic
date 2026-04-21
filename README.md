@@ -1,4 +1,8 @@
-# fmusic
+<p align="center">
+  <img src="docs/logo.png" width="160" height="160" alt="FMusic logo">
+</p>
+
+# FMusic
 
 Cross-platform desktop app (Windows, macOS and Linux) to **download music
 from YouTube**, **manage a local library** (playlists, genres…) and
@@ -71,7 +75,7 @@ required on the user's machine.
   - Shows cover art, title, artist and basic controls (previous / play·pause / next).
   - **Draggable**: can be moved anywhere on screen.
   - **⤢** button to restore the main window and hide the mini player.
-- 🗂️ **Tray context menu**: play/pause, previous, next, "Open fmusic" and "Quit", with the current track title and tooltip updated in real time.
+- 🗂️ **Tray context menu**: play/pause, previous, next, "Open FMusic" and "Quit", with the current track title and tooltip updated in real time.
 
 ### General
 - ⚙️ **Settings**: download folder, default format/quality, dependency status and a button to **update yt-dlp** without leaving the app.
@@ -88,7 +92,7 @@ required on the user's machine.
 | Frontend | **React 18 + Vite** + **TypeScript** |
 | Bundler | **electron-vite** (unified main / preload / renderer) |
 | State | **Zustand** (player, library, downloads, Sonos) |
-| Local audio | **Howler.js** + `fmusic-media:` protocol with Range requests |
+| Local audio | **Howler.js** + `FMusic-media:` protocol with Range requests |
 | Database | **better-sqlite3** with versioned migrations |
 | Metadata tags | **music-metadata** (read) + **node-id3** (write MP3 tags) |
 | Downloads | **yt-dlp** + **FFmpeg** (per-platform binaries, no Python) |
@@ -167,7 +171,7 @@ players can see the updated title / artist / album / genre.
 ## Project structure
 
 ```text
-fmusic/
+FMusic/
 ├─ electron-builder.yml
 ├─ electron.vite.config.ts
 ├─ scripts/
@@ -178,7 +182,7 @@ fmusic/
    │  ├─ channels.ts
    │  └─ types.ts
    ├─ main/                        # Electron main process
-   │  ├─ index.ts                  # main window, fmusic-media: protocol, IPC
+   │  ├─ index.ts                  # main window, FMusic-media: protocol, IPC
    │  ├─ ipc.ts
    │  ├─ tray.ts                   # tray icon + context menu
    │  ├─ miniplayer.ts             # floating mini player window
@@ -197,7 +201,7 @@ fmusic/
    │     ├─ playlists-repo.ts
    │     └─ migrations/
    ├─ preload/
-   │  └─ index.ts                  # contextBridge → window.fmusic
+   │  └─ index.ts                  # contextBridge → window.FMusic
    └─ renderer/
       ├─ index.html
       └─ src/
@@ -276,10 +280,10 @@ string; the UI resolves the displayed name via `playlistDisplayName(p, t)`
 so it always reflects the active language. User-created playlists leave
 `slug` as `NULL` and are shown verbatim.
 
-## `fmusic-media:` protocol
+## `FMusic-media:` protocol
 
 Local tracks are served via a custom scheme
-(`fmusic-media://track/<id>`) with full **Range request** support
+(`FMusic-media://track/<id>`) with full **Range request** support
 (`206 Partial Content`), so both Howler.js and Sonos devices can seek
 inside the audio without downloading it fully.
 

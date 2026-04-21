@@ -74,7 +74,11 @@ export const Channels = {
   SonosPosition: 'sonos:position',
 
   // Mobile Sync
-  MobileSyncGetUrl: 'mobile-sync:get-url'
+  MobileSyncGetUrl: 'mobile-sync:get-url',
+
+  // Window Controls
+  WindowMaximizeChange: 'window:maximize-change', // event, main -> renderer
+  WindowIsMaximized: 'window:is-maximized'
 } as const;
 
 export type ChannelName = (typeof Channels)[keyof typeof Channels];

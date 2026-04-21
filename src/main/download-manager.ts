@@ -211,7 +211,7 @@ export class DownloadManager extends EventEmitter {
         await ensureEmbeddedArtwork(result.filePath, result.thumbnail);
       } catch (err) {
         const detail = err instanceof Error ? err.message : String(err);
-        console.warn('[fmusic] Could not ensure embedded artwork:', detail);
+        console.warn('[FMusic] Could not ensure embedded artwork:', detail);
       }
 
       let track: Track;

@@ -1,7 +1,8 @@
-import { app, BrowserWindow, ipcMain, protocol, session, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, nativeImage, protocol, session, shell } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import { Readable } from 'node:stream';
+import { Channels } from '../shared/channels.js';
 import { registerIpc } from './ipc.js';
 import { getSettings } from './settings.js';
 import { getDb, closeDb } from './library/db.js';
@@ -66,9 +67,24 @@ function registerMediaProtocol(): void {
   protocol.handle(MEDIA_SCHEME, async (request) => {
     try {
       const url = new URL(request.url);
-      if (url.hostname !== 'track' && url.hostname !== 'artwork') {
+      if (url.hostname !== 'track' && url.hostname !== 'artwork' && url.hostname !== 'app-icon') {
         return new Response('unknown resource', { status: 404 });
       }
+      
+      if (url.hostname === 'app-icon') {
+        const iconPath = app.isPackaged
+          ? path.join(process.resourcesPath, 'icon.png')
+          : path.join(app.getAppPath(), 'resources', 'icon.png');
+        try {
+          const data = fs.readFileSync(iconPath);
+          return new Response(data, {
+            headers: { 'Content-Type': 'image/png' }
+          });
+        } catch {
+          return new Response('icon missing', { status: 404 });
+        }
+      }
+
       const id = parseInt(url.pathname.replace(/^\//, ''), 10);
       if (!Number.isFinite(id)) {
         return new Response('invalid id', { status: 400 });
@@ -134,13 +150,17 @@ function registerMediaProtocol(): void {
         }
       });
     } catch (err) {
-      console.error('[fmusic-media] handler error:', err);
+      console.error('[FMusic-media] handler error:', err);
       return new Response('internal error', { status: 500 });
     }
   });
 }
 
 function createWindow(): void {
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'icon.png')
+    : path.join(app.getAppPath(), 'resources', 'icon.png');
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 820,
@@ -149,6 +169,14 @@ function createWindow(): void {
     backgroundColor: '#0f1115',
     autoHideMenuBar: true,
     show: false,
+    title: 'FMusic',
+    icon: nativeImage.createFromPath(iconPath),
+    titleBarStyle: 'hidden',
+    titleBarOverlay: process.platform === 'win32' ? {
+      color: '#161a22',
+      symbolColor: '#8d95a8',
+      height: 32
+    } : undefined,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -158,6 +186,13 @@ function createWindow(): void {
   });
 
   mainWindow.on('ready-to-show', () => mainWindow?.show());
+
+  mainWindow.on('maximize', () => {
+    mainWindow?.webContents.send(Channels.WindowMaximizeChange, true);
+  });
+  mainWindow.on('unmaximize', () => {
+    mainWindow?.webContents.send(Channels.WindowMaximizeChange, false);
+  });
 
   // Intercept close: hide to tray or quit depending on user setting.
   mainWindow.on('close', (e) => {
@@ -227,11 +262,11 @@ app.whenReady().then(() => {
       void startMobileServer(settings.mobileSyncPort).catch(console.error);
     }
   } catch (err) {
-    console.error('[fmusic] Failed to initialize library database:', err);
+    console.error('[FMusic] Failed to initialize library database:', err);
   }
 
   void warmTrackArtworkCache().catch((err) => {
-    console.error('[fmusic] Failed to warm artwork cache:', err);
+    console.error('[FMusic] Failed to warm artwork cache:', err);
   });
 
   registerMediaProtocol();
@@ -246,7 +281,7 @@ app.whenReady().then(() => {
         app.quit();
       })
       .catch((err) => {
-        console.error('[fmusic] Screenshot capture failed:', err);
+        console.error('[FMusic] Screenshot capture failed:', err);
         app.exit(1);
       });
   }

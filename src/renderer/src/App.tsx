@@ -3,6 +3,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { PlayerBar } from './components/PlayerBar';
 import { TrayBridge } from './components/TrayBridge';
+import { WindowTitleBar } from './components/WindowTitleBar';
 import { DownloadPage } from './pages/DownloadPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { MiniPlayerPage } from './pages/MiniPlayerPage';
@@ -154,6 +155,7 @@ export function App() {
           path="*"
           element={
             <div className="app-shell">
+              <WindowTitleBar />
               <TrayBridge />
               <Sidebar />
               <main className="main">

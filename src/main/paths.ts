@@ -55,7 +55,7 @@ export function backupsDir(): string {
 }
 
 /**
- * Default music directory used for downloads. `~/Music/fmusic`.
+ * Default music directory used for downloads. `~/Music/FMusic`.
  */
 export function defaultMusicDir(): string {
   const musicRoot = app.getPath('music');

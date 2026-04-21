@@ -5,6 +5,7 @@ import { useT, playlistDisplayName } from '../i18n';
 import type { UpdateStatus } from '../../../shared/types';
 
 const RELEASES_URL = 'https://github.com/dgarana/fmusic/releases/latest';
+const GITHUB_URL = 'https://github.com/dgarana/fmusic';
 
 export function Sidebar() {
   const playlists = useLibraryStore((s) => s.playlists);
@@ -20,7 +21,31 @@ export function Sidebar() {
 
   return (
     <aside className="sidebar">
-      <div className="brand">fmusic</div>
+      <div
+        className="brand"
+        style={{ position: 'relative', cursor: 'pointer' }}
+        onClick={() => void window.fmusic.openExternal(GITHUB_URL)}
+        title={t('nav.openGithub', { defaultValue: 'View on GitHub' })}
+      >
+        {appVersion && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 24,
+              right: 12,
+              fontSize: 11,
+              color: 'rgba(255,255,255,0.5)',
+              fontWeight: 700,
+              pointerEvents: 'none',
+              zIndex: 1,
+              textShadow: '0 1px 2px rgba(0,0,0,0.4)'
+            }}
+          >
+            v{appVersion}
+          </div>
+        )}
+        <img src="fmusic-media://app-icon" alt="FMusic" />
+      </div>
       <nav>
         <NavLink to="/download" className={({ isActive }) => (isActive ? 'active' : '')}>
           {t('nav.download')}
@@ -42,9 +67,7 @@ export function Sidebar() {
           <NavLink
             key={p.id}
             to={`/playlists/${p.id}`}
-            className={({ isActive }) =>
-              'playlist-item' + (isActive ? ' active' : '')
-            }
+            className={({ isActive }) => 'playlist-item' + (isActive ? ' active' : '')}
           >
             <span>{playlistDisplayName(p, t)}</span>
             <span style={{ color: 'var(--text-muted)' }}>{p.trackCount}</span>
@@ -53,9 +76,6 @@ export function Sidebar() {
       </div>
       <div style={{ padding: '8px 16px', marginTop: 'auto', fontSize: 11 }}>
         <UpdateBadge status={updateStatus} t={t} />
-        {appVersion && (
-          <div style={{ color: 'var(--text-muted)', marginTop: 4 }}>v{appVersion}</div>
-        )}
       </div>
     </aside>
   );
@@ -90,7 +110,10 @@ function UpdateBadge({ status, t }: { status: UpdateStatus; t: ReturnType<typeof
 
   if (status.status === 'ready') {
     return (
-      <button style={{ ...linkStyle, fontWeight: 600 }} onClick={() => void window.fmusic.installUpdate()}>
+      <button
+        style={{ ...linkStyle, fontWeight: 600 }}
+        onClick={() => void window.fmusic.installUpdate()}
+      >
         {t('updater.ready')}
       </button>
     );
@@ -100,10 +123,7 @@ function UpdateBadge({ status, t }: { status: UpdateStatus; t: ReturnType<typeof
     return (
       <span style={{ color: 'var(--text-muted)' }}>
         {t('updater.error')}{' '}
-        <button
-          style={linkStyle}
-          onClick={() => void window.fmusic.openExternal(RELEASES_URL)}
-        >
+        <button style={linkStyle} onClick={() => void window.fmusic.openExternal(RELEASES_URL)}>
           {t('updater.downloadManually')}
         </button>
       </span>

@@ -44,6 +44,7 @@ import {
 import { getSchemaHistory } from './library/db.js';
 import { discoverSonos, addSonosByIp, initSonosFromCache, sonosPlayTrack, sonosPause, sonosResume, sonosStop, sonosSetVolume, sonosSeek, sonosGetPosition } from './sonos.js';
 import { startAudioServer, getTrackHttpUrl } from './sonos-server.js';
+import { startMobileServer, stopMobileServer, generateTrackMobileUrl } from './mobile-server.js';
 import { refreshTrayLanguage } from './tray.js';
 import { checkForUpdates, downloadUpdate, quitAndInstall, getLastUpdaterStatus } from './app-updater.js';
 import { lookupTrackMetadata } from './musicbrainz.js';
@@ -88,10 +89,25 @@ export function registerIpc(): void {
   // ----- Settings -----
   ipcMain.handle(Channels.SettingsGet, () => getSettings());
   ipcMain.handle(Channels.SettingsUpdate, (_evt, patch: Partial<AppSettings>) => {
+    const prev = getSettings();
     const next = updateSettings(patch);
+
     if (Object.prototype.hasOwnProperty.call(patch, 'language')) {
       refreshTrayLanguage();
     }
+
+    // Handle mobile server lifecycle on setting changes
+    if (patch.mobileSyncEnabled !== undefined || patch.mobileSyncPort !== undefined) {
+      if (next.mobileSyncEnabled) {
+        // (Re)start server if enabled or port changed
+        if (prev.mobileSyncEnabled) stopMobileServer();
+        void startMobileServer(next.mobileSyncPort).catch(console.error);
+      } else if (prev.mobileSyncEnabled) {
+        // Stop if it was enabled and now is disabled
+        stopMobileServer();
+      }
+    }
+
     return next;
   });
 
@@ -245,4 +261,9 @@ export function registerIpc(): void {
     sonosSeek(host, seconds)
   );
   ipcMain.handle(Channels.SonosPosition, (_evt, host: string) => sonosGetPosition(host));
+
+  // ----- Mobile Sync -----
+  ipcMain.handle(Channels.MobileSyncGetUrl, (_evt, trackId: number) => {
+    return generateTrackMobileUrl(trackId);
+  });
 }

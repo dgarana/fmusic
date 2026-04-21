@@ -120,6 +120,10 @@ export interface AppSettings {
   closeToTray: boolean;
   /** Show mini player when clicking the tray icon (only applies when closeToTray is true). Default: true. */
   miniPlayerEnabled: boolean;
+  /** Enable local HTTP server for mobile sync via QR codes. Default: false. */
+  mobileSyncEnabled: boolean;
+  /** Port for the mobile sync HTTP server. 0 for random available port. Default: 0. */
+  mobileSyncPort: number;
 }
 
 export interface DependencyStatus {

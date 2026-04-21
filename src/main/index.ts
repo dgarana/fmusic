@@ -9,6 +9,7 @@ import { ensureBuiltinPlaylists } from './library/playlists-repo.js';
 import { getTrack, getTrackEmbeddedArtwork, resolveTrackFilePath, warmTrackArtworkCache } from './library/tracks-repo.js';
 import { stopActiveSonos } from './sonos.js';
 import { stopAudioServer } from './sonos-server.js';
+import { startMobileServer, stopMobileServer } from './mobile-server.js';
 import { createTray, destroyTray, updateTray, type TrayPlayerState } from './tray.js';
 import { createMiniPlayer, showMiniPlayer, hideMiniPlayer, getMiniPlayer } from './miniplayer.js';
 import { initUpdater } from './app-updater.js';
@@ -219,6 +220,12 @@ app.whenReady().then(() => {
     if (screenshotMode) {
       seedScreenshotDemoData(app.getPath('userData'));
     }
+
+    // Start mobile sync server if enabled
+    const settings = getSettings();
+    if (settings.mobileSyncEnabled) {
+      void startMobileServer(settings.mobileSyncPort).catch(console.error);
+    }
   } catch (err) {
     console.error('[fmusic] Failed to initialize library database:', err);
   }
@@ -317,5 +324,6 @@ app.on('before-quit', () => {
   destroyTray();
   void stopActiveSonos();
   stopAudioServer();
+  stopMobileServer();
   closeDb();
 });

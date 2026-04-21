@@ -194,6 +194,28 @@ export function SettingsPage() {
             checked={settings.sonosEnabled ?? true}
             onChange={(v) => void update({ sonosEnabled: v })}
           />
+          <ToggleSetting
+            label={t('settings.network.mobileSync')}
+            description={t('settings.network.mobileSyncDescription')}
+            checked={settings.mobileSyncEnabled ?? false}
+            onChange={(v) => void update({ mobileSyncEnabled: v })}
+          />
+          {settings.mobileSyncEnabled && (
+            <label style={{ display: 'grid', gap: 4, marginLeft: 28 }}>
+              <span style={{ fontWeight: 500 }}>{t('settings.network.mobileSyncPort')}</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                {t('settings.network.mobileSyncPortDescription')}
+              </span>
+              <input
+                type="number"
+                min="0"
+                max="65535"
+                value={settings.mobileSyncPort || 0}
+                onChange={(e) => void update({ mobileSyncPort: Number(e.target.value) })}
+                style={{ width: 100, marginTop: 4 }}
+              />
+            </label>
+          )}
         </div>
       )}
 

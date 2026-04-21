@@ -12,7 +12,7 @@ fs.mkdirSync(outputDir, { recursive: true });
 fs.rmSync(userDataDir, { recursive: true, force: true });
 fs.mkdirSync(userDataDir, { recursive: true });
 
-const child = spawn(electronPath, ['.'], {
+const child = spawn(electronPath, ['.', '--no-sandbox'], {
   cwd: rootDir,
   stdio: 'inherit',
   env: {

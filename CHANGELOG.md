@@ -1,7 +1,7 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.4.2
+## v0.5.0
 
 ### Bug Fixes
 
@@ -23,6 +23,7 @@ _Generated from repository tags and commit history._
 - Add MusicBrainz metadata sync ([b759dd0](https://github.com/dgarana/fmusic/commit/b759dd0de96ade5d0862b44d5ba58c87e4bf7491))
 - Show embedded track artwork ([8af77b3](https://github.com/dgarana/fmusic/commit/8af77b33ecd7dc23094b28236fc19ff6d03efb4d))
 - Add dedicated track editing workspace with trim, fade and volume controls ([218e1c5](https://github.com/dgarana/fmusic/commit/218e1c5f850019c77bc66e73a8f8ee08f5e10583))
+- Add downloading capabilities through QR ([a0a5351](https://github.com/dgarana/fmusic/commit/a0a53516c8229c13a3c93854209d7311447a8e5b))
 
 ### Miscellaneous
 
@@ -34,7 +35,9 @@ _Generated from repository tags and commit history._
 - Release v0.3.1 ([c5a5724](https://github.com/dgarana/fmusic/commit/c5a5724cc857b9c705cb9fbb4f8421ec1e572f31))
 - Release v0.4.0 ([2720d94](https://github.com/dgarana/fmusic/commit/2720d94cf5a4681a3bc55ad681e5bb9d0c7af1c0))
 - Release v0.4.1 ([c14f7e2](https://github.com/dgarana/fmusic/commit/c14f7e2251b25fb06a7bfff96b6be7c9aa7c6ed3))
-- Release v0.4.2 ([cb11250](https://github.com/dgarana/fmusic/commit/cb1125031fe615bc278fb385d4788b195f632a78))
+- Release v0.4.2 ([8200515](https://github.com/dgarana/fmusic/commit/8200515b84060cb581da19fda1d600b16a16d0ee))
+- Update the requirements ([d303eb9](https://github.com/dgarana/fmusic/commit/d303eb91578d1af7bb78bf309d8b3977e7049d59))
+- Release v0.5.0 ([1ca0a4a](https://github.com/dgarana/fmusic/commit/1ca0a4ab7653ae753e7dace6f723784998d72fa2))
 
 ### Other
 
@@ -46,6 +49,13 @@ test: add Vitest test suite for all renderer components ([9208601](https://githu
 - Merge pull request #2 from dgarana/feature/add_support_for_editing_music
 
 feat: add dedicated track editing workspace ([b7a43e5](https://github.com/dgarana/fmusic/commit/b7a43e52ef04faf980d8c9eba9e1aba2b30c2ac2))
+- Run build as part of PRs ([c6b546c](https://github.com/dgarana/fmusic/commit/c6b546cf682c0eaf14dcf45acc21fd8dd9d2da92))
+- Merge pull request #3 from dgarana/update_requirements
+
+chore: Update the requirements ([53c34fd](https://github.com/dgarana/fmusic/commit/53c34fddc3f48e79ba98c38699e8b866798b9e68))
+- Merge pull request #4 from dgarana/add_download_capabilities
+
+feat: Add downloading capabilities through QR ([fa5ec26](https://github.com/dgarana/fmusic/commit/fa5ec2686e8ce6a45755645ef953f5b00026c533))
 
 ### Testing
 

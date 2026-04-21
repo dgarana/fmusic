@@ -95,7 +95,11 @@
     "untitledFallback": "Sin título",
     "syncMetadataLoaded": "Metadatos cargados desde {source}. Revisa y guarda si te encajan.",
     "syncMetadataNotFound": "No he encontrado una coincidencia fiable en MusicBrainz para esta canción.",
-    "syncMetadataError": "No se han podido consultar los metadatos online: {detail}"
+    "syncMetadataError": "No se han podido consultar los metadatos online: {detail}",
+    "mobileSyncTooltip": "Mostrar QR para descarga móvil",
+    "mobileSyncTitle": "Sincronización móvil",
+    "mobileSyncInstructions": "Escanea este código QR con tu móvil para descargar \"{title}\".",
+    "mobileSyncDisabled": "La sincronización móvil está desactivada. Actívala en Ajustes > Red."
   },
   "playlists": {
     "title": "🎵 Playlists",
@@ -156,7 +160,11 @@
       "skipCert": "🔒 Ignorar errores de certificado SSL",
       "skipCertDescription": "Actívalo si estás detrás de una VPN corporativa con inspección SSL. Desactívalo en redes de confianza.",
       "sonos": "📡 Integración con Sonos",
-      "sonosDescription": "Habilita el streaming a altavoces Sonos. Levanta un servidor HTTP interno en la red local."
+      "sonosDescription": "Habilita el streaming a altavoces Sonos. Levanta un servidor HTTP interno en la red local.",
+      "mobileSync": "📱 Sincronización móvil",
+      "mobileSyncDescription": "Permite descargar canciones a tu móvil escaneando un código QR. Levanta un servidor HTTP interno.",
+      "mobileSyncPort": "Puerto de sincronización móvil",
+      "mobileSyncPortDescription": "Puerto para el servidor de sincronización móvil. Usa 0 para un puerto aleatorio disponible."
     },
     "dependencies": {
       "available": "✅ disponible",

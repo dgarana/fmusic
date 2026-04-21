@@ -24,7 +24,9 @@ function getStore(): Store<Schema> {
         sonosKnownHosts: [],
         sonosEnabled: true,
         closeToTray: true,
-        miniPlayerEnabled: true
+        miniPlayerEnabled: true,
+        mobileSyncEnabled: false,
+        mobileSyncPort: 0
       }
     }
   });

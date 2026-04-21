@@ -71,7 +71,10 @@ export const Channels = {
   SonosStop: 'sonos:stop',
   SonosVolume: 'sonos:volume',
   SonosSeek: 'sonos:seek',
-  SonosPosition: 'sonos:position'
+  SonosPosition: 'sonos:position',
+
+  // Mobile Sync
+  MobileSyncGetUrl: 'mobile-sync:get-url'
 } as const;
 
 export type ChannelName = (typeof Channels)[keyof typeof Channels];

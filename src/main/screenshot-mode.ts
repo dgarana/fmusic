@@ -216,6 +216,37 @@ export async function runScreenshotCapture(win: BrowserWindow): Promise<void> {
     await captureRoute(win, `#/playlists/${seededData.playlistIds[0]}`, 'playlist-detail.png');
   }
   await captureRoute(win, '#/settings', 'settings.png');
+
+  // Mobile Sync screenshot
+  await win.webContents.executeJavaScript(`(async () => {
+    // 1. Enable Mobile Sync in settings first
+    window.location.hash = '#/settings';
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    
+    // Find and click Network tab
+    const tabs = Array.from(document.querySelectorAll('button'));
+    const networkTab = tabs.find(b => b.textContent.includes('Network') || b.textContent.includes('Red'));
+    if (networkTab) networkTab.click();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    
+    // Find and enable Mobile Sync toggle (it's the 3rd one in the network tab)
+    const toggles = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+    if (toggles[2] && !toggles[2].checked) toggles[2].click();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // 2. Go to library and click the mobile sync button for a track
+    window.location.hash = '#/library';
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    const mobileSyncBtns = Array.from(document.querySelectorAll('button')).filter(b => {
+      const title = b.getAttribute('title') || '';
+      return title.toLowerCase().includes('mobile') || title.toLowerCase().includes('móvil');
+    });
+    if (mobileSyncBtns[0]) mobileSyncBtns[0].click();
+  })()`);
+  await wait(1500);
+  const mobileSyncImage = await win.capturePage();
+  fs.writeFileSync(path.join(screenshotOutputDir, 'mobile-sync.png'), mobileSyncImage.toPNG());
+
   if (seededData?.tracks[0]) {
     await win.webContents.executeJavaScript(`(async () => {
       window.location.hash = '#/edit/${seededData.tracks[0].id}';

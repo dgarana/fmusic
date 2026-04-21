@@ -28,9 +28,12 @@ required on the user's machine.
 - 💾 **Metadata persistence**: manual edits are saved to the app database and also written back to the audio file for **MP3** tracks (ID3 tags).
 - 📝 **Playlists** with add / remove / reorder tracks.
 - ♥ **Favorites**: protected special playlist (cannot be deleted); heart button in the player toggles the current track in Favorites instantly.
+- 📱 **Mobile Sync**: download specific tracks to your mobile device by scanning a dynamically generated QR code.
 - 🔄 **Real-time refresh**: opening a playlist and adding tracks from elsewhere in the app updates the view without a reload.
 
 ![Library](docs/screenshots/library.png)
+
+![Mobile Sync](docs/screenshots/mobile-sync.png)
 
 ![Playlists](docs/screenshots/playlists.png)
 

@@ -5,6 +5,14 @@ import { usePlayerStore } from '../store/player';
 import { formatDuration } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
 import type { Playlist, Track } from '../../../shared/types';
+import {
+  MusicIcon,
+  PlayIcon,
+  ChevronUpIcon,
+  CloseIcon,
+  SearchIcon
+} from '../components/icons';
+import { NowPlayingIndicator } from '../components/NowPlayingIndicator';
 
 export function PlaylistsPage() {
   const t = useT();
@@ -97,6 +105,8 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [adding, setAdding] = useState(false);
   const playTrack = usePlayerStore((s) => s.playTrack);
+  const currentTrack = usePlayerStore((s) => s.current);
+  const isPlayingGlobal = usePlayerStore((s) => s.isPlaying);
   const refreshPlaylists = useLibraryStore((s) => s.refreshPlaylists);
   const playlistsVersion = useLibraryStore((s) => s.playlistsVersion);
 
@@ -173,30 +183,26 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-        <h1 style={{ margin: 0 }}>🎵 {name}</h1>
+        <h1 style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+          <MusicIcon size={22} /> {name}
+        </h1>
         <button className="primary" onClick={() => void openPicker()}>
           {t('playlists.addTracks')}
         </button>
       </div>
 
       {pickerOpen && (
-        <div
-          style={{
-            marginBottom: 18,
-            padding: 14,
-            border: '1px solid var(--border)',
-            borderRadius: 8,
-            background: 'var(--bg-elevated)'
-          }}
-        >
-          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-            <input
-              placeholder={t('playlists.pickerFilter')}
-              value={pickerQuery}
-              onChange={(e) => setPickerQuery(e.target.value)}
-              style={{ flex: 1 }}
-              autoFocus
-            />
+        <div className="picker-card">
+          <div className="picker-toolbar">
+            <div className="input-with-icon">
+              <SearchIcon size={16} />
+              <input
+                placeholder={t('playlists.pickerFilter')}
+                value={pickerQuery}
+                onChange={(e) => setPickerQuery(e.target.value)}
+                autoFocus
+              />
+            </div>
             <button
               className="primary"
               onClick={() => void commitAdd()}
@@ -211,26 +217,9 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
               {allTracks.length === 0 ? t('playlists.libraryEmpty') : t('playlists.allAlreadyIn')}
             </div>
           ) : (
-            <div
-              style={{
-                maxHeight: 320,
-                overflowY: 'auto',
-                border: '1px solid var(--border)',
-                borderRadius: 6
-              }}
-            >
+            <div className="picker-list">
               {candidates.map((t) => (
-                <label
-                  key={t.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '8px 10px',
-                    borderBottom: '1px solid var(--border)',
-                    cursor: 'pointer'
-                  }}
-                >
+                <label key={t.id} className="picker-row">
                   <input
                     type="checkbox"
                     checked={selected.has(t.id)}
@@ -265,19 +254,51 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
             </tr>
           </thead>
           <tbody>
-            {tracks.map((tr, i) => (
-              <tr key={tr.id}>
-                <td>{i + 1}</td>
+            {tracks.map((tr, i) => {
+              const isCurrent = currentTrack?.id === tr.id;
+              return (
+              <tr key={tr.id} className={isCurrent ? 'now-playing' : undefined}>
+                <td>
+                  {isCurrent ? (
+                    <span className="now-playing-indicator-cell">
+                      <NowPlayingIndicator playing={isPlayingGlobal} size={16} />
+                    </span>
+                  ) : (
+                    i + 1
+                  )}
+                </td>
                 <td>{tr.title}</td>
                 <td>{tr.artist ?? '-'}</td>
                 <td>{formatDuration(tr.durationSec)}</td>
                 <td className="actions">
-                  <button onClick={() => void playTrack(tr, tracks)} title={t('playlists.playTooltip')}>▶</button>{' '}
-                  <button onClick={() => void moveUp(i)} disabled={i === 0} title={t('playlists.moveUpTooltip')}>↑</button>{' '}
-                  <button className="danger" onClick={() => void remove(tr.id)} title={t('playlists.removeTooltip')}>×</button>
+                  <div className="row-actions">
+                    <button
+                      className="icon-btn"
+                      onClick={() => void playTrack(tr, tracks)}
+                      title={t('playlists.playTooltip')}
+                    >
+                      <PlayIcon size={16} />
+                    </button>
+                    <button
+                      className="icon-btn"
+                      onClick={() => void moveUp(i)}
+                      disabled={i === 0}
+                      title={t('playlists.moveUpTooltip')}
+                    >
+                      <ChevronUpIcon size={16} />
+                    </button>
+                    <button
+                      className="icon-btn danger"
+                      onClick={() => void remove(tr.id)}
+                      title={t('playlists.removeTooltip')}
+                    >
+                      <CloseIcon size={16} />
+                    </button>
+                  </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       )}

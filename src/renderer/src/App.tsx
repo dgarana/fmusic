@@ -58,9 +58,16 @@ export function App() {
 
     const offDownload = window.fmusic.onDownloadUpdate((job) => applyDownloadUpdate(job));
     const offTrack = window.fmusic.onTrackAdded((track) => handleTrackAdded(track));
+    // Keep every window's settings store in sync: the main process
+    // broadcasts Channels.SettingsChanged after any update, so the mini
+    // player picks up theme/language changes made in the main window.
+    const offSettings = window.fmusic.onSettingsChanged((next) => {
+      useSettingsStore.setState({ settings: next });
+    });
     return () => {
       offDownload();
       offTrack();
+      offSettings();
     };
   }, [refreshAll, refreshDownloads, applyDownloadUpdate, handleTrackAdded]);
 

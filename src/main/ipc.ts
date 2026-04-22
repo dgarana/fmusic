@@ -28,7 +28,8 @@ import {
   updateTrack,
   getTrack,
   getTrackEmbeddedArtworkDataUrl,
-  editTrack
+  editTrack,
+  renameTrackFile
 } from './library/tracks-repo.js';
 import {
   addTrackToPlaylist,
@@ -109,6 +110,11 @@ export function registerIpc(): void {
       }
     }
 
+    // Notify every renderer (main window, mini player, …) so they can keep
+    // their own zustand copy of the settings in sync — the theme, language
+    // and other preferences must propagate across all windows.
+    broadcast(Channels.SettingsChanged, next);
+
     return next;
   });
 
@@ -188,6 +194,10 @@ export function registerIpc(): void {
     (_evt, id: number, options: Parameters<typeof editTrack>[1]) =>
       editTrack(id, options)
   );
+  ipcMain.handle(Channels.TracksRename, (_evt, id: number, basename: string) =>
+    renameTrackFile(id, basename)
+  );
+  ipcMain.handle(Channels.TracksGet, (_evt, id: number) => getTrack(id));
   ipcMain.handle(Channels.TracksDownloadedIds, (_evt, ids: string[]) =>
     findDownloadedYoutubeIds(ids)
   );

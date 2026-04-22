@@ -12,11 +12,13 @@ export function createMiniPlayer(): BrowserWindow {
     minHeight: 96,
     maxHeight: 96,
     frame: false,
-    transparent: false,
+    // A transparent native background lets the CSS theme (light, dark,
+    // darcula) drive the look instead of a hardcoded color that would peek
+    // through during load / on light themes.
+    transparent: true,
     alwaysOnTop: true,
     resizable: false,
     skipTaskbar: true,
-    backgroundColor: '#1a1d24',
     show: false,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),

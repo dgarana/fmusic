@@ -15,6 +15,7 @@ export const Channels = {
   // Settings
   SettingsGet: 'settings:get',
   SettingsUpdate: 'settings:update',
+  SettingsChanged: 'settings:changed', // event, main -> renderer (all windows)
 
   // YouTube
   YtSearch: 'yt:search',
@@ -40,6 +41,8 @@ export const Channels = {
   TracksStream: 'tracks:stream-url',
   TracksDownloadedIds: 'tracks:downloaded-ids',
   TracksEdit: 'tracks:edit',
+  TracksRename: 'tracks:rename',
+  TracksGet: 'tracks:get',
 
   // Library - playlists
   PlaylistsList: 'playlists:list',

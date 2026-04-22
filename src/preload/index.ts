@@ -51,6 +51,8 @@ const api = {
   getSettings: () => invoke<AppSettings>(Channels.SettingsGet),
   updateSettings: (patch: Partial<AppSettings>) =>
     invoke<AppSettings>(Channels.SettingsUpdate, patch),
+  onSettingsChanged: (handler: (settings: AppSettings) => void) =>
+    on<AppSettings>(Channels.SettingsChanged, handler),
 
   // YouTube
   search: (query: string, limit = 10) => invoke<SearchResult[]>(Channels.YtSearch, query, limit),
@@ -96,6 +98,9 @@ const api = {
   trackStreamUrl: (id: number) => invoke<string | null>(Channels.TracksStream, id),
   editTrack: (id: number, options: TrackEditOptions) =>
     invoke<Track | null>(Channels.TracksEdit, id, options),
+  renameTrackFile: (id: number, basename: string) =>
+    invoke<Track | null>(Channels.TracksRename, id, basename),
+  getTrack: (id: number) => invoke<Track | null>(Channels.TracksGet, id),
   downloadedYoutubeIds: (ids: string[]) =>
     invoke<string[]>(Channels.TracksDownloadedIds, ids),
   onTrackAdded: (handler: (track: Track) => void) => on<Track>(Channels.TracksAdded, handler),

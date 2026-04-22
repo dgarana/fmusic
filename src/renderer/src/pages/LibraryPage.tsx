@@ -6,36 +6,27 @@ import { usePlayerStore } from '../store/player';
 import { useSettingsStore } from '../store/settings';
 import { formatDuration } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
-import type { Track, TrackMetadataSuggestions, TrackSortKey } from '../../../shared/types';
+import type { Track, TrackSortKey } from '../../../shared/types';
+import {
+  PlayIcon,
+  EditIcon,
+  QrCodeIcon,
+  PlusIcon,
+  CloseIcon,
+  MusicIcon,
+  SearchIcon
+} from '../components/icons';
+import { NowPlayingIndicator } from '../components/NowPlayingIndicator';
 
-interface EditDraft {
-  title: string;
-  artist: string;
-  album: string;
-  genre: string;
-}
-
-interface SyncFeedback {
-  trackId: number;
-  kind: 'info' | 'error';
-  message: string;
-}
-
-function draftFromTrack(track: Track): EditDraft {
-  return {
-    title: track.title,
-    artist: track.artist ?? '',
-    album: track.album ?? '',
-    genre: track.genre ?? ''
-  };
-}
-
-function normalizeOptionalText(value: string): string | null {
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
-function TrackTitleCell({ track }: { track: Track }) {
+function TrackTitleCell({
+  track,
+  isCurrent,
+  isPlaying
+}: {
+  track: Track;
+  isCurrent: boolean;
+  isPlaying: boolean;
+}) {
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -51,16 +42,25 @@ function TrackTitleCell({ track }: { track: Track }) {
 
   return (
     <div className="track-title-cell">
-      {thumbnailUrl ? (
-        <img
-          className="track-thumb"
-          src={thumbnailUrl}
-          alt=""
-          loading="lazy"
-        />
-      ) : (
-        <div className="track-thumb-fallback" aria-hidden="true">♪</div>
-      )}
+      <div className="track-thumb-wrap">
+        {thumbnailUrl ? (
+          <img
+            className="track-thumb"
+            src={thumbnailUrl}
+            alt=""
+            loading="lazy"
+          />
+        ) : (
+          <div className="track-thumb-fallback" aria-hidden="true">
+            <MusicIcon size={18} />
+          </div>
+        )}
+        {isCurrent && (
+          <div className="track-thumb-overlay">
+            <NowPlayingIndicator playing={isPlaying} size={18} />
+          </div>
+        )}
+      </div>
       <span className="track-title-text">{track.title}</span>
     </div>
   );
@@ -73,32 +73,21 @@ export function LibraryPage() {
     { key: 'title', label: t('library.columns.title') },
     { key: 'artist', label: t('library.columns.artist') },
     { key: 'album', label: t('library.columns.album') },
-    { key: 'genre', label: t('library.columns.genre') },
-    { key: 'durationSec', label: t('library.columns.duration') },
-    { key: 'downloadedAt', label: t('library.columns.downloaded') }
+    { key: 'durationSec', label: t('library.columns.duration') }
   ];
   const { tracks, genres, query, setQuery } = useLibraryStore();
   const playTrack = usePlayerStore((s) => s.playTrack);
+  const currentTrack = usePlayerStore((s) => s.current);
+  const isPlayingGlobal = usePlayerStore((s) => s.isPlaying);
   const { settings } = useSettingsStore();
 
   const [addingTrackId, setAddingTrackId] = useState<number | null>(null);
-  const [editingTrackId, setEditingTrackId] = useState<number | null>(null);
-  const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
-  const [savingTrackId, setSavingTrackId] = useState<number | null>(null);
-  const [syncingTrackId, setSyncingTrackId] = useState<number | null>(null);
-  const [syncFeedback, setSyncFeedback] = useState<SyncFeedback | null>(null);
   const [mobileSyncTrackId, setMobileSyncTrackId] = useState<number | null>(null);
   const [mobileSyncUrl, setMobileSyncUrl] = useState<string | null>(null);
   const playlists = useLibraryStore((s) => s.playlists);
   const refreshPlaylists = useLibraryStore((s) => s.refreshPlaylists);
   const refreshTracks = useLibraryStore((s) => s.refreshTracks);
-  const refreshGenres = useLibraryStore((s) => s.refreshGenres);
   const [playlistsByTrack, setPlaylistsByTrack] = useState<Map<number, number[]>>(new Map());
-  const [metadataSuggestions, setMetadataSuggestions] = useState<TrackMetadataSuggestions>({
-    artists: [],
-    albums: [],
-    genres: []
-  });
 
   const playlistsById = useMemo(() => {
     const map = new Map<number, string>();
@@ -122,16 +111,6 @@ export function LibraryPage() {
     };
   }, [tracks, playlists]);
 
-  useEffect(() => {
-    let cancelled = false;
-    void window.fmusic.trackMetadataSuggestions().then((suggestions) => {
-      if (!cancelled) setMetadataSuggestions(suggestions);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   function sortBy(key: TrackSortKey) {
     const sortDir =
       query.sortBy === key ? (query.sortDir === 'asc' ? 'desc' : 'asc') : 'asc';
@@ -153,22 +132,8 @@ export function LibraryPage() {
   }
 
   function togglePlaylistPicker(trackId: number) {
-    stopEditing();
+    setMobileSyncTrackId(null);
     setAddingTrackId((current) => (current === trackId ? null : trackId));
-  }
-
-  function startEditing(track: Track) {
-    setAddingTrackId(null);
-    setMobileSyncTrackId(null);
-    setEditingTrackId(track.id);
-    setEditDraft(draftFromTrack(track));
-  }
-
-  function stopEditing() {
-    setEditingTrackId(null);
-    setEditDraft(null);
-    setSyncFeedback(null);
-    setMobileSyncTrackId(null);
   }
 
   async function toggleMobileSync(trackId: number) {
@@ -184,7 +149,6 @@ export function LibraryPage() {
     }
 
     setAddingTrackId(null);
-    setEditingTrackId(null);
     setMobileSyncTrackId(trackId);
     setMobileSyncUrl(null);
     try {
@@ -196,77 +160,18 @@ export function LibraryPage() {
     }
   }
 
-  async function handleSaveMetadata(trackId: number) {
-    if (!editDraft) return;
-    setSavingTrackId(trackId);
-    try {
-      await window.fmusic.updateTrack(trackId, {
-        title: editDraft.title.trim() || t('library.untitledFallback'),
-        artist: normalizeOptionalText(editDraft.artist),
-        album: normalizeOptionalText(editDraft.album),
-        genre: normalizeOptionalText(editDraft.genre)
-      });
-      await Promise.all([
-        refreshTracks(),
-        refreshGenres(),
-        window.fmusic.trackMetadataSuggestions().then(setMetadataSuggestions)
-      ]);
-      setSyncFeedback(null);
-      stopEditing();
-    } finally {
-      setSavingTrackId(null);
-    }
-  }
-
-  async function handleLookupMetadata(track: Track) {
-    setAddingTrackId(null);
-    setSyncFeedback(null);
-    setSyncingTrackId(track.id);
-    try {
-      const result = await window.fmusic.lookupTrackMetadata(track.id);
-      if (!result) {
-        setSyncFeedback({
-          trackId: track.id,
-          kind: 'info',
-          message: t('library.syncMetadataNotFound')
-        });
-        return;
-      }
-
-      setEditingTrackId(track.id);
-      setEditDraft({
-        title: result.title || track.title,
-        artist: result.artist ?? track.artist ?? '',
-        album: result.album ?? track.album ?? '',
-        genre: result.genre ?? ''
-      });
-      setSyncFeedback({
-        trackId: track.id,
-        kind: 'info',
-        message: t('library.syncMetadataLoaded', { source: result.source })
-      });
-    } catch (err) {
-      const detail = err instanceof Error ? err.message : String(err);
-      setSyncFeedback({
-        trackId: track.id,
-        kind: 'error',
-        message: t('library.syncMetadataError', { detail })
-      });
-    } finally {
-      setSyncingTrackId(null);
-    }
-  }
-
   return (
     <div>
       <h1>{t('library.title')}</h1>
       <div className="library-toolbar">
-        <input
-          placeholder={t('library.searchPlaceholder')}
-          value={query.search ?? ''}
-          onChange={(e) => void setQuery({ search: e.target.value })}
-          style={{ flex: 1 }}
-        />
+        <div className="input-with-icon">
+          <SearchIcon size={16} />
+          <input
+            placeholder={t('library.searchPlaceholder')}
+            value={query.search ?? ''}
+            onChange={(e) => void setQuery({ search: e.target.value })}
+          />
+        </div>
         <select
           value={query.genre ?? ''}
           onChange={(e) => void setQuery({ genre: e.target.value || undefined })}
@@ -285,7 +190,17 @@ export function LibraryPage() {
           {t('library.empty')}
         </div>
       ) : (
-        <table className="track-table">
+        <table className="track-table compact">
+          {/* Fixed column widths so long titles/artists truncate with
+              ellipsis instead of stretching the table beyond the viewport. */}
+          <colgroup>
+            <col />
+            <col className="col-artist" />
+            <col className="col-album" />
+            <col className="col-duration" />
+            <col className="col-playlists" />
+            <col className="col-actions" />
+          </colgroup>
           <thead>
             <tr>
               {columns.map((col) => (
@@ -303,17 +218,20 @@ export function LibraryPage() {
               const trackPlaylists = (playlistsByTrack.get(tr.id) ?? [])
                 .map((id) => playlistsById.get(id))
                 .filter((name): name is string => Boolean(name));
-              const showEditor = editingTrackId === tr.id && editDraft;
-              const showFeedback = syncFeedback?.trackId === tr.id;
+              const isCurrent = currentTrack?.id === tr.id;
               return (
                 <Fragment key={tr.id}>
-                  <tr key={tr.id}>
-                    <td><TrackTitleCell track={tr} /></td>
-                    <td>{tr.artist ?? '-'}</td>
-                    <td>{tr.album ?? '-'}</td>
-                    <td>{tr.genre ?? '-'}</td>
-                    <td>{formatDuration(tr.durationSec)}</td>
-                    <td>{tr.downloadedAt.slice(0, 10)}</td>
+                  <tr key={tr.id} className={isCurrent ? 'now-playing' : undefined}>
+                    <td className="cell-flex">
+                      <TrackTitleCell
+                        track={tr}
+                        isCurrent={isCurrent}
+                        isPlaying={isCurrent && isPlayingGlobal}
+                      />
+                    </td>
+                    <td className="cell-ellipsis" title={tr.artist ?? undefined}>{tr.artist ?? '-'}</td>
+                    <td className="cell-ellipsis" title={tr.album ?? undefined}>{tr.album ?? '-'}</td>
+                    <td className="cell-narrow">{formatDuration(tr.durationSec)}</td>
                     <td>
                       {trackPlaylists.length === 0 ? (
                         <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>
@@ -328,149 +246,70 @@ export function LibraryPage() {
                       )}
                     </td>
                     <td className="actions">
-                      <button onClick={() => void playTrack(tr, tracks)} title={t('library.playTooltip')}>▶</button>{' '}
-                      <button
-                        onClick={() => startEditing(tr)}
-                        title={t('library.editMetadataTooltip')}
-                      >
-                        ✎
-                      </button>{' '}
-                      <button
-                        onClick={() => navigate(`/edit/${tr.id}`)}
-                        title={t('library.editAudioTooltip')}
-                      >
-                        ✂
-                      </button>{' '}
-                      <button
-                        onClick={() => void handleLookupMetadata(tr)}
-                        title={t('library.syncMetadataTooltip')}
-                        disabled={syncingTrackId === tr.id}
-                      >
-                        {syncingTrackId === tr.id ? '…' : '↻'}
-                      </button>{' '}
-                      {settings?.mobileSyncEnabled && (
+                      <div className="row-actions">
                         <button
-                          onClick={() => void toggleMobileSync(tr.id)}
-                          title={t('library.mobileSyncTooltip')}
+                          className="icon-btn sm"
+                          onClick={() => void playTrack(tr, tracks)}
+                          title={t('library.playTooltip')}
                         >
-                          📱
+                          <PlayIcon size={14} />
                         </button>
-                      )}{' '}
-                      <button
-                        onClick={() => togglePlaylistPicker(tr.id)}
-                        title={t('library.addToPlaylistTooltip')}
-                      >
-                        +
-                      </button>
-                      {addingTrackId === tr.id && (
-                        <select
-                          autoFocus
-                          onChange={(e) => {
-                            const id = Number(e.target.value);
-                            if (id) void handleAddToPlaylist(tr, id);
-                          }}
-                          defaultValue=""
-                          style={{ marginLeft: 6 }}
+                        <button
+                          className="icon-btn sm"
+                          onClick={() => navigate(`/edit/${tr.id}`)}
+                          title={t('library.editorTooltip')}
                         >
-                          <option value="" disabled>
-                            {t('library.choosePlaylist')}
-                          </option>
-                          {playlists.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {playlistDisplayName(p, t)}
+                          <EditIcon size={14} />
+                        </button>
+                        <button
+                          className="icon-btn sm"
+                          onClick={() => togglePlaylistPicker(tr.id)}
+                          title={t('library.addToPlaylistTooltip')}
+                        >
+                          <PlusIcon size={14} />
+                        </button>
+                        {settings?.mobileSyncEnabled && (
+                          <button
+                            className="icon-btn sm"
+                            onClick={() => void toggleMobileSync(tr.id)}
+                            title={t('library.mobileSyncTooltip')}
+                          >
+                            <QrCodeIcon size={14} />
+                          </button>
+                        )}
+                        {addingTrackId === tr.id && (
+                          <select
+                            autoFocus
+                            onChange={(e) => {
+                              const id = Number(e.target.value);
+                              if (id) void handleAddToPlaylist(tr, id);
+                            }}
+                            defaultValue=""
+                            style={{ marginLeft: 6 }}
+                          >
+                            <option value="" disabled>
+                              {t('library.choosePlaylist')}
                             </option>
-                          ))}
-                        </select>
-                      )}{' '}
-                      <button className="danger" onClick={() => void handleDelete(tr)} title={t('library.deleteTooltip')}>
-                        ×
-                      </button>
+                            {playlists.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {playlistDisplayName(p, t)}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        <button
+                          className="icon-btn sm danger"
+                          onClick={() => void handleDelete(tr)}
+                          title={t('library.deleteTooltip')}
+                        >
+                          <CloseIcon size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                  {showEditor && (
-                    <tr key={`${tr.id}-editor`} className="track-editor-row">
-                      <td colSpan={8}>
-                        <div className="track-editor">
-                          {showFeedback && (
-                            <div className={`track-editor-feedback ${syncFeedback.kind}`}>
-                              {syncFeedback.message}
-                            </div>
-                          )}
-                          <label>
-                            <span>{t('library.columns.title')}</span>
-                            <input
-                              value={editDraft.title}
-                              onChange={(e) =>
-                                setEditDraft((draft) =>
-                                  draft ? { ...draft, title: e.target.value } : draft
-                                )
-                              }
-                            />
-                          </label>
-                          <label>
-                            <span>{t('library.columns.artist')}</span>
-                            <input
-                              list="library-artists"
-                              value={editDraft.artist}
-                              onChange={(e) =>
-                                setEditDraft((draft) =>
-                                  draft ? { ...draft, artist: e.target.value } : draft
-                                )
-                              }
-                            />
-                          </label>
-                          <label>
-                            <span>{t('library.columns.album')}</span>
-                            <input
-                              list="library-albums"
-                              value={editDraft.album}
-                              onChange={(e) =>
-                                setEditDraft((draft) =>
-                                  draft ? { ...draft, album: e.target.value } : draft
-                                )
-                              }
-                            />
-                          </label>
-                          <label>
-                            <span>{t('library.columns.genre')}</span>
-                            <input
-                              list="library-genres"
-                              value={editDraft.genre}
-                              onChange={(e) =>
-                                setEditDraft((draft) =>
-                                  draft ? { ...draft, genre: e.target.value } : draft
-                                )
-                              }
-                            />
-                          </label>
-                          <div className="track-editor-actions">
-                            <button onClick={stopEditing}>{t('common.cancel')}</button>
-                            <button
-                              className="primary"
-                              onClick={() => void handleSaveMetadata(tr.id)}
-                              disabled={savingTrackId === tr.id}
-                            >
-                              {savingTrackId === tr.id
-                                ? t('library.savingMetadata')
-                                : t('library.saveMetadata')}
-                            </button>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                  {showFeedback && !showEditor && (
-                    <tr key={`${tr.id}-feedback`} className="track-editor-row">
-                      <td colSpan={8}>
-                        <div className={`track-editor-feedback ${syncFeedback.kind}`}>
-                          {syncFeedback.message}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
                   {mobileSyncTrackId === tr.id && (
                     <tr key={`${tr.id}-mobile-sync`} className="track-editor-row">
-                      <td colSpan={8}>
+                      <td colSpan={6}>
                         <div className="mobile-sync-card">
                           <div className="mobile-sync-header">
                             <h3>{t('library.mobileSyncTitle')}</h3>
@@ -478,7 +317,7 @@ export function LibraryPage() {
                               <p>{t('library.mobileSyncInstructions', { title: tr.title })}</p>
                             )}
                           </div>
-                          
+
                           {mobileSyncUrl ? (
                             <>
                               <div className="mobile-sync-qr-wrapper">
@@ -491,22 +330,22 @@ export function LibraryPage() {
                                     src: 'fmusic-media://artwork/' + tr.id,
                                     height: 40,
                                     width: 40,
-                                    excavate: true,
+                                    excavate: true
                                   }}
                                 />
                               </div>
-                              <div className="mobile-sync-url">
-                                {mobileSyncUrl}
-                              </div>
+                              <div className="mobile-sync-url">{mobileSyncUrl}</div>
                             </>
                           ) : (
                             <div className="empty" style={{ fontStyle: 'normal' }}>
-                              ⏳ {t('common.loading')}
+                              {t('common.loading')}
                             </div>
                           )}
 
                           <div className="track-editor-actions" style={{ marginTop: 24 }}>
-                            <button onClick={() => setMobileSyncTrackId(null)}>{t('common.cancel')}</button>
+                            <button onClick={() => setMobileSyncTrackId(null)}>
+                              {t('common.cancel')}
+                            </button>
                           </div>
                         </div>
                       </td>
@@ -518,21 +357,6 @@ export function LibraryPage() {
           </tbody>
         </table>
       )}
-      <datalist id="library-artists">
-        {metadataSuggestions.artists.map((artist) => (
-          <option key={artist} value={artist} />
-        ))}
-      </datalist>
-      <datalist id="library-albums">
-        {metadataSuggestions.albums.map((album) => (
-          <option key={album} value={album} />
-        ))}
-      </datalist>
-      <datalist id="library-genres">
-        {metadataSuggestions.genres.map((genre) => (
-          <option key={genre} value={genre} />
-        ))}
-      </datalist>
     </div>
   );
 }

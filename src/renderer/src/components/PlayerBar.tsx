@@ -6,6 +6,15 @@ import { useSettingsStore } from '../store/settings';
 import { SonosPanel } from './SonosPanel';
 import { formatDuration } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
+import {
+  PrevIcon,
+  NextIcon,
+  PlayIcon,
+  PauseIcon,
+  HeartIcon,
+  HeartFilledIcon,
+  VolumeIcon
+} from './icons';
 
 function coverUrl(trackId: number | null | undefined): string | null {
   return typeof trackId === 'number' ? `fmusic-media://artwork/${trackId}` : null;
@@ -141,32 +150,34 @@ export function PlayerBar() {
               : t('player.addToFavorites', { name: favoritesName })
           }
         >
-          {isFavorited ? '♥' : '♡'}
+          {isFavorited ? <HeartFilledIcon size={18} /> : <HeartIcon size={18} />}
         </button>
       </div>
       <div className="player-controls">
         <div className="buttons">
           <button
+            className="icon-btn"
             onClick={() => void handlePrev()}
             title={t('player.previous')}
             style={{ visibility: hasPrev ? 'visible' : 'hidden' }}
           >
-            &laquo;
+            <PrevIcon size={20} />
           </button>
           <button
-            className="primary"
+            className="play-btn"
             onClick={handleTogglePlay}
             disabled={!current}
             title={isPlaying ? t('player.pause') : t('player.play')}
           >
-            {isPlaying ? '\u275a\u275a' : '\u25b6'}
+            {isPlaying ? <PauseIcon size={20} /> : <PlayIcon size={20} />}
           </button>
           <button
+            className="icon-btn"
             onClick={() => void handleNext()}
             title={t('player.next')}
             style={{ visibility: hasNext ? 'visible' : 'hidden' }}
           >
-            &raquo;
+            <NextIcon size={20} />
           </button>
         </div>
         <div className="scrub">
@@ -189,16 +200,18 @@ export function PlayerBar() {
       </div>
       <div className="player-extras">
         {sonosEnabled && <SonosPanel />}
-        <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{t('player.volume')}</span>
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={volume}
-          onChange={(e) => handleVolume(Number(e.target.value))}
-          style={{ width: 120 }}
-        />
+        <div className="volume" title={t('player.volume')}>
+          <VolumeIcon size={18} />
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={volume}
+            onChange={(e) => handleVolume(Number(e.target.value))}
+            aria-label={t('player.volume')}
+          />
+        </div>
       </div>
     </footer>
   );

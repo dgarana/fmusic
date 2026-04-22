@@ -5,6 +5,7 @@ import { useDownloadsStore } from '../store/downloads';
 import { PAGE_SIZE, useSearchStore } from '../store/search';
 import { extractYoutubeId, formatDuration, isYouTubeUrl } from '../util';
 import { useT } from '../i18n';
+import { SearchIcon, DownloadIcon, CloseIcon } from '../components/icons';
 
 function isSslError(message: string): boolean {
   return message.includes('CERTIFICATE_VERIFY_FAILED') || message.includes('SSL');
@@ -170,14 +171,17 @@ export function DownloadPage() {
     <div>
       <h1>{t('download.title')}</h1>
       <div className="search-row">
-        <input
-          placeholder={t('download.searchPlaceholder')}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') void submit();
-          }}
-        />
+        <div className="input-with-icon">
+          <SearchIcon size={16} />
+          <input
+            placeholder={t('download.searchPlaceholder')}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void submit();
+            }}
+          />
+        </div>
         <button className="primary" onClick={() => void submit()} disabled={searching}>
           {searching ? t('common.searching') : t('download.searchButton')}
         </button>
@@ -222,7 +226,13 @@ export function DownloadPage() {
                       {t('download.cancelJob')}
                     </button>
                   ) : (
-                    <button onClick={() => dismissJob(job.id)} title={t('download.dismissJob')}>×</button>
+                    <button
+                      className="icon-btn"
+                      onClick={() => dismissJob(job.id)}
+                      title={t('download.dismissJob')}
+                    >
+                      <CloseIcon size={14} />
+                    </button>
                   )}
                 </div>
                 <div className="progress-bar">
@@ -352,7 +362,12 @@ export function DownloadPage() {
                           {t('download.cancelJob')}
                         </button>
                       ) : (
-                        <button className="primary" onClick={() => void enqueue(r.url, r.id)}>
+                        <button
+                          className="primary"
+                          onClick={() => void enqueue(r.url, r.id)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                        >
+                          <DownloadIcon size={14} />
                           {t('download.download')}
                         </button>
                       )}

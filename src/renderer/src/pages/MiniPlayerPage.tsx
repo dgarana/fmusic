@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useT } from '../i18n';
+import {
+  PrevIcon,
+  NextIcon,
+  PlayIcon,
+  PauseIcon,
+  ExpandIcon,
+  MusicIcon
+} from '../components/icons';
 
 interface MiniState {
   trackId: number | null;
@@ -57,7 +65,9 @@ export function MiniPlayerPage() {
           {cover ? (
             <img src={cover} alt="" />
           ) : (
-            <span className="mini-cover-empty">♪</span>
+            <span className="mini-cover-empty">
+              <MusicIcon size={22} />
+            </span>
           )}
         </div>
         <div className="mini-info">
@@ -72,7 +82,7 @@ export function MiniPlayerPage() {
           style={{ visibility: state.hasPrev ? 'visible' : 'hidden' }}
           title={t('miniPlayer.previous')}
         >
-          ‹‹
+          <PrevIcon size={16} />
         </button>
         <button
           className="primary mini-play"
@@ -80,7 +90,7 @@ export function MiniPlayerPage() {
           disabled={!state.title}
           title={state.isPlaying ? t('miniPlayer.pause') : t('miniPlayer.play')}
         >
-          {state.isPlaying ? '❚❚' : '▶'}
+          {state.isPlaying ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
         </button>
         <button
           onClick={() => send('next')}
@@ -88,11 +98,11 @@ export function MiniPlayerPage() {
           style={{ visibility: state.hasNext ? 'visible' : 'hidden' }}
           title={t('miniPlayer.next')}
         >
-          ››
+          <NextIcon size={16} />
         </button>
       </div>
       <button className="mini-expand" onClick={() => send('expand')} title={t('miniPlayer.openFmusic')}>
-        ⤢
+        <ExpandIcon size={16} />
       </button>
     </div>
   );

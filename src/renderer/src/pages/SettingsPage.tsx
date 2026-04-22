@@ -69,22 +69,12 @@ export function SettingsPage() {
     <div>
       <h1>{t('settings.title')}</h1>
 
-      <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
+      <div className="pill-tabs">
         {(Object.keys(tabLabels) as Tab[]).map((key) => (
           <button
             key={key}
+            className={`pill-tab${key === tab ? ' active' : ''}`}
             onClick={() => setTab(key)}
-            style={{
-              background: 'none',
-              border: 'none',
-              borderBottom: key === tab ? '2px solid var(--accent)' : '2px solid transparent',
-              borderRadius: 0,
-              color: key === tab ? 'var(--accent)' : 'var(--text-muted)',
-              cursor: 'pointer',
-              fontWeight: key === tab ? 600 : 400,
-              marginBottom: -1,
-              padding: '8px 18px'
-            }}
           >
             {tabLabels[key]}
           </button>

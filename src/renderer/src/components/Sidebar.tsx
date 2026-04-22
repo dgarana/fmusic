@@ -3,6 +3,12 @@ import { NavLink } from 'react-router-dom';
 import { useLibraryStore } from '../store/library';
 import { useT, playlistDisplayName } from '../i18n';
 import type { UpdateStatus } from '../../../shared/types';
+import {
+  DownloadIcon,
+  LibraryIcon,
+  PlaylistIcon,
+  SettingsIcon
+} from './icons';
 
 const RELEASES_URL = 'https://github.com/dgarana/fmusic/releases/latest';
 const GITHUB_URL = 'https://github.com/dgarana/fmusic';
@@ -23,41 +29,29 @@ export function Sidebar() {
     <aside className="sidebar">
       <div
         className="brand"
-        style={{ position: 'relative', cursor: 'pointer' }}
+        style={{ cursor: 'pointer' }}
         onClick={() => void window.fmusic.openExternal(GITHUB_URL)}
         title={t('nav.openGithub', { defaultValue: 'View on GitHub' })}
       >
-        {appVersion && (
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 24,
-              right: 12,
-              fontSize: 11,
-              color: 'rgba(255,255,255,0.5)',
-              fontWeight: 700,
-              pointerEvents: 'none',
-              zIndex: 1,
-              textShadow: '0 1px 2px rgba(0,0,0,0.4)'
-            }}
-          >
-            v{appVersion}
-          </div>
-        )}
         <img src="fmusic-media://app-icon" alt="FMusic" />
+        {appVersion && <div className="brand-version">v{appVersion}</div>}
       </div>
       <nav>
         <NavLink to="/download" className={({ isActive }) => (isActive ? 'active' : '')}>
-          {t('nav.download')}
+          <DownloadIcon size={16} />
+          <span>{t('nav.download')}</span>
         </NavLink>
         <NavLink to="/library" className={({ isActive }) => (isActive ? 'active' : '')}>
-          {t('nav.library')}
+          <LibraryIcon size={16} />
+          <span>{t('nav.library')}</span>
         </NavLink>
         <NavLink to="/playlists" className={({ isActive }) => (isActive ? 'active' : '')}>
-          {t('nav.playlists')}
+          <PlaylistIcon size={16} />
+          <span>{t('nav.playlists')}</span>
         </NavLink>
         <NavLink to="/settings" className={({ isActive }) => (isActive ? 'active' : '')}>
-          {t('nav.settings')}
+          <SettingsIcon size={16} />
+          <span>{t('nav.settings')}</span>
         </NavLink>
       </nav>
       <div className="playlists">
@@ -70,11 +64,11 @@ export function Sidebar() {
             className={({ isActive }) => 'playlist-item' + (isActive ? ' active' : '')}
           >
             <span>{playlistDisplayName(p, t)}</span>
-            <span style={{ color: 'var(--text-muted)' }}>{p.trackCount}</span>
+            <span>{p.trackCount}</span>
           </NavLink>
         ))}
       </div>
-      <div style={{ padding: '8px 16px', marginTop: 'auto', fontSize: 11 }}>
+      <div className="sidebar-footer">
         <UpdateBadge status={updateStatus} t={t} />
       </div>
     </aside>

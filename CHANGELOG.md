@@ -1,7 +1,7 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.5.0
+## v0.6.0
 
 ### Bug Fixes
 
@@ -24,6 +24,7 @@ _Generated from repository tags and commit history._
 - Show embedded track artwork ([8af77b3](https://github.com/dgarana/fmusic/commit/8af77b33ecd7dc23094b28236fc19ff6d03efb4d))
 - Add dedicated track editing workspace with trim, fade and volume controls ([218e1c5](https://github.com/dgarana/fmusic/commit/218e1c5f850019c77bc66e73a8f8ee08f5e10583))
 - Add downloading capabilities through QR ([a0a5351](https://github.com/dgarana/fmusic/commit/a0a53516c8229c13a3c93854209d7311447a8e5b))
+- Add new logo and taskbar ([89cb913](https://github.com/dgarana/fmusic/commit/89cb91396bbcf6a2b392abcb4d865bd3f1ed5613))
 
 ### Miscellaneous
 
@@ -37,7 +38,8 @@ _Generated from repository tags and commit history._
 - Release v0.4.1 ([c14f7e2](https://github.com/dgarana/fmusic/commit/c14f7e2251b25fb06a7bfff96b6be7c9aa7c6ed3))
 - Release v0.4.2 ([8200515](https://github.com/dgarana/fmusic/commit/8200515b84060cb581da19fda1d600b16a16d0ee))
 - Update the requirements ([d303eb9](https://github.com/dgarana/fmusic/commit/d303eb91578d1af7bb78bf309d8b3977e7049d59))
-- Release v0.5.0 ([1ca0a4a](https://github.com/dgarana/fmusic/commit/1ca0a4ab7653ae753e7dace6f723784998d72fa2))
+- Release v0.5.0 ([35c9d14](https://github.com/dgarana/fmusic/commit/35c9d142bb04c74ca738e40cb1d1bea4faea9727))
+- Release v0.6.0 ([53186c5](https://github.com/dgarana/fmusic/commit/53186c5b05f568b4989391610f02cffd36d728df))
 
 ### Other
 
@@ -56,6 +58,9 @@ chore: Update the requirements ([53c34fd](https://github.com/dgarana/fmusic/comm
 - Merge pull request #4 from dgarana/add_download_capabilities
 
 feat: Add downloading capabilities through QR ([fa5ec26](https://github.com/dgarana/fmusic/commit/fa5ec2686e8ce6a45755645ef953f5b00026c533))
+- Merge pull request #5 from dgarana/change_look
+
+feat: Add new logo and taskbar ([1e0070a](https://github.com/dgarana/fmusic/commit/1e0070a03420b8387292bbfbf57da49bc7a680d6))
 
 ### Testing
 

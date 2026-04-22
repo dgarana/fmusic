@@ -107,7 +107,7 @@ export interface AppSettings {
   defaultFormat: AudioFormat;
   defaultQuality: number;
   concurrency: number;
-  theme: 'system' | 'dark' | 'light';
+  theme: 'system' | 'original' | 'light' | 'darcula';
   /** UI language. Defaults to 'en'. */
   language: Locale;
   /** Disable SSL certificate verification for yt-dlp (useful behind corporate VPNs). Default: false. */

@@ -41,6 +41,15 @@ export function App() {
   const refreshDownloads = useDownloadsStore((s) => s.refresh);
   const applyDownloadUpdate = useDownloadsStore((s) => s.applyUpdate);
   const loadSettings = useSettingsStore((s) => s.load);
+  const settings = useSettingsStore((s) => s.settings);
+
+  useEffect(() => {
+    if (settings?.theme) {
+      document.body.className = `theme-${settings.theme}`;
+    } else {
+      document.body.className = 'theme-original';
+    }
+  }, [settings?.theme]);
 
   useEffect(() => {
     void refreshAll();

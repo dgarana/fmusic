@@ -156,6 +156,21 @@ export function SettingsPage() {
               ))}
             </select>
           </label>
+          <label style={{ display: 'grid', gap: 4 }}>
+            <span style={{ fontWeight: 500 }}>{t('settings.system.theme')}</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+              {t('settings.system.themeDescription')}
+            </span>
+            <select
+              value={settings.theme ?? 'original'}
+              onChange={(e) => void update({ theme: e.target.value as any })}
+              style={{ width: 'fit-content', marginTop: 4 }}
+            >
+              <option value="original">{t('settings.system.themes.original')}</option>
+              <option value="light">{t('settings.system.themes.light')}</option>
+              <option value="darcula">{t('settings.system.themes.darcula')}</option>
+            </select>
+          </label>
           <ToggleSetting
             label={t('settings.system.minimize')}
             description={t('settings.system.minimizeDescription')}

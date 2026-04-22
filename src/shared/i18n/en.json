@@ -154,6 +154,13 @@
       "minimizeDescription": "When clicking × the app hides to the system tray instead of quitting.",
       "miniPlayer": "🎛️ Mini player",
       "miniPlayerDescription": "Clicking the tray icon opens the floating mini player.",
+      "theme": "🎨 Theme",
+      "themeDescription": "Select the look and feel of the app.",
+      "themes": {
+        "original": "Original (Dark)",
+        "light": "Light",
+        "darcula": "Darcula"
+      },
       "appVersion": "Version"
     },
     "network": {

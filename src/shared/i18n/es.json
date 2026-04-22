@@ -154,6 +154,13 @@
       "minimizeDescription": "Al pulsar × la app se oculta en la bandeja del sistema en lugar de cerrarse.",
       "miniPlayer": "🎛️ Mini reproductor",
       "miniPlayerDescription": "Al hacer clic en el icono del tray se abre el mini reproductor flotante.",
+      "theme": "🎨 Tema",
+      "themeDescription": "Selecciona el aspecto visual de la aplicación.",
+      "themes": {
+        "original": "Original (Oscuro)",
+        "light": "Claro",
+        "darcula": "Darcula"
+      },
       "appVersion": "Versión"
     },
     "network": {

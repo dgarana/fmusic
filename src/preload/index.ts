@@ -13,7 +13,8 @@ import type {
   TrackMetadataLookupResult,
   TrackMetadataSuggestions,
   TrackQuery,
-  UpdateStatus
+  UpdateStatus,
+  YoutubePlaylistFetch
 } from '../shared/types.js';
 
 function invoke<T>(channel: string, ...args: unknown[]): Promise<T> {
@@ -71,6 +72,8 @@ const api = {
       releaseYear: number | null;
     }>(Channels.YtInfo, url),
   ytStreamUrl: (url: string) => invoke<string>(Channels.YtStreamUrl, url),
+  fetchYoutubePlaylist: (url: string) =>
+    invoke<YoutubePlaylistFetch>(Channels.YtPlaylist, url),
 
   // Downloads
   enqueueDownload: (req: DownloadRequest) => invoke<DownloadJob>(Channels.DownloadEnqueue, req),
@@ -126,6 +129,8 @@ const api = {
     );
     return new Map(tuples);
   },
+  addTracksByYoutubeIdsToPlaylist: (playlistId: number, youtubeIds: string[]) =>
+    invoke<number>(Channels.PlaylistsAddTracksByYoutubeIds, playlistId, youtubeIds),
 
   // Schema
   schemaHistory: () =>

@@ -1,10 +1,19 @@
 import { spawn, type SpawnOptions } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { ffmpegPath, hasFfmpeg, hasYtDlp, ytDlpPath } from './paths.js';
+import {
+  binDir,
+  ffmpegPath,
+  ffprobePath,
+  hasFfmpeg,
+  hasFfprobe,
+  hasYtDlp,
+  ytDlpPath
+} from './paths.js';
 import { getSettings } from './settings.js';
-import type { AudioFormat, SearchResult } from '../shared/types.js';
+import type { AudioFormat, SearchResult, YoutubePlaylistFetch } from '../shared/types.js';
 
 /**
  * Progress marker that yt-dlp emits on stdout via --progress-template.
@@ -21,10 +30,14 @@ const PROGRESS_TEMPLATE = `${PROGRESS_PREFIX}%(progress._percent_str)s|%(progres
  * into the OEM code page, making fs.existsSync fail later on.
  */
 function spawnOptions(): SpawnOptions {
+  const currentPath = process.env.PATH ?? process.env.Path ?? '';
+  const augmentedPath = [binDir(), currentPath].filter(Boolean).join(path.delimiter);
   return {
     windowsHide: true,
     env: {
       ...process.env,
+      PATH: augmentedPath,
+      Path: augmentedPath,
       PYTHONIOENCODING: 'utf-8',
       PYTHONUTF8: '1',
       LC_ALL: 'C.UTF-8',
@@ -50,6 +63,65 @@ function assertBinaries() {
   }
 }
 
+function assertAudioBinaries() {
+  assertBinaries();
+  if (!hasFfmpeg() || !hasFfprobe()) {
+    throw new Error(
+      `ffmpeg/ffprobe are required for audio downloads. Re-run \`npm install\` so the bundled binaries are copied into resources/bin.\n${dependencyDiagnostics()}`
+    );
+  }
+}
+
+function dependencyDiagnostics(): string {
+  return [
+    `binDir=${binDir()}`,
+    `yt-dlp=${ytDlpPath()} present=${hasYtDlp()}`,
+    `ffmpeg=${ffmpegPath()} present=${hasFfmpeg()}`,
+    `ffprobe=${ffprobePath()} present=${hasFfprobe()}`,
+    `cwd=${process.cwd()}`
+  ].join('\n');
+}
+
+function shellQuote(value: string): string {
+  return JSON.stringify(value);
+}
+
+function ytDlpDiagnostics(args: string[]): string {
+  return [
+    dependencyDiagnostics(),
+    `command=${[ytDlpPath(), ...args].map(shellQuote).join(' ')}`
+  ].join('\n');
+}
+
+function cleanupStaleIntermediateFiles(dir: string, youtubeId: string): void {
+  const staleExts = new Set([
+    '.webm',
+    '.part',
+    '.ytdl',
+    '.temp',
+    '.tmp'
+  ]);
+  try {
+    for (const entry of fs.readdirSync(dir)) {
+      if (!entry.includes(`[${youtubeId}]`)) continue;
+      const lower = entry.toLowerCase();
+      const isStale = [...staleExts].some(
+        (ext) => lower.endsWith(ext) || lower.includes(`${ext}.`)
+      );
+      if (!isStale) continue;
+      const fullPath = path.join(dir, entry);
+      if (fs.statSync(fullPath).isFile()) {
+        fs.unlinkSync(fullPath);
+      }
+    }
+  } catch (err) {
+    console.warn(
+      '[FMusic] Could not clean stale yt-dlp intermediates:',
+      err instanceof Error ? err.message : String(err)
+    );
+  }
+}
+
 export async function ytDlpVersion(): Promise<string | null> {
   if (!hasYtDlp()) return null;
   return new Promise((resolve) => {
@@ -61,13 +133,21 @@ export async function ytDlpVersion(): Promise<string | null> {
   });
 }
 
+type SpawnedProc = ReturnType<typeof spawn>;
+
 /**
- * Runs yt-dlp and collects its stdout as text.
+ * Runs yt-dlp and collects its stdout as text. Optionally exposes the spawned
+ * child process via `onProcess` so long-running callers (e.g. DownloadProcess)
+ * can cancel the pre-download metadata step, not just the final download.
  */
-function runCollecting(args: string[]): Promise<string> {
+function runCollecting(
+  args: string[],
+  onProcess?: (proc: SpawnedProc) => void
+): Promise<string> {
   assertBinaries();
   return new Promise((resolve, reject) => {
     const proc = spawn(ytDlpPath(), [...baseArgs(), ...args], spawnOptions());
+    onProcess?.(proc);
     let stdout = '';
     let stderr = '';
     proc.stdout?.on('data', (chunk) => (stdout += decodeUtf8(chunk)));
@@ -121,6 +201,52 @@ export async function searchYouTube(query: string, limit = 10): Promise<SearchRe
     .filter((r): r is SearchResult => r !== null);
 }
 
+/**
+ * Resolves the entries of a YouTube playlist. Uses `--flat-playlist` so we
+ * avoid paying the metadata-fetch cost for every single video — that happens
+ * later, once each entry is enqueued as its own download. `--yes-playlist`
+ * forces yt-dlp to treat watch URLs with `&list=` as playlists instead of
+ * single videos. Alongside the entries we also surface the playlist title
+ * (best-effort) so callers can use it when creating a matching local
+ * playlist.
+ */
+export async function fetchPlaylistEntries(url: string): Promise<YoutubePlaylistFetch> {
+  const stdout = await runCollecting([
+    '--no-warnings',
+    '--yes-playlist',
+    '--flat-playlist',
+    '--dump-json',
+    url
+  ]);
+
+  let title: string | null = null;
+  const entries: SearchResult[] = [];
+  for (const raw of stdout.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    const parsed = parseYtSearchLine(line);
+    if (parsed) entries.push(parsed);
+    // Extract the playlist title from any entry that carries it. yt-dlp
+    // exposes it as `playlist_title` (preferred) or `playlist`. We take
+    // the first non-empty occurrence since every entry in the same batch
+    // should agree.
+    if (title === null) {
+      try {
+        const data = JSON.parse(line);
+        const candidate =
+          (typeof data.playlist_title === 'string' && data.playlist_title.trim()) ||
+          (typeof data.playlist === 'string' && data.playlist.trim()) ||
+          null;
+        if (candidate) title = candidate;
+      } catch {
+        // ignore malformed lines
+      }
+    }
+  }
+
+  return { title, entries };
+}
+
 export interface VideoInfo {
   id: string;
   title: string;
@@ -152,8 +278,19 @@ function parseYear(value: unknown): number | null {
   return null;
 }
 
-export async function fetchVideoInfo(url: string): Promise<VideoInfo> {
-  const stdout = await runCollecting(['--no-warnings', '--dump-json', url]);
+export async function fetchVideoInfo(
+  url: string,
+  onProcess?: (proc: SpawnedProc) => void
+): Promise<VideoInfo> {
+  // `--no-playlist` is critical here: without it, a watch URL that carries a
+  // `&list=` (mix / radio / playlist context) makes yt-dlp iterate every
+  // entry and emit one JSON object per line. That both blows up `JSON.parse`
+  // below and stalls the metadata step long enough to make the download
+  // look unresponsive.
+  const stdout = await runCollecting(
+    ['--no-warnings', '--no-playlist', '--dump-json', url],
+    onProcess
+  );
   const data = JSON.parse(stdout);
   return {
     id: data.id,
@@ -257,18 +394,30 @@ export class DownloadProcess extends EventEmitter {
   }
 
   async start(): Promise<DownloadResult> {
-    assertBinaries();
+    assertAudioBinaries();
     fs.mkdirSync(this.options.outputDir, { recursive: true });
 
-    // Step 1: fetch info so we know the title up front.
-    this.info = await fetchVideoInfo(this.options.url);
+    // Step 1: fetch info so we know the title up front. Expose the spawned
+    // process so cancel() can interrupt even this (normally short) step.
+    this.info = await fetchVideoInfo(this.options.url, (proc) => {
+      this.proc = proc;
+    });
+    this.proc = null;
+    if (this.cancelled) {
+      throw new Error('Download cancelled');
+    }
     this.emit('info', this.info);
 
     // Step 2: run yt-dlp with audio extraction.
+    cleanupStaleIntermediateFiles(this.options.outputDir, this.info.id);
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fmusic-ytdlp-'));
     const outputTemplate = path.join(this.options.outputDir, '%(title)s [%(id)s].%(ext)s');
     const args: string[] = [
       '--no-warnings',
       '--no-playlist',
+      '--no-continue',
+      '--paths',
+      `temp:${tempDir}`,
       '-x',
       '--audio-format',
       this.options.format,
@@ -298,13 +447,14 @@ export class DownloadProcess extends EventEmitter {
     ];
 
     if (hasFfmpeg()) {
-      args.push('--ffmpeg-location', ffmpegPath());
+      args.push('--ffmpeg-location', binDir());
     }
 
     args.push(this.options.url);
+    const fullArgs = [...baseArgs(), ...args];
 
     return new Promise<DownloadResult>((resolve, reject) => {
-      const proc = spawn(ytDlpPath(), [...baseArgs(), ...args], spawnOptions());
+      const proc = spawn(ytDlpPath(), fullArgs, spawnOptions());
       this.proc = proc;
       let stderr = '';
 
@@ -345,17 +495,39 @@ export class DownloadProcess extends EventEmitter {
       proc.on('error', reject);
       proc.on('close', (code) => {
         if (this.cancelled) {
+          fs.rmSync(tempDir, { recursive: true, force: true });
           reject(new Error('Download cancelled'));
           return;
         }
         if (code !== 0) {
-          reject(new Error(`yt-dlp exited with code ${code}: ${stderr.trim()}`));
+          fs.rmSync(tempDir, { recursive: true, force: true });
+          const trimmed = stderr.trim();
+          // yt-dlp emits this exact line when ffprobe runs but can't parse
+          // the file. In practice that happens either because ffprobe is
+          // missing (handled by copying ffprobe-static in postinstall) or
+          // because the downloaded file is not what yt-dlp expected —
+          // typically a middleware / VPN that returns an HTTP redirect as
+          // the response body. Surface a more actionable hint.
+          if (/unable to obtain file audio codec with ffprobe/i.test(trimmed)) {
+            const hint = !hasFfprobe()
+              ? 'ffprobe is not installed next to ffmpeg. Re-run `npm install` or click "Update download engine" in Settings.'
+              : 'The downloaded file is not valid media. This usually means a proxy or VPN is intercepting the download — try disabling it or switching networks.';
+            reject(new Error(`${trimmed}\n${hint}\n\nDiagnostics:\n${ytDlpDiagnostics(fullArgs)}`));
+            return;
+          }
+          reject(
+            new Error(
+              `yt-dlp exited with code ${code}: ${trimmed}\n\nDiagnostics:\n${ytDlpDiagnostics(fullArgs)}`
+            )
+          );
           return;
         }
         if (!this.finalFile || !this.info) {
+          fs.rmSync(tempDir, { recursive: true, force: true });
           reject(new Error('yt-dlp finished but could not resolve the generated file.'));
           return;
         }
+        fs.rmSync(tempDir, { recursive: true, force: true });
         // Normalise the path: yt-dlp sometimes emits NFD-decomposed Unicode
         // (e.g. 'i' + combining diaeresis) whereas NTFS stores NFC. Round-trip
         // through path.normalize + String.normalize('NFC') so subsequent
@@ -387,6 +559,10 @@ export function getDependencyStatus() {
     ffmpeg: {
       present: hasFfmpeg(),
       path: hasFfmpeg() ? ffmpegPath() : null
+    },
+    ffprobe: {
+      present: hasFfprobe(),
+      path: hasFfprobe() ? ffprobePath() : null
     }
   };
 }

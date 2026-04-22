@@ -10,6 +10,7 @@ import type {
 import { getSettings, updateSettings } from './settings.js';
 import {
   fetchAudioStreamUrl,
+  fetchPlaylistEntries,
   fetchVideoInfo,
   getDependencyStatus,
   searchYouTube,
@@ -19,6 +20,7 @@ import { getDownloadManager } from './download-manager.js';
 import { updateYtDlp } from './updater.js';
 import {
   deleteTrack,
+  findByYoutubeId,
   findDownloadedYoutubeIds,
   getTrackMetadataSuggestions,
   incrementPlayCount,
@@ -124,6 +126,7 @@ export function registerIpc(): void {
   });
   ipcMain.handle(Channels.YtInfo, async (_evt, url: string) => fetchVideoInfo(url));
   ipcMain.handle(Channels.YtStreamUrl, async (_evt, url: string) => fetchAudioStreamUrl(url));
+  ipcMain.handle(Channels.YtPlaylist, async (_evt, url: string) => fetchPlaylistEntries(url));
 
   // ----- Downloads -----
   const dm = getDownloadManager();
@@ -229,6 +232,29 @@ export function registerIpc(): void {
     // Map is not JSON-serializable across IPC; send as array of tuples.
     return Array.from(map.entries());
   });
+  ipcMain.handle(
+    Channels.PlaylistsAddTracksByYoutubeIds,
+    (_evt, playlistId: number, youtubeIds: string[]) => {
+      // Adds every library track whose YouTube id is in the list to the given
+      // playlist. Used when importing a YouTube playlist that contains videos
+      // we already have locally — we still want them to appear in the newly
+      // created local playlist, just without downloading them again.
+      let added = 0;
+      for (const ytId of youtubeIds) {
+        const track = findByYoutubeId(ytId);
+        if (!track) continue;
+        try {
+          addTrackToPlaylist(playlistId, track.id);
+          added++;
+        } catch {
+          // Ignore individual failures; duplicates are de-duped at the repo
+          // layer via INSERT OR IGNORE so this should only hit on schema
+          // errors.
+        }
+      }
+      return added;
+    }
+  );
 
   // ----- Schema -----
   ipcMain.handle(Channels.SchemaHistory, () => getSchemaHistory());

@@ -32,7 +32,7 @@
   },
   "download": {
     "title": "Descargar",
-    "searchPlaceholder": "Pega un enlace de YouTube o escribe para buscar...",
+    "searchPlaceholder": "Pega un enlace de YouTube (vídeo o playlist) o escribe para buscar...",
     "searchButton": "Buscar / Descargar",
     "alreadyHave": "Ya tienes esta canción en tu biblioteca.",
     "sslHintBefore": "Parece un error de certificado SSL. Si estás en una VPN corporativa, activa ",
@@ -53,7 +53,15 @@
     "inLibrary": "En biblioteca",
     "download": "Descargar",
     "loadMore": "Cargar más resultados",
-    "loading": "Cargando..."
+    "loading": "Cargando...",
+    "fetchingPlaylist": "Obteniendo entradas de la playlist...",
+    "playlistEmpty": "La playlist está vacía o no se pudo leer.",
+    "playlistEnqueued": "Playlist \"{playlist}\": {total} vídeos · {enqueued} añadidos · {skipped} omitidos (ya están en la biblioteca o en cola).",
+    "playlistDefaultName": "Playlist de YouTube",
+    "playlistBatchTitle": "Playlist: {title}",
+    "playlistBatchProgress": "{done}/{total} completados",
+    "cancelAll": "Cancelar todo",
+    "dismissAll": "Cerrar todo"
   },
   "library": {
     "title": "Biblioteca",

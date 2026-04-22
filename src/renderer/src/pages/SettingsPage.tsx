@@ -251,6 +251,15 @@ export function SettingsPage() {
                   </div>
                 )}
               </div>
+              <div style={{ marginTop: 6 }}>
+                <strong>ffprobe</strong>:{' '}
+                {deps.ffprobe.present ? t('settings.dependencies.available') : t('settings.dependencies.notFound')}
+                {deps.ffprobe.path && (
+                  <div style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 11 }}>
+                    {deps.ffprobe.path}
+                  </div>
+                )}
+              </div>
               <div style={{ marginTop: 12 }}>
                 <button className="primary" onClick={() => void updateYtDlp()} disabled={updating}>
                   {updating ? t('settings.dependencies.updating') : t('settings.dependencies.updateEngine')}

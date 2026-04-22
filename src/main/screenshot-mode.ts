@@ -184,6 +184,15 @@ async function prepareDownloadsScreenshot(win: BrowserWindow): Promise<void> {
   await wait(900);
 }
 
+async function preparePlaylistDownloadScreenshot(win: BrowserWindow): Promise<void> {
+  await win.webContents.executeJavaScript(`(async () => {
+    window.location.hash = '#/download';
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    await window.__fmusicScreenshot?.preparePlaylistDownloadDemo?.();
+  })()`);
+  await wait(900);
+}
+
 async function prepareSonosScreenshot(win: BrowserWindow): Promise<void> {
   await win.webContents.executeJavaScript(`(async () => {
     window.location.hash = '#/library';
@@ -207,6 +216,12 @@ export async function runScreenshotCapture(win: BrowserWindow): Promise<void> {
   await prepareDownloadsScreenshot(win);
   const downloadsImage = await win.capturePage();
   fs.writeFileSync(path.join(screenshotOutputDir, 'downloads.png'), downloadsImage.toPNG());
+  await preparePlaylistDownloadScreenshot(win);
+  const playlistDownloadImage = await win.capturePage();
+  fs.writeFileSync(
+    path.join(screenshotOutputDir, 'playlist-download.png'),
+    playlistDownloadImage.toPNG()
+  );
   await captureRoute(win, '#/library', 'library.png');
   await prepareSonosScreenshot(win);
   const sonosImage = await win.capturePage();

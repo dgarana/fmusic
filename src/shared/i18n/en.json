@@ -32,7 +32,7 @@
   },
   "download": {
     "title": "Download",
-    "searchPlaceholder": "Paste a YouTube link or type to search...",
+    "searchPlaceholder": "Paste a YouTube link (video or playlist) or type to search...",
     "searchButton": "Search / Download",
     "alreadyHave": "This song is already in your library.",
     "sslHintBefore": "This looks like an SSL certificate error. If you are behind a corporate VPN, enable ",
@@ -53,7 +53,15 @@
     "inLibrary": "In library",
     "download": "Download",
     "loadMore": "Load more results",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "fetchingPlaylist": "Fetching playlist entries...",
+    "playlistEmpty": "The playlist is empty or could not be read.",
+    "playlistEnqueued": "Playlist \"{playlist}\": {total} items · {enqueued} enqueued · {skipped} skipped (already in library or queued).",
+    "playlistDefaultName": "YouTube Playlist",
+    "playlistBatchTitle": "Playlist: {title}",
+    "playlistBatchProgress": "{done}/{total} done",
+    "cancelAll": "Cancel all",
+    "dismissAll": "Dismiss all"
   },
   "library": {
     "title": "Library",

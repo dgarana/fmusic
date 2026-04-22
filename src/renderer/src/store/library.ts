@@ -56,5 +56,6 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     // Simplest approach: refresh list. Could be optimized to insert in-place.
     void get().refreshTracks();
     void get().refreshGenres();
+    void get().refreshPlaylists();
   }
 }));

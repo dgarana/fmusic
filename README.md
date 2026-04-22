@@ -17,11 +17,14 @@ required on the user's machine.
 ### Search and download
 - 🔎 **Search** YouTube for songs by name, with **pagination** (12 at a time via "Load more") and inline audio preview before downloading.
 - ⬇️ **Download** audio from a YouTube URL (MP3 / M4A / Opus, configurable quality) with a download queue, live progress and a button to dismiss finished notifications.
+- 🎼 **Playlist imports** create a matching local playlist and group the queued downloads together.
 - 🔁 **Resume** cancelled downloads: clicking the button again on a cancelled download re-queues it.
 - ℹ️ **Notice** when trying to download a URL that is already in your library.
 - 📋 The "Other downloads" section appears above the search results for better visibility.
 
 ![Downloads](docs/screenshots/downloads.png)
+
+![Playlist download](docs/screenshots/playlist-download.png)
 
 ### Library and playlists
 - 📚 **Library** stored in SQLite with sortable table, search, and genre filter.

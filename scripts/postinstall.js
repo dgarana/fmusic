@@ -132,12 +132,75 @@ function copyFfmpeg() {
   console.log(`[postinstall] ffmpeg copied to ${dest}`);
 }
 
+// ---------- ffprobe ----------
+
+// yt-dlp's audio post-processing (`-x`) invokes ffprobe to identify the
+// source codec. `ffmpeg-static` ships only ffmpeg, so without this extra
+// step yt-dlp fails with:
+//   ERROR: Postprocessing: unable to obtain file audio codec with ffprobe
+// We pull the right ffprobe binary for the target (platform, arch) and drop it
+// next to ffmpeg so `--ffmpeg-location <dir>` finds both.
+function resolveFfprobeSource() {
+  const filename = targetPlatform === 'win32' ? 'ffprobe.exe' : 'ffprobe';
+  const archDir =
+    targetArch === 'x86' ? 'ia32' : targetArch === 'amd64' ? 'x64' : targetArch;
+
+  try {
+    const installerPackage = `@ffprobe-installer/${targetPlatform}-${archDir}`;
+    const installerPath = require.resolve(`${installerPackage}/${filename}`);
+    if (fs.existsSync(installerPath)) return installerPath;
+  } catch (err) {
+    // Fall through to ffprobe-static. This keeps FMUSIC_TARGET_* cross-builds
+    // working when npm only installed optional dependencies for the host.
+  }
+
+  let ffprobeStatic;
+  try {
+    ffprobeStatic = require('ffprobe-static');
+  } catch (err) {
+    return null;
+  }
+
+  // Prefer the package's explicit target tree over `.path`, which resolves
+  // for the host process and can be stale after changing FMUSIC_TARGET_*.
+  const candidate = path.join(
+    path.dirname(require.resolve('ffprobe-static/package.json')),
+    'bin',
+    targetPlatform,
+    archDir,
+    filename
+  );
+  if (fs.existsSync(candidate)) return candidate;
+
+  const resolved = ffprobeStatic && ffprobeStatic.path;
+  return resolved && fs.existsSync(resolved) ? resolved : null;
+}
+
+function copyFfprobe() {
+  const src = resolveFfprobeSource();
+  if (!src) {
+    console.warn(
+      '[postinstall] ffprobe did not resolve a valid binary for ' +
+        `${targetPlatform}/${targetArch}; yt-dlp post-processing may fail.`
+    );
+    return;
+  }
+  const destName = targetPlatform === 'win32' ? 'ffprobe.exe' : 'ffprobe';
+  const dest = path.join(binDir, destName);
+  fs.copyFileSync(src, dest);
+  if (targetPlatform !== 'win32') {
+    fs.chmodSync(dest, 0o755);
+  }
+  console.log(`[postinstall] ffprobe copied to ${dest}`);
+}
+
 // ---------- entry ----------
 
 (async () => {
   try {
     await ensureYtDlp();
     copyFfmpeg();
+    copyFfprobe();
     console.log('[postinstall] Binary setup complete.');
   } catch (err) {
     console.error('[postinstall] Failed:', err);

@@ -466,6 +466,11 @@ input[type='range']:active::-webkit-slider-thumb { background: var(--accent); }
   border: none;
   background: transparent;
   display: block;
+  /* Block the native HTML5 image drag so the OS doesn't start a ghost
+     drag of the logo when the user grabs that corner of the sidebar. */
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
 }
 .sidebar .brand .brand-version {
   position: absolute;
@@ -1315,18 +1320,45 @@ body.theme-light .track-thumb-overlay {
 
 .mini-player {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
   width: 100vw;
   height: 100vh;
   background: var(--bg-elevated);
   color: var(--text);
-  padding: 0 12px;
+  padding: 6px 12px 8px;
   box-sizing: border-box;
   user-select: none;
   overflow: hidden;
   -webkit-app-region: drag;
   cursor: grab;
+}
+
+.mini-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mini-scrub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px;
+  -webkit-app-region: no-drag;
+}
+.mini-scrub input[type='range'] { flex: 1; }
+.mini-time {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 34px;
+  text-align: center;
 }
 
 .mini-drag {

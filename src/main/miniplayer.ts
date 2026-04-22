@@ -6,11 +6,11 @@ let miniWin: BrowserWindow | null = null;
 export function createMiniPlayer(): BrowserWindow {
   miniWin = new BrowserWindow({
     width: 340,
-    height: 96,
+    height: 120,
     minWidth: 340,
     maxWidth: 340,
-    minHeight: 96,
-    maxHeight: 96,
+    minHeight: 120,
+    maxHeight: 120,
     frame: false,
     // A transparent native background lets the CSS theme (light, dark,
     // darcula) drive the look instead of a hardcoded color that would peek

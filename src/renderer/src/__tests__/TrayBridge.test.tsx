@@ -2,9 +2,11 @@ import { render } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TrayBridge } from '../components/TrayBridge';
 import { usePlayerStore } from '../store/player';
+import { useSonosStore } from '../store/sonos';
 import type { Track } from '../../../shared/types';
 
 vi.mock('../store/player');
+vi.mock('../store/sonos');
 
 const mockTrack: Track = {
   id: 1,
@@ -24,6 +26,9 @@ const mockTrack: Track = {
 const mockNext = vi.fn().mockResolvedValue(undefined);
 const mockPrev = vi.fn().mockResolvedValue(undefined);
 const mockTogglePlay = vi.fn();
+const mockSeek = vi.fn();
+const mockSonosTogglePlay = vi.fn().mockResolvedValue(undefined);
+const mockSonosSeek = vi.fn().mockResolvedValue(undefined);
 
 function makeState(overrides = {}) {
   return {
@@ -31,9 +36,24 @@ function makeState(overrides = {}) {
     isPlaying: false,
     index: -1,
     queue: [] as Track[],
+    position: 0,
+    duration: 0,
     next: mockNext,
     prev: mockPrev,
     togglePlay: mockTogglePlay,
+    seek: mockSeek,
+    ...overrides,
+  };
+}
+
+function makeSonosState(overrides = {}) {
+  return {
+    activeHost: null as string | null,
+    isPlaying: false,
+    position: 0,
+    duration: 0,
+    togglePlay: mockSonosTogglePlay,
+    seek: mockSonosSeek,
     ...overrides,
   };
 }
@@ -43,6 +63,11 @@ beforeEach(() => {
     const state = makeState();
     return typeof selector === 'function' ? selector(state) : state;
   });
+  vi.mocked(useSonosStore).mockImplementation((selector?: unknown) => {
+    const state = makeSonosState();
+    return typeof selector === 'function' ? selector(state) : state;
+  });
+  vi.mocked(window.fmusic.onMiniSeek).mockReturnValue(() => {});
   vi.clearAllMocks();
 });
 
@@ -72,6 +97,8 @@ describe('TrayBridge', () => {
       isPlaying: false,
       hasPrev: false,
       hasNext: false,
+      position: 0,
+      duration: 0
     });
   });
 

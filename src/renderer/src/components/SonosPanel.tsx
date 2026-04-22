@@ -66,9 +66,13 @@ export function SonosPanel() {
   }
 
   async function handleStop(host: string) {
-    await window.fmusic.sonosStop(host);
-    // If we were casting to this device, clear the store state too
-    if (activeHost === host) stop();
+    if (activeHost === host) {
+      // Route through the store so it resumes local playback from the
+      // current Sonos position (and calls sonosStop once internally).
+      await stop();
+    } else {
+      await window.fmusic.sonosStop(host).catch(() => {});
+    }
   }
 
   return (

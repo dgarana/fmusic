@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLibraryStore } from '../store/library';
 import { usePlayerStore } from '../store/player';
+import { useSonosStore } from '../store/sonos';
 import { useSettingsStore } from '../store/settings';
 import { formatDuration } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
@@ -78,7 +79,12 @@ export function LibraryPage() {
   const { tracks, genres, query, setQuery } = useLibraryStore();
   const playTrack = usePlayerStore((s) => s.playTrack);
   const currentTrack = usePlayerStore((s) => s.current);
-  const isPlayingGlobal = usePlayerStore((s) => s.isPlaying);
+  const localIsPlaying = usePlayerStore((s) => s.isPlaying);
+  const sonosActiveHost = useSonosStore((s) => s.activeHost);
+  const sonosIsPlaying = useSonosStore((s) => s.isPlaying);
+  // When casting, the true playback state lives in the Sonos store (the
+  // local Howl is always paused/unloaded while the speaker plays).
+  const isPlayingGlobal = sonosActiveHost !== null ? sonosIsPlaying : localIsPlaying;
   const { settings } = useSettingsStore();
 
   const [addingTrackId, setAddingTrackId] = useState<number | null>(null);

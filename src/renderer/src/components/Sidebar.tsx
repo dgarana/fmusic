@@ -33,7 +33,12 @@ export function Sidebar() {
         onClick={() => void window.fmusic.openExternal(GITHUB_URL)}
         title={t('nav.openGithub', { defaultValue: 'View on GitHub' })}
       >
-        <img src="fmusic-media://app-icon" alt="FMusic" />
+        <img
+          src="fmusic-media://app-icon"
+          alt="FMusic"
+          draggable={false}
+          onDragStart={(e) => e.preventDefault()}
+        />
         {appVersion && <div className="brand-version">v{appVersion}</div>}
       </div>
       <nav>

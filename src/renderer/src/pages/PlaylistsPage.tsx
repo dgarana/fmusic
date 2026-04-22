@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useLibraryStore } from '../store/library';
 import { usePlayerStore } from '../store/player';
+import { useSonosStore } from '../store/sonos';
 import { formatDuration } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
 import type { Playlist, Track } from '../../../shared/types';
@@ -106,7 +107,11 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
   const [adding, setAdding] = useState(false);
   const playTrack = usePlayerStore((s) => s.playTrack);
   const currentTrack = usePlayerStore((s) => s.current);
-  const isPlayingGlobal = usePlayerStore((s) => s.isPlaying);
+  const localIsPlaying = usePlayerStore((s) => s.isPlaying);
+  const sonosActiveHost = useSonosStore((s) => s.activeHost);
+  const sonosIsPlaying = useSonosStore((s) => s.isPlaying);
+  // When casting, the true playback state lives in the Sonos store.
+  const isPlayingGlobal = sonosActiveHost !== null ? sonosIsPlaying : localIsPlaying;
   const refreshPlaylists = useLibraryStore((s) => s.refreshPlaylists);
   const playlistsVersion = useLibraryStore((s) => s.playlistsVersion);
 

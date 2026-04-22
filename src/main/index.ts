@@ -194,6 +194,15 @@ function createWindow(): void {
     mainWindow?.webContents.send(Channels.WindowMaximizeChange, false);
   });
 
+  // Tie the mini player's visibility to the main window: it only appears
+  // when the main window is hidden (closed to tray), never alongside it.
+  mainWindow.on('hide', () => {
+    if (getSettings().miniPlayerEnabled) showMiniPlayer();
+  });
+  mainWindow.on('show', () => {
+    hideMiniPlayer();
+  });
+
   // Intercept close: hide to tray or quit depending on user setting.
   mainWindow.on('close', (e) => {
     if (!isQuitting) {
@@ -290,19 +299,30 @@ app.whenReady().then(() => {
   // Left-click on tray: toggle mini player (show if hidden, hide if visible).
   if (!screenshotMode) {
     createTray(mainWindow!, () => {
+      // The mini player is mutually exclusive with the main window:
+      //  • Main visible → just bring it to the front. Never hide the main
+      //    window or open the mini in its place — the mini is only meant
+      //    for when the user has actively closed the main window.
+      //  • Main hidden + mini enabled → toggle the mini's visibility.
+      //  • Main hidden + mini disabled → restore the main window.
+      if (mainWindow?.isVisible()) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+        return;
+      }
       const { miniPlayerEnabled } = getSettings();
-      if (miniPlayerEnabled) {
-        const mini = getMiniPlayer();
-        if (!mini) return;
-        if (mini.isVisible()) {
-          mini.hide();
-        } else {
-          mini.show();
-          mini.focus();
-        }
-      } else {
+      if (!miniPlayerEnabled) {
         mainWindow?.show();
         mainWindow?.focus();
+        return;
+      }
+      const mini = getMiniPlayer();
+      if (!mini) return;
+      if (mini.isVisible()) {
+        mini.hide();
+      } else {
+        mini.show();
+        mini.focus();
       }
     });
     createMiniPlayer();
@@ -335,6 +355,13 @@ app.whenReady().then(() => {
     } else {
       mainWindow?.webContents.send('tray:command', cmd);
     }
+  });
+
+  // Mini player scrub → forward the seek value to the main renderer; the
+  // TrayBridge there decides whether to apply it to the local Howl or to
+  // the Sonos speaker when casting.
+  ipcMain.on('mini:seek', (_evt, seconds: number) => {
+    mainWindow?.webContents.send('mini:seek-from-main', seconds);
   });
 
   app.on('activate', () => {

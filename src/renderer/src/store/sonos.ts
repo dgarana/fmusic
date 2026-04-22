@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { SonosDevice } from '../../../shared/types';
+import { usePlayerStore } from './player';
 
 interface SonosState {
   devices: SonosDevice[];
@@ -132,7 +133,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
   },
 
   async stop() {
-    const { activeHost } = get();
+    const { activeHost, position } = get();
     if (!activeHost) return;
     get().stopPositionPolling();
     try {
@@ -140,7 +141,16 @@ export const useSonosStore = create<SonosState>((set, get) => ({
     } catch {
       // ignore
     }
+    // Capture where the Sonos speaker was before we clear the state so we
+    // can pick up local playback from the same point — the user expects
+    // "stop casting" to mean "continue here", not "throw the song away".
+    const resumeAt = Math.max(0, position);
     set({ activeHost: null, isPlaying: false, position: 0, duration: 0 });
+
+    const player = usePlayerStore.getState();
+    if (player.current && player.index >= 0) {
+      await player.playFromIndex(player.index, { startAt: resumeAt });
+    }
   },
 
   async setVolume(volume) {

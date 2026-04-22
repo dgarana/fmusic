@@ -150,6 +150,8 @@ const api = {
     isPlaying: boolean;
     hasPrev: boolean;
     hasNext: boolean;
+    position: number;
+    duration: number;
   }) => void) => on('mini:state', handler),
   sendMiniCommand: (cmd: 'toggle-play' | 'prev' | 'next' | 'expand' | 'request-state') =>
     ipcRenderer.send('mini:command', cmd),
@@ -160,7 +162,12 @@ const api = {
     isPlaying: boolean;
     hasPrev: boolean;
     hasNext: boolean;
+    position: number;
+    duration: number;
   }) => ipcRenderer.send('mini:state-from-main', state),
+  sendMiniSeek: (seconds: number) => ipcRenderer.send('mini:seek', seconds),
+  onMiniSeek: (handler: (seconds: number) => void) =>
+    on<number>('mini:seek-from-main', handler),
 
   // Sonos
   sonosDiscover: () => invoke<SonosDevice[]>(Channels.SonosDiscover),

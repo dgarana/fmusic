@@ -205,7 +205,7 @@
     "next": "Siguiente",
     "play": "Reproducir",
     "pause": "Pausar",
-    "openFmusic": "Abrir fmusic"
+    "openFmusic": "Abrir FMusic"
   },
   "tray": {
     "nothingPlaying": "Nada reproduciéndose",
@@ -213,7 +213,7 @@
     "pause": "⏸  Pausar",
     "previous": "⏮  Anterior",
     "next": "⏭  Siguiente",
-    "openFmusic": "Abrir fmusic",
+    "openFmusic": "Abrir FMusic",
     "quit": "Salir"
   }
 }

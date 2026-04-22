@@ -266,4 +266,22 @@ export function registerIpc(): void {
   ipcMain.handle(Channels.MobileSyncGetUrl, (_evt, trackId: number) => {
     return generateTrackMobileUrl(trackId);
   });
+
+  // ----- Window Controls -----
+  ipcMain.on('window:minimize', () => {
+    BrowserWindow.getFocusedWindow()?.minimize();
+  });
+  ipcMain.on('window:maximize', () => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (win) {
+      if (win.isMaximized()) win.unmaximize();
+      else win.maximize();
+    }
+  });
+  ipcMain.on('window:close', () => {
+    BrowserWindow.getFocusedWindow()?.close();
+  });
+  ipcMain.handle(Channels.WindowIsMaximized, () => {
+    return BrowserWindow.getFocusedWindow()?.isMaximized() ?? false;
+  });
 }

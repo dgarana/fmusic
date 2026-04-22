@@ -3,7 +3,7 @@ publish:
   provider: github
   owner: dgarana
   repo: fmusic
-productName: fmusic
+productName: FMusic
 directories:
   buildResources: build
   output: dist
@@ -22,6 +22,8 @@ extraResources:
     to: bin
     filter:
       - '**/*'
+  - from: resources/icon.png
+    to: icon.png
 asarUnpack:
   - 'resources/**'
 win:

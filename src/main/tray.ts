@@ -1,5 +1,5 @@
 import { app, Menu, nativeImage, Tray, BrowserWindow } from 'electron';
-import zlib from 'node:zlib';
+import path from 'node:path';
 import { t } from './i18n.js';
 
 export interface TrayPlayerState {
@@ -18,54 +18,6 @@ let currentState: TrayPlayerState = {
   hasPrev: false,
   hasNext: false
 };
-
-/** Generates a solid-color 16x16 PNG buffer without external dependencies. */
-function makePng(r: number, g: number, b: number): Buffer {
-  const W = 16, H = 16;
-  // Raw scanlines: one filter byte (0x00 = None) + W*3 RGB bytes per row
-  const raw = Buffer.alloc(H * (1 + W * 3));
-  for (let y = 0; y < H; y++) {
-    const base = y * (1 + W * 3);
-    raw[base] = 0;
-    for (let x = 0; x < W; x++) {
-      raw[base + 1 + x * 3] = r;
-      raw[base + 1 + x * 3 + 1] = g;
-      raw[base + 1 + x * 3 + 2] = b;
-    }
-  }
-  const idat = zlib.deflateSync(raw);
-
-  function crc32(buf: Buffer): number {
-    let c = 0xffffffff;
-    for (let i = 0; i < buf.length; i++) {
-      c ^= buf[i];
-      for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    }
-    return (c ^ 0xffffffff) >>> 0;
-  }
-  function chunk(type: string, data: Buffer): Buffer {
-    const t = Buffer.from(type, 'ascii');
-    const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
-    const crcBuf = Buffer.alloc(4); crcBuf.writeUInt32BE(crc32(Buffer.concat([t, data])));
-    return Buffer.concat([len, t, data, crcBuf]);
-  }
-
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H, 4);
-  ihdr[8] = 8; ihdr[9] = 2; // 8-bit depth, RGB
-
-  return Buffer.concat([
-    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
-    chunk('IHDR', ihdr),
-    chunk('IDAT', idat),
-    chunk('IEND', Buffer.alloc(0))
-  ]);
-}
-
-function buildIcon(): Electron.NativeImage {
-  // Purple #7c3aed
-  return nativeImage.createFromBuffer(makePng(124, 58, 237));
-}
 
 function buildMenu(win: BrowserWindow, state: TrayPlayerState): Electron.Menu {
   const trackLabel = state.title
@@ -105,8 +57,14 @@ function buildMenu(win: BrowserWindow, state: TrayPlayerState): Electron.Menu {
 let lastWin: BrowserWindow | null = null;
 
 export function createTray(win: BrowserWindow, onLeftClick: () => void): void {
-  tray = new Tray(buildIcon());
-  tray.setToolTip('fmusic');
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'icon.png')
+    : path.join(app.getAppPath(), 'resources', 'icon.png');
+
+  const icon = nativeImage.createFromPath(iconPath).resize({ width: 22, height: 22 });
+  
+  tray = new Tray(icon);
+  tray.setToolTip('FMusic');
   tray.on('click', onLeftClick);
   lastWin = win;
   updateTray(win, currentState);
@@ -118,8 +76,8 @@ export function updateTray(win: BrowserWindow, state: TrayPlayerState): void {
   lastWin = win;
   tray.setContextMenu(buildMenu(win, state));
   const tooltip = state.title
-    ? `fmusic — ${state.title}${state.isPlaying ? ' ▶' : ' ⏸'}`
-    : 'fmusic';
+    ? `FMusic — ${state.title}${state.isPlaying ? ' ▶' : ' ⏸'}`
+    : 'FMusic';
   tray.setToolTip(tooltip);
 }
 

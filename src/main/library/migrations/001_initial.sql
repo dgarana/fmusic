@@ -1,4 +1,4 @@
--- 001_initial: baseline schema for fmusic library.
+-- 001_initial: baseline schema for FMusic library.
 
 CREATE TABLE IF NOT EXISTS schema_history (
   version     INTEGER PRIMARY KEY,

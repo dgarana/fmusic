@@ -173,7 +173,20 @@ const api = {
     invoke<{ position: number; duration: number }>(Channels.SonosPosition, host),
 
   // Mobile Sync
-  getMobileSyncUrl: (trackId: number) => invoke<string>(Channels.MobileSyncGetUrl, trackId)
+  getMobileSyncUrl: (trackId: number) => invoke<string>(Channels.MobileSyncGetUrl, trackId),
+
+  // Window Controls
+  minimize: () => ipcRenderer.send('window:minimize'),
+  maximize: () => ipcRenderer.send('window:maximize'),
+  close: () => ipcRenderer.send('window:close'),
+  isMaximized: () => invoke<boolean>(Channels.WindowIsMaximized),
+  onMaximizeChange: (callback: (isMaximized: boolean) => void) => {
+    const handler = (_evt: unknown, val: boolean) => callback(val);
+    ipcRenderer.on(Channels.WindowMaximizeChange, handler);
+    return () => {
+      ipcRenderer.off(Channels.WindowMaximizeChange, handler);
+    };
+  }
 };
 
 export type FmusicAPI = typeof api;

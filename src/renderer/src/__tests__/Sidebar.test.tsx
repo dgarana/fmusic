@@ -37,9 +37,9 @@ beforeEach(() => {
 });
 
 describe('Sidebar', () => {
-  it('renders the brand name', () => {
+  it('renders the brand logo', () => {
     renderSidebar();
-    expect(screen.getByText('fmusic')).toBeInTheDocument();
+    expect(screen.getByAltText('FMusic')).toBeInTheDocument();
   });
 
   it('renders all main navigation links', () => {

@@ -1,7 +1,7 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.6.0
+## v0.7.0
 
 ### Bug Fixes
 
@@ -10,6 +10,8 @@ _Generated from repository tags and commit history._
 - Solve issues with tests ([0e9f8d0](https://github.com/dgarana/fmusic/commit/0e9f8d01fd7a0589b8583f7fc709c0710a999f35))
 - Updat node from 20 to 24 ([363111a](https://github.com/dgarana/fmusic/commit/363111a872166d91c77e4f6b35e54ce542335fd7))
 - Force github actions to use node 24 ([4303b13](https://github.com/dgarana/fmusic/commit/4303b135f753057fde448690520fecd92be56af7))
+- MacOS window not renderind properly ([cc4363d](https://github.com/dgarana/fmusic/commit/cc4363d5f3a119c32c3a4c5572f41807d90838f3))
+- Fix test suite ([f337495](https://github.com/dgarana/fmusic/commit/f33749546e197c9b87b790f607a981cf6d48d3a7))
 
 ### Documentation
 
@@ -25,6 +27,8 @@ _Generated from repository tags and commit history._
 - Add dedicated track editing workspace with trim, fade and volume controls ([218e1c5](https://github.com/dgarana/fmusic/commit/218e1c5f850019c77bc66e73a8f8ee08f5e10583))
 - Add downloading capabilities through QR ([a0a5351](https://github.com/dgarana/fmusic/commit/a0a53516c8229c13a3c93854209d7311447a8e5b))
 - Add new logo and taskbar ([89cb913](https://github.com/dgarana/fmusic/commit/89cb91396bbcf6a2b392abcb4d865bd3f1ed5613))
+- Add different themes to the app ([38e6b91](https://github.com/dgarana/fmusic/commit/38e6b9199f44e331c0487b98d645e635db4b4d36))
+- Add downloading playlist feature ([2b95a66](https://github.com/dgarana/fmusic/commit/2b95a66a8cd049f44426cb022dd53cc0cb940baf))
 
 ### Miscellaneous
 
@@ -39,7 +43,10 @@ _Generated from repository tags and commit history._
 - Release v0.4.2 ([8200515](https://github.com/dgarana/fmusic/commit/8200515b84060cb581da19fda1d600b16a16d0ee))
 - Update the requirements ([d303eb9](https://github.com/dgarana/fmusic/commit/d303eb91578d1af7bb78bf309d8b3977e7049d59))
 - Release v0.5.0 ([35c9d14](https://github.com/dgarana/fmusic/commit/35c9d142bb04c74ca738e40cb1d1bea4faea9727))
-- Release v0.6.0 ([53186c5](https://github.com/dgarana/fmusic/commit/53186c5b05f568b4989391610f02cffd36d728df))
+- Release v0.6.0 ([fa3a208](https://github.com/dgarana/fmusic/commit/fa3a208734c5c9f64dba52da254fb90fc81b409f))
+- Templating stuff ([9fa32c6](https://github.com/dgarana/fmusic/commit/9fa32c6d2607aa4e84bbfae3099dbf78c66d9296))
+- Fix minor bugs ([9a5aaa6](https://github.com/dgarana/fmusic/commit/9a5aaa68773a0621401fa521dd646db583ad4815))
+- Release v0.7.0 ([30506ab](https://github.com/dgarana/fmusic/commit/30506ab6090c3ad7ff6d4d61ff6bfa6725ceedbe))
 
 ### Other
 
@@ -61,6 +68,9 @@ feat: Add downloading capabilities through QR ([fa5ec26](https://github.com/dgar
 - Merge pull request #5 from dgarana/change_look
 
 feat: Add new logo and taskbar ([1e0070a](https://github.com/dgarana/fmusic/commit/1e0070a03420b8387292bbfbf57da49bc7a680d6))
+- Merge pull request #6 from dgarana/fix_theme
+
+Fix theme ([694e1e6](https://github.com/dgarana/fmusic/commit/694e1e6373b68dbc4dfa186eb8efdc8acbb796d8))
 
 ### Testing
 

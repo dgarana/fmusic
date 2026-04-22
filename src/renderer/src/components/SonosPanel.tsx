@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSonosStore } from '../store/sonos';
 import { usePlayerStore } from '../store/player';
 import { useT } from '../i18n';
+import { CastIcon, StopIcon } from './icons';
 
 export function SonosPanel() {
   const t = useT();
@@ -65,9 +66,13 @@ export function SonosPanel() {
   }
 
   async function handleStop(host: string) {
-    await window.fmusic.sonosStop(host);
-    // If we were casting to this device, clear the store state too
-    if (activeHost === host) stop();
+    if (activeHost === host) {
+      // Route through the store so it resumes local playback from the
+      // current Sonos position (and calls sonosStop once internally).
+      await stop();
+    } else {
+      await window.fmusic.sonosStop(host).catch(() => {});
+    }
   }
 
   return (
@@ -77,7 +82,7 @@ export function SonosPanel() {
         onClick={() => setOpen((v) => !v)}
         title={isCasting ? t('sonos.playingTooltip') : t('sonos.castTooltip')}
       >
-        ⊕
+        <CastIcon size={18} />
       </button>
 
       {open && (
@@ -86,7 +91,7 @@ export function SonosPanel() {
             <span>{t('sonos.title')}</span>
           </div>
 
-          {error && <div className="sonos-error">{t('sonos.errorPrefix')} {error}</div>}
+          {error && <div className="sonos-error">{error}</div>}
 
           {devices.length === 0 ? (
             <button onClick={() => void discover()} disabled={discovering} style={{ width: '100%' }}>
@@ -111,7 +116,7 @@ export function SonosPanel() {
                       onClick={() => void handleStop(d.host)}
                       title={t('sonos.stopDevice')}
                     >
-                      ■
+                      <StopIcon size={14} />
                     </button>
                   </div>
                 ))}
@@ -126,11 +131,9 @@ export function SonosPanel() {
             </>
           )}
 
-          <div style={{ marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
-              {t('sonos.addByIp')}
-            </div>
-            <div style={{ display: 'flex', gap: 4 }}>
+          <div className="sonos-addip">
+            <div className="sonos-addip-label">{t('sonos.addByIp')}</div>
+            <div className="sonos-addip-row">
               <input
                 placeholder="192.168.1.x"
                 value={manualIp}
@@ -139,7 +142,7 @@ export function SonosPanel() {
                 style={{ flex: 1, fontSize: 12 }}
               />
               <button onClick={() => void handleAddByIp()} disabled={addingIp || !manualIp.trim()}>
-                {addingIp ? '⏳' : t('sonos.add')}
+                {addingIp ? '…' : t('sonos.add')}
               </button>
             </div>
             {ipError && (

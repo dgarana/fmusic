@@ -217,6 +217,51 @@ export function deleteTrack(id: number): boolean {
   return res.changes > 0;
 }
 
+/**
+ * Rename the audio file backing a track on disk and update the stored
+ * `file_path`. The new basename is taken verbatim except for path separators
+ * and NUL bytes, which are stripped. The extension is preserved — renaming
+ * never changes the audio format. Throws with a descriptive error if the
+ * target basename is empty, the source file is missing, or the destination
+ * already exists.
+ */
+export function renameTrackFile(id: number, rawBasename: string): Track | null {
+  const track = getTrack(id);
+  if (!track) return null;
+
+  const sourcePath = resolveTrackFilePath(track);
+  if (!sourcePath) {
+    throw new Error('Track file not found on disk');
+  }
+
+  const sanitized = rawBasename
+    .replace(/[\\/\u0000]/g, '')
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    .trim();
+  if (!sanitized) {
+    throw new Error('The filename cannot be empty');
+  }
+
+  const dir = path.dirname(sourcePath);
+  const ext = path.extname(sourcePath);
+  // Drop any extension the user typed; we always reuse the source extension
+  // so renaming can never change the audio format.
+  const baseWithoutExt = path.basename(sanitized, path.extname(sanitized)) || sanitized;
+  const targetPath = path.join(dir, `${baseWithoutExt}${ext}`);
+
+  if (path.resolve(targetPath) === path.resolve(sourcePath)) {
+    // No-op rename — caller passed the same name.
+    return track;
+  }
+  if (fs.existsSync(targetPath)) {
+    throw new Error(`A file named "${path.basename(targetPath)}" already exists`);
+  }
+
+  fs.renameSync(sourcePath, targetPath);
+  updateFilePath(id, targetPath);
+  return getTrack(id);
+}
+
 export async function editTrack(
   id: number,
   options: TrackEditOptions

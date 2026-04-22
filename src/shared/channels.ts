@@ -2,6 +2,7 @@
 export const Channels = {
   // App / system
   AppVersion: 'app:version',
+  AppPlatform: 'app:platform',
   OpenExternal: 'app:open-external',
   OpenPath: 'app:open-path',
   PickDirectory: 'app:pick-directory',
@@ -14,11 +15,13 @@ export const Channels = {
   // Settings
   SettingsGet: 'settings:get',
   SettingsUpdate: 'settings:update',
+  SettingsChanged: 'settings:changed', // event, main -> renderer (all windows)
 
   // YouTube
   YtSearch: 'yt:search',
   YtInfo: 'yt:info',
   YtStreamUrl: 'yt:stream-url',
+  YtPlaylist: 'yt:playlist',
 
   // Downloads
   DownloadEnqueue: 'download:enqueue',
@@ -39,6 +42,8 @@ export const Channels = {
   TracksStream: 'tracks:stream-url',
   TracksDownloadedIds: 'tracks:downloaded-ids',
   TracksEdit: 'tracks:edit',
+  TracksRename: 'tracks:rename',
+  TracksGet: 'tracks:get',
 
   // Library - playlists
   PlaylistsList: 'playlists:list',
@@ -50,6 +55,7 @@ export const Channels = {
   PlaylistsReorder: 'playlists:reorder',
   PlaylistsForTrack: 'playlists:for-track',
   PlaylistsForTracks: 'playlists:for-tracks',
+  PlaylistsAddTracksByYoutubeIds: 'playlists:add-tracks-by-yt',
 
   // Schema
   SchemaHistory: 'schema:history',

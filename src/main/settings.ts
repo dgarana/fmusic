@@ -18,7 +18,7 @@ function getStore(): Store<Schema> {
         defaultFormat: 'mp3',
         defaultQuality: 192,
         concurrency: 1,
-        theme: 'system',
+        theme: 'original',
         language: 'en',
         skipCertCheck: false,
         sonosKnownHosts: [],

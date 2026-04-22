@@ -1,6 +1,7 @@
 import { Howl } from 'howler';
 import { create } from 'zustand';
 import type { Track } from '../../../shared/types';
+import { useSonosStore } from './sonos';
 
 interface PlayerState {
   queue: Track[];
@@ -15,7 +16,7 @@ interface PlayerState {
 
   playTrack: (track: Track, queue?: Track[]) => Promise<void>;
   enqueue: (track: Track) => void;
-  playFromIndex: (index: number) => Promise<void>;
+  playFromIndex: (index: number, options?: { startAt?: number }) => Promise<void>;
   pause: () => void;
   togglePlay: () => void;
   next: () => Promise<void>;
@@ -57,12 +58,33 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     set({ queue: [...queue, track] });
   },
 
-  async playFromIndex(index) {
+  async playFromIndex(index, options = {}) {
     const { queue, howl, tickerId, volume } = get();
     if (index < 0 || index >= queue.length) return;
     const track = queue[index];
+    const startAt = options.startAt && options.startAt > 0 ? options.startAt : 0;
 
     stop(howl, tickerId);
+
+    // When Sonos is the active audio sink, skip starting the local Howl
+    // entirely. We still advance the queue state and update `current` so
+    // the UI (PlayerBar, NowPlayingIndicator, …) reflects the right
+    // track; the PlayerBar's effect forwards the change to Sonos.
+    // Without this guard, clicking "Next" while casting would double up
+    // playback locally and on the speaker.
+    if (useSonosStore.getState().activeHost !== null) {
+      set({
+        howl: null,
+        tickerId: null,
+        current: track,
+        index,
+        isPlaying: true,
+        position: 0,
+        duration: track.durationSec ?? 0
+      });
+      window.fmusic.markTrackPlayed(track.id).catch(() => {});
+      return;
+    }
 
     const url = await window.fmusic.trackStreamUrl(track.id);
     if (!url) {
@@ -79,6 +101,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     nextHowl.once('load', () => {
       set({ duration: nextHowl.duration() });
+      // Howler's seek() is only reliable once the source has loaded; when
+      // we're resuming from a Sonos handoff this is how we jump to the
+      // position the speaker was at.
+      if (startAt > 0) {
+        nextHowl.seek(startAt);
+        set({ position: startAt });
+      }
     });
 
     nextHowl.on('end', () => {
@@ -99,7 +128,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       current: track,
       index,
       isPlaying: true,
-      position: 0,
+      position: startAt,
       tickerId: newTickerId
     });
   },
@@ -113,9 +142,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   togglePlay() {
     const { howl, isPlaying, current, index } = get();
-    // The queue finished on the last track: the Howl was unloaded to free
-    // memory but `current` is still set. Hitting play again should restart
-    // that track from the beginning.
+    // The queue finished on the last track, or Sonos is the sink: the
+    // local Howl is null but `current` is still set. Hitting play should
+    // restart the current track (locally or, if casting, via Sonos via
+    // playFromIndex, which branches on activeHost).
     if (!howl && current && index >= 0) {
       void get().playFromIndex(index);
       return;

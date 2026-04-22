@@ -2,9 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { DownloadJob, SearchResult } from '../../../shared/types';
 import { useDownloadsStore } from '../store/downloads';
+import { useLibraryStore } from '../store/library';
 import { PAGE_SIZE, useSearchStore } from '../store/search';
-import { extractYoutubeId, formatDuration, isYouTubeUrl } from '../util';
+import {
+  extractYoutubeId,
+  extractYoutubePlaylistId,
+  formatDuration,
+  isYouTubeUrl
+} from '../util';
 import { useT } from '../i18n';
+import { SearchIcon, DownloadIcon, CloseIcon } from '../components/icons';
 
 function isSslError(message: string): boolean {
   return message.includes('CERTIFICATE_VERIFY_FAILED') || message.includes('SSL');
@@ -38,6 +45,7 @@ export function DownloadPage() {
   const [info, setInfo] = useState<string | null>(null);
   const jobs = useDownloadsStore((s) => s.jobs);
   const dismissJob = useDownloadsStore((s) => s.dismiss);
+  const refreshPlaylists = useLibraryStore((s) => s.refreshPlaylists);
   const [inLibrary, setInLibrary] = useState<Set<string>>(new Set());
 
   // Build a lookup: youtubeId -> active job (the most recent one wins if there
@@ -97,7 +105,18 @@ export function DownloadPage() {
     setError(null);
     setInfo(null);
     if (isYouTubeUrl(trimmed)) {
-      await enqueue(trimmed, extractYoutubeId(trimmed));
+      const videoId = extractYoutubeId(trimmed);
+      const playlistId = extractYoutubePlaylistId(trimmed);
+      // If the URL carries a `list=` (dedicated playlist, user-curated list
+      // or an auto-generated mix/radio) we treat it as a playlist download.
+      // This matches the user-facing promise: "paste a playlist link and it
+      // will download all of its items". Users who only want the single
+      // video can paste a URL without the `&list=` parameter.
+      if (playlistId) {
+        await enqueuePlaylist(trimmed);
+        return;
+      }
+      await enqueue(trimmed, videoId);
       return;
     }
     setSearching(true);
@@ -108,6 +127,104 @@ export function DownloadPage() {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSearching(false);
+    }
+  }
+
+  async function enqueuePlaylist(url: string) {
+    setSearching(true);
+    setInfo(t('download.fetchingPlaylist'));
+    try {
+      const { title: rawTitle, entries } = await window.fmusic.fetchYoutubePlaylist(url);
+      if (entries.length === 0) {
+        setInfo(t('download.playlistEmpty'));
+        return;
+      }
+
+      const playlistTitle = rawTitle?.trim() || t('download.playlistDefaultName');
+
+      // Create the local playlist up front so we can attach each download
+      // to it via `playlistId`. DownloadManager handles the add-to-playlist
+      // step automatically once the track lands in the library.
+      let localPlaylist: { id: number };
+      try {
+        localPlaylist = await window.fmusic.createPlaylist(playlistTitle);
+        await refreshPlaylists();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+        return;
+      }
+
+      const batchId = `pl-${localPlaylist.id}-${Date.now()}`;
+      const entryIds = entries.map((e) => e.id);
+      const alreadyIn = new Set(await window.fmusic.downloadedYoutubeIds(entryIds));
+
+      // Anything already in the library should still end up in the newly
+      // created local playlist — we just skip the download part.
+      const preExistingIds = entryIds.filter((id) => alreadyIn.has(id));
+      if (preExistingIds.length > 0) {
+        try {
+          await window.fmusic.addTracksByYoutubeIdsToPlaylist(
+            localPlaylist.id,
+            preExistingIds
+          );
+          await refreshPlaylists();
+        } catch {
+          // Non-fatal: the local playlist exists, we just couldn't prefill
+          // some tracks. The user can add them manually.
+        }
+      }
+
+      let enqueued = 0;
+      let skipped = 0;
+      for (const entry of entries) {
+        const activeJob = jobByYoutubeId.get(entry.id);
+        const isActive = activeJob && ACTIVE_STATUSES.includes(activeJob.status);
+        if (alreadyIn.has(entry.id) || isActive) {
+          skipped++;
+          continue;
+        }
+        try {
+          await window.fmusic.enqueueDownload({
+            url: entry.url,
+            playlistId: localPlaylist.id,
+            batchId,
+            batchTitle: playlistTitle
+          });
+          enqueued++;
+        } catch {
+          // Individual failures will surface as failed jobs in the list; we
+          // don't want one bad entry to abort the whole playlist import.
+        }
+      }
+
+      setInfo(
+        t('download.playlistEnqueued', {
+          total: entries.length,
+          enqueued,
+          skipped,
+          playlist: playlistTitle
+        })
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setInfo(null);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  async function cancelBatch(batchId: string) {
+    const targets = jobs.filter(
+      (j) => j.request.batchId === batchId && ACTIVE_STATUSES.includes(j.status)
+    );
+    await Promise.all(targets.map((j) => window.fmusic.cancelDownload(j.id)));
+  }
+
+  function dismissBatch(batchId: string) {
+    for (const job of jobs) {
+      if (job.request.batchId === batchId && !ACTIVE_STATUSES.includes(job.status)) {
+        dismissJob(job.id);
+      }
     }
   }
 
@@ -166,18 +283,41 @@ export function DownloadPage() {
     });
   }, [jobs, results]);
 
+  // Jobs that belong to a playlist import are rendered in their own group so
+  // the user can see "Playlist X: 12 tracks" and cancel them all at once.
+  const batches = useMemo(() => {
+    const groups = new Map<string, { title: string; jobs: DownloadJob[] }>();
+    for (const job of orphanJobs) {
+      const id = job.request.batchId;
+      if (!id) continue;
+      const title = job.request.batchTitle ?? t('download.playlistDefaultName');
+      const existing = groups.get(id);
+      if (existing) existing.jobs.push(job);
+      else groups.set(id, { title, jobs: [job] });
+    }
+    return Array.from(groups.entries()).map(([id, g]) => ({ id, ...g }));
+  }, [orphanJobs, t]);
+
+  const unbatchedOrphanJobs = useMemo(
+    () => orphanJobs.filter((j) => !j.request.batchId),
+    [orphanJobs]
+  );
+
   return (
     <div>
       <h1>{t('download.title')}</h1>
       <div className="search-row">
-        <input
-          placeholder={t('download.searchPlaceholder')}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') void submit();
-          }}
-        />
+        <div className="input-with-icon">
+          <SearchIcon size={16} />
+          <input
+            placeholder={t('download.searchPlaceholder')}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void submit();
+            }}
+          />
+        </div>
         <button className="primary" onClick={() => void submit()} disabled={searching}>
           {searching ? t('common.searching') : t('download.searchButton')}
         </button>
@@ -201,11 +341,93 @@ export function DownloadPage() {
       )}
       {info && <div style={{ color: 'var(--text-muted)', marginBottom: 12 }}>{info}</div>}
 
-      {orphanJobs.length > 0 && (
+      {batches.map((batch) => {
+        const activeCount = batch.jobs.filter((j) => ACTIVE_STATUSES.includes(j.status)).length;
+        const completedCount = batch.jobs.filter((j) => j.status === 'completed').length;
+        return (
+          <section className="download-batch" key={batch.id} style={{ marginBottom: 16 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginBottom: 8
+              }}
+            >
+              <h2 style={{ margin: 0 }}>
+                {t('download.playlistBatchTitle', { title: batch.title })}
+              </h2>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 13,
+                  color: 'var(--text-muted)'
+                }}
+              >
+                <span>
+                  {t('download.playlistBatchProgress', {
+                    done: completedCount,
+                    total: batch.jobs.length
+                  })}
+                </span>
+                {activeCount > 0 ? (
+                  <button className="danger" onClick={() => void cancelBatch(batch.id)}>
+                    {t('download.cancelAll')}
+                  </button>
+                ) : (
+                  <button onClick={() => dismissBatch(batch.id)}>
+                    {t('download.dismissAll')}
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="jobs">
+              {batch.jobs.map((job) => (
+                <div className="job" key={job.id}>
+                  <div>
+                    <div className="title">{job.title ?? job.request.url}</div>
+                    <div className="meta">
+                      {job.status === 'downloading'
+                        ? `${Math.round(job.progress * 100)}% · ${job.speedHuman ?? ''} · ETA ${formatDuration(job.etaSeconds ?? null)}`
+                        : job.error ?? ''}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className={`status-pill ${job.status}`}>{job.status}</span>
+                    {ACTIVE_STATUSES.includes(job.status) ? (
+                      <button onClick={() => void window.fmusic.cancelDownload(job.id)}>
+                        {t('download.cancelJob')}
+                      </button>
+                    ) : (
+                      <button
+                        className="icon-btn"
+                        onClick={() => dismissJob(job.id)}
+                        title={t('download.dismissJob')}
+                      >
+                        <CloseIcon size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="progress-bar">
+                    <div
+                      style={{ width: `${Math.min(100, Math.max(0, job.progress * 100))}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+
+      {unbatchedOrphanJobs.length > 0 && (
         <>
           <h2>{t('download.otherDownloads')}</h2>
           <div className="jobs">
-            {orphanJobs.map((job) => (
+            {unbatchedOrphanJobs.map((job) => (
               <div className="job" key={job.id}>
                 <div>
                   <div className="title">{job.title ?? job.request.url}</div>
@@ -222,7 +444,13 @@ export function DownloadPage() {
                       {t('download.cancelJob')}
                     </button>
                   ) : (
-                    <button onClick={() => dismissJob(job.id)} title={t('download.dismissJob')}>×</button>
+                    <button
+                      className="icon-btn"
+                      onClick={() => dismissJob(job.id)}
+                      title={t('download.dismissJob')}
+                    >
+                      <CloseIcon size={14} />
+                    </button>
                   )}
                 </div>
                 <div className="progress-bar">
@@ -352,7 +580,12 @@ export function DownloadPage() {
                           {t('download.cancelJob')}
                         </button>
                       ) : (
-                        <button className="primary" onClick={() => void enqueue(r.url, r.id)}>
+                        <button
+                          className="primary"
+                          onClick={() => void enqueue(r.url, r.id)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                        >
+                          <DownloadIcon size={14} />
                           {t('download.download')}
                         </button>
                       )}

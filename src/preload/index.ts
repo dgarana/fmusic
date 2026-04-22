@@ -13,7 +13,8 @@ import type {
   TrackMetadataLookupResult,
   TrackMetadataSuggestions,
   TrackQuery,
-  UpdateStatus
+  UpdateStatus,
+  YoutubePlaylistFetch
 } from '../shared/types.js';
 
 function invoke<T>(channel: string, ...args: unknown[]): Promise<T> {
@@ -29,6 +30,7 @@ function on<T>(channel: string, handler: (payload: T) => void): () => void {
 const api = {
   // App / system
   getAppVersion: () => invoke<string>(Channels.AppVersion),
+  getPlatform: () => invoke<string>(Channels.AppPlatform),
   openExternal: (url: string) => invoke<void>(Channels.OpenExternal, url),
 
   // Updater
@@ -50,6 +52,8 @@ const api = {
   getSettings: () => invoke<AppSettings>(Channels.SettingsGet),
   updateSettings: (patch: Partial<AppSettings>) =>
     invoke<AppSettings>(Channels.SettingsUpdate, patch),
+  onSettingsChanged: (handler: (settings: AppSettings) => void) =>
+    on<AppSettings>(Channels.SettingsChanged, handler),
 
   // YouTube
   search: (query: string, limit = 10) => invoke<SearchResult[]>(Channels.YtSearch, query, limit),
@@ -68,6 +72,8 @@ const api = {
       releaseYear: number | null;
     }>(Channels.YtInfo, url),
   ytStreamUrl: (url: string) => invoke<string>(Channels.YtStreamUrl, url),
+  fetchYoutubePlaylist: (url: string) =>
+    invoke<YoutubePlaylistFetch>(Channels.YtPlaylist, url),
 
   // Downloads
   enqueueDownload: (req: DownloadRequest) => invoke<DownloadJob>(Channels.DownloadEnqueue, req),
@@ -95,6 +101,9 @@ const api = {
   trackStreamUrl: (id: number) => invoke<string | null>(Channels.TracksStream, id),
   editTrack: (id: number, options: TrackEditOptions) =>
     invoke<Track | null>(Channels.TracksEdit, id, options),
+  renameTrackFile: (id: number, basename: string) =>
+    invoke<Track | null>(Channels.TracksRename, id, basename),
+  getTrack: (id: number) => invoke<Track | null>(Channels.TracksGet, id),
   downloadedYoutubeIds: (ids: string[]) =>
     invoke<string[]>(Channels.TracksDownloadedIds, ids),
   onTrackAdded: (handler: (track: Track) => void) => on<Track>(Channels.TracksAdded, handler),
@@ -120,6 +129,8 @@ const api = {
     );
     return new Map(tuples);
   },
+  addTracksByYoutubeIdsToPlaylist: (playlistId: number, youtubeIds: string[]) =>
+    invoke<number>(Channels.PlaylistsAddTracksByYoutubeIds, playlistId, youtubeIds),
 
   // Schema
   schemaHistory: () =>
@@ -144,6 +155,8 @@ const api = {
     isPlaying: boolean;
     hasPrev: boolean;
     hasNext: boolean;
+    position: number;
+    duration: number;
   }) => void) => on('mini:state', handler),
   sendMiniCommand: (cmd: 'toggle-play' | 'prev' | 'next' | 'expand' | 'request-state') =>
     ipcRenderer.send('mini:command', cmd),
@@ -154,7 +167,12 @@ const api = {
     isPlaying: boolean;
     hasPrev: boolean;
     hasNext: boolean;
+    position: number;
+    duration: number;
   }) => ipcRenderer.send('mini:state-from-main', state),
+  sendMiniSeek: (seconds: number) => ipcRenderer.send('mini:seek', seconds),
+  onMiniSeek: (handler: (seconds: number) => void) =>
+    on<number>('mini:seek-from-main', handler),
 
   // Sonos
   sonosDiscover: () => invoke<SonosDevice[]>(Channels.SonosDiscover),

@@ -1,10 +1,23 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import { useLibraryStore } from '../store/library';
 import { usePlayerStore } from '../store/player';
+import { useSonosStore } from '../store/sonos';
+import { useSettingsStore } from '../store/settings';
 import { formatDuration } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
 import type { Playlist, Track } from '../../../shared/types';
+import { TrackTitleCell } from '../components/TrackTitleCell';
+import {
+  MusicIcon,
+  PlayIcon,
+  EditIcon,
+  QrCodeIcon,
+  ChevronUpIcon,
+  CloseIcon,
+  SearchIcon
+} from '../components/icons';
 
 export function PlaylistsPage() {
   const t = useT();
@@ -88,6 +101,7 @@ export function PlaylistsPage() {
 
 function PlaylistDetail({ playlist }: { playlist: Playlist }) {
   const t = useT();
+  const navigate = useNavigate();
   const { id } = playlist;
   const name = playlistDisplayName(playlist, t);
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -96,7 +110,16 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
   const [pickerQuery, setPickerQuery] = useState('');
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [adding, setAdding] = useState(false);
+  const [mobileSyncTrackId, setMobileSyncTrackId] = useState<number | null>(null);
+  const [mobileSyncUrl, setMobileSyncUrl] = useState<string | null>(null);
   const playTrack = usePlayerStore((s) => s.playTrack);
+  const currentTrack = usePlayerStore((s) => s.current);
+  const localIsPlaying = usePlayerStore((s) => s.isPlaying);
+  const sonosActiveHost = useSonosStore((s) => s.activeHost);
+  const sonosIsPlaying = useSonosStore((s) => s.isPlaying);
+  const { settings } = useSettingsStore();
+  // When casting, the true playback state lives in the Sonos store.
+  const isPlayingGlobal = sonosActiveHost !== null ? sonosIsPlaying : localIsPlaying;
   const refreshPlaylists = useLibraryStore((s) => s.refreshPlaylists);
   const playlistsVersion = useLibraryStore((s) => s.playlistsVersion);
 
@@ -142,6 +165,29 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
     await refreshPlaylists();
   }
 
+  async function toggleMobileSync(trackId: number) {
+    if (mobileSyncTrackId === trackId) {
+      setMobileSyncTrackId(null);
+      setMobileSyncUrl(null);
+      return;
+    }
+
+    if (!settings?.mobileSyncEnabled) {
+      alert(t('library.mobileSyncDisabled'));
+      return;
+    }
+
+    setMobileSyncTrackId(trackId);
+    setMobileSyncUrl(null);
+    try {
+      const url = await window.fmusic.getMobileSyncUrl(trackId);
+      setMobileSyncUrl(url);
+    } catch (err) {
+      alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
+      setMobileSyncTrackId(null);
+    }
+  }
+
   async function moveUp(index: number) {
     if (index === 0) return;
     const ordered = [...tracks];
@@ -173,30 +219,26 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-        <h1 style={{ margin: 0 }}>🎵 {name}</h1>
+        <h1 style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+          <MusicIcon size={22} /> {name}
+        </h1>
         <button className="primary" onClick={() => void openPicker()}>
           {t('playlists.addTracks')}
         </button>
       </div>
 
       {pickerOpen && (
-        <div
-          style={{
-            marginBottom: 18,
-            padding: 14,
-            border: '1px solid var(--border)',
-            borderRadius: 8,
-            background: 'var(--bg-elevated)'
-          }}
-        >
-          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-            <input
-              placeholder={t('playlists.pickerFilter')}
-              value={pickerQuery}
-              onChange={(e) => setPickerQuery(e.target.value)}
-              style={{ flex: 1 }}
-              autoFocus
-            />
+        <div className="picker-card">
+          <div className="picker-toolbar">
+            <div className="input-with-icon">
+              <SearchIcon size={16} />
+              <input
+                placeholder={t('playlists.pickerFilter')}
+                value={pickerQuery}
+                onChange={(e) => setPickerQuery(e.target.value)}
+                autoFocus
+              />
+            </div>
             <button
               className="primary"
               onClick={() => void commitAdd()}
@@ -211,26 +253,9 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
               {allTracks.length === 0 ? t('playlists.libraryEmpty') : t('playlists.allAlreadyIn')}
             </div>
           ) : (
-            <div
-              style={{
-                maxHeight: 320,
-                overflowY: 'auto',
-                border: '1px solid var(--border)',
-                borderRadius: 6
-              }}
-            >
+            <div className="picker-list">
               {candidates.map((t) => (
-                <label
-                  key={t.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '8px 10px',
-                    borderBottom: '1px solid var(--border)',
-                    cursor: 'pointer'
-                  }}
-                >
+                <label key={t.id} className="picker-row">
                   <input
                     type="checkbox"
                     checked={selected.has(t.id)}
@@ -254,30 +279,129 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
           {t('playlists.empty')}
         </div>
       ) : (
-        <table className="track-table">
+        <table className="track-table compact">
+          <colgroup>
+            <col />
+            <col className="col-artist" />
+            <col className="col-album" />
+            <col className="col-duration" />
+            <col className="col-actions playlist-actions" />
+          </colgroup>
           <thead>
             <tr>
-              <th>{t('playlists.columns.index')}</th>
               <th>{t('playlists.columns.title')}</th>
               <th>{t('playlists.columns.artist')}</th>
+              <th>{t('library.columns.album')}</th>
               <th>{t('playlists.columns.duration')}</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {tracks.map((tr, i) => (
-              <tr key={tr.id}>
-                <td>{i + 1}</td>
-                <td>{tr.title}</td>
-                <td>{tr.artist ?? '-'}</td>
-                <td>{formatDuration(tr.durationSec)}</td>
-                <td className="actions">
-                  <button onClick={() => void playTrack(tr, tracks)} title={t('playlists.playTooltip')}>▶</button>{' '}
-                  <button onClick={() => void moveUp(i)} disabled={i === 0} title={t('playlists.moveUpTooltip')}>↑</button>{' '}
-                  <button className="danger" onClick={() => void remove(tr.id)} title={t('playlists.removeTooltip')}>×</button>
-                </td>
-              </tr>
-            ))}
+            {tracks.map((tr, i) => {
+              const isCurrent = currentTrack?.id === tr.id;
+              return (
+                <Fragment key={tr.id}>
+                  <tr className={isCurrent ? 'now-playing' : undefined}>
+                    <td className="cell-flex">
+                      <TrackTitleCell
+                        track={tr}
+                        isCurrent={isCurrent}
+                        isPlaying={isCurrent && isPlayingGlobal}
+                      />
+                    </td>
+                    <td className="cell-ellipsis" title={tr.artist ?? undefined}>{tr.artist ?? '-'}</td>
+                    <td className="cell-ellipsis" title={tr.album ?? undefined}>{tr.album ?? '-'}</td>
+                    <td className="cell-narrow">{formatDuration(tr.durationSec)}</td>
+                    <td className="actions">
+                      <div className="row-actions">
+                        <button
+                          className="icon-btn sm"
+                          onClick={() => void playTrack(tr, tracks)}
+                          title={t('playlists.playTooltip')}
+                        >
+                          <PlayIcon size={14} />
+                        </button>
+                        <button
+                          className="icon-btn sm"
+                          onClick={() => navigate(`/edit/${tr.id}`)}
+                          title={t('library.editorTooltip')}
+                        >
+                          <EditIcon size={14} />
+                        </button>
+                        {settings?.mobileSyncEnabled && (
+                          <button
+                            className="icon-btn sm"
+                            onClick={() => void toggleMobileSync(tr.id)}
+                            title={t('library.mobileSyncTooltip')}
+                          >
+                            <QrCodeIcon size={14} />
+                          </button>
+                        )}
+                        <button
+                          className="icon-btn sm"
+                          onClick={() => void moveUp(i)}
+                          disabled={i === 0}
+                          title={t('playlists.moveUpTooltip')}
+                        >
+                          <ChevronUpIcon size={14} />
+                        </button>
+                        <button
+                          className="icon-btn sm danger"
+                          onClick={() => void remove(tr.id)}
+                          title={t('playlists.removeTooltip')}
+                        >
+                          <CloseIcon size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {mobileSyncTrackId === tr.id && (
+                    <tr className="track-editor-row">
+                      <td colSpan={5}>
+                        <div className="mobile-sync-card">
+                          <div className="mobile-sync-header">
+                            <h3>{t('library.mobileSyncTitle')}</h3>
+                            {mobileSyncUrl && (
+                              <p>{t('library.mobileSyncInstructions', { title: tr.title })}</p>
+                            )}
+                          </div>
+
+                          {mobileSyncUrl ? (
+                            <>
+                              <div className="mobile-sync-qr-wrapper">
+                                <QRCodeSVG
+                                  value={mobileSyncUrl}
+                                  size={220}
+                                  level="H"
+                                  includeMargin={false}
+                                  imageSettings={{
+                                    src: 'fmusic-media://artwork/' + tr.id,
+                                    height: 40,
+                                    width: 40,
+                                    excavate: true
+                                  }}
+                                />
+                              </div>
+                              <div className="mobile-sync-url">{mobileSyncUrl}</div>
+                            </>
+                          ) : (
+                            <div className="empty" style={{ fontStyle: 'normal' }}>
+                              {t('common.loading')}
+                            </div>
+                          )}
+
+                          <div className="track-editor-actions" style={{ marginTop: 24 }}>
+                            <button onClick={() => setMobileSyncTrackId(null)}>
+                              {t('common.cancel')}
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       )}

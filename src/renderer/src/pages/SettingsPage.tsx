@@ -69,22 +69,12 @@ export function SettingsPage() {
     <div>
       <h1>{t('settings.title')}</h1>
 
-      <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
+      <div className="pill-tabs">
         {(Object.keys(tabLabels) as Tab[]).map((key) => (
           <button
             key={key}
+            className={`pill-tab${key === tab ? ' active' : ''}`}
             onClick={() => setTab(key)}
-            style={{
-              background: 'none',
-              border: 'none',
-              borderBottom: key === tab ? '2px solid var(--accent)' : '2px solid transparent',
-              borderRadius: 0,
-              color: key === tab ? 'var(--accent)' : 'var(--text-muted)',
-              cursor: 'pointer',
-              fontWeight: key === tab ? 600 : 400,
-              marginBottom: -1,
-              padding: '8px 18px'
-            }}
           >
             {tabLabels[key]}
           </button>
@@ -154,6 +144,21 @@ export function SettingsPage() {
                   {loc.flag} {loc.name}
                 </option>
               ))}
+            </select>
+          </label>
+          <label style={{ display: 'grid', gap: 4 }}>
+            <span style={{ fontWeight: 500 }}>{t('settings.system.theme')}</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+              {t('settings.system.themeDescription')}
+            </span>
+            <select
+              value={settings.theme ?? 'original'}
+              onChange={(e) => void update({ theme: e.target.value as any })}
+              style={{ width: 'fit-content', marginTop: 4 }}
+            >
+              <option value="original">{t('settings.system.themes.original')}</option>
+              <option value="light">{t('settings.system.themes.light')}</option>
+              <option value="darcula">{t('settings.system.themes.darcula')}</option>
             </select>
           </label>
           <ToggleSetting
@@ -243,6 +248,15 @@ export function SettingsPage() {
                 {deps.ffmpeg.path && (
                   <div style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 11 }}>
                     {deps.ffmpeg.path}
+                  </div>
+                )}
+              </div>
+              <div style={{ marginTop: 6 }}>
+                <strong>ffprobe</strong>:{' '}
+                {deps.ffprobe.present ? t('settings.dependencies.available') : t('settings.dependencies.notFound')}
+                {deps.ffprobe.path && (
+                  <div style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 11 }}>
+                    {deps.ffprobe.path}
                   </div>
                 )}
               </div>

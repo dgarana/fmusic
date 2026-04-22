@@ -12,6 +12,7 @@ import type {
 import { DownloadProcess } from './ytdlp.js';
 import { getSettings } from './settings.js';
 import { findByYoutubeId, insertTrack } from './library/tracks-repo.js';
+import { addTrackToPlaylist } from './library/playlists-repo.js';
 
 type Listener = (...args: unknown[]) => void;
 
@@ -117,7 +118,10 @@ export class DownloadManager extends EventEmitter {
       request: {
         url: request.url,
         format: request.format ?? settings.defaultFormat,
-        quality: request.quality ?? settings.defaultQuality
+        quality: request.quality ?? settings.defaultQuality,
+        playlistId: request.playlistId,
+        batchId: request.batchId,
+        batchTitle: request.batchTitle
       },
       status: 'queued',
       progress: 0
@@ -229,6 +233,22 @@ export class DownloadManager extends EventEmitter {
           filePath: result.filePath,
           thumbnailPath: null
         });
+      }
+
+      // When the job belongs to a playlist import, make sure the finished
+      // track ends up in the local playlist the user asked for. We swallow
+      // errors so a misconfigured playlist id cannot break the download
+      // pipeline — the track itself is already saved to the library.
+      const destinationPlaylist = job.request.playlistId;
+      if (destinationPlaylist != null) {
+        try {
+          addTrackToPlaylist(destinationPlaylist, track.id);
+        } catch (err) {
+          console.warn(
+            `[FMusic] Could not add track ${track.id} to playlist ${destinationPlaylist}:`,
+            err instanceof Error ? err.message : err
+          );
+        }
       }
 
       this.updateJob(job, { status: 'completed', progress: 1, trackId: track.id });

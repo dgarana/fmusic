@@ -8,6 +8,23 @@ export interface DownloadRequest {
   format?: AudioFormat;
   /** Audio bitrate in kbps. Default 192. */
   quality?: number;
+  /**
+   * Optional local playlist that the resulting track should be auto-added to
+   * once the download completes. Used when importing a YouTube playlist.
+   */
+  playlistId?: number;
+  /**
+   * Opaque batch id used by the renderer to group jobs that belong to the
+   * same bulk enqueue (typically a YouTube playlist import). Not persisted.
+   */
+  batchId?: string;
+  /** Human-readable name for the batch (shown as the group header). */
+  batchTitle?: string;
+}
+
+export interface YoutubePlaylistFetch {
+  title: string | null;
+  entries: SearchResult[];
 }
 
 export type DownloadStatus =
@@ -107,7 +124,7 @@ export interface AppSettings {
   defaultFormat: AudioFormat;
   defaultQuality: number;
   concurrency: number;
-  theme: 'system' | 'dark' | 'light';
+  theme: 'system' | 'original' | 'light' | 'darcula';
   /** UI language. Defaults to 'en'. */
   language: Locale;
   /** Disable SSL certificate verification for yt-dlp (useful behind corporate VPNs). Default: false. */
@@ -129,6 +146,7 @@ export interface AppSettings {
 export interface DependencyStatus {
   ytDlp: { present: boolean; path: string | null };
   ffmpeg: { present: boolean; path: string | null };
+  ffprobe: { present: boolean; path: string | null };
 }
 
 export type TrackSortKey = 'title' | 'artist' | 'album' | 'genre' | 'durationSec' | 'downloadedAt';

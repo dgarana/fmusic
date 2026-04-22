@@ -41,6 +41,15 @@ export function App() {
   const refreshDownloads = useDownloadsStore((s) => s.refresh);
   const applyDownloadUpdate = useDownloadsStore((s) => s.applyUpdate);
   const loadSettings = useSettingsStore((s) => s.load);
+  const settings = useSettingsStore((s) => s.settings);
+
+  useEffect(() => {
+    if (settings?.theme) {
+      document.body.className = `theme-${settings.theme}`;
+    } else {
+      document.body.className = 'theme-original';
+    }
+  }, [settings?.theme]);
 
   useEffect(() => {
     void refreshAll();
@@ -49,9 +58,16 @@ export function App() {
 
     const offDownload = window.fmusic.onDownloadUpdate((job) => applyDownloadUpdate(job));
     const offTrack = window.fmusic.onTrackAdded((track) => handleTrackAdded(track));
+    // Keep every window's settings store in sync: the main process
+    // broadcasts Channels.SettingsChanged after any update, so the mini
+    // player picks up theme/language changes made in the main window.
+    const offSettings = window.fmusic.onSettingsChanged((next) => {
+      useSettingsStore.setState({ settings: next });
+    });
     return () => {
       offDownload();
       offTrack();
+      offSettings();
     };
   }, [refreshAll, refreshDownloads, applyDownloadUpdate, handleTrackAdded]);
 
@@ -112,6 +128,86 @@ export function App() {
           error: null
         });
         useDownloadsStore.setState({ jobs: demoJobs });
+      },
+      preparePlaylistDownloadDemo: () => {
+        const batchId = 'demo-playlist-import';
+        const playlistTitle = 'Industrial Essentials';
+        const playlistJobs: DownloadJob[] = [
+          {
+            id: 'pl-job-1',
+            request: {
+              url: 'https://www.youtube.com/watch?v=demo-du-hast',
+              format: 'mp3',
+              quality: 320,
+              playlistId: 42,
+              batchId,
+              batchTitle: playlistTitle
+            },
+            status: 'completed',
+            title: 'Du Hast',
+            youtubeId: 'demo-du-hast',
+            thumbnail: demoThumbnail('Du Hast', ['#111827', '#ef4444']),
+            progress: 1,
+            trackId: 101
+          },
+          {
+            id: 'pl-job-2',
+            request: {
+              url: 'https://www.youtube.com/watch?v=demo-sonne',
+              format: 'mp3',
+              quality: 320,
+              playlistId: 42,
+              batchId,
+              batchTitle: playlistTitle
+            },
+            status: 'downloading',
+            title: 'Sonne',
+            youtubeId: 'demo-sonne',
+            thumbnail: demoThumbnail('Sonne', ['#312e81', '#f59e0b']),
+            progress: 0.58,
+            etaSeconds: 24,
+            speedHuman: '2.4MiB/s'
+          },
+          {
+            id: 'pl-job-3',
+            request: {
+              url: 'https://www.youtube.com/watch?v=demo-engel',
+              format: 'mp3',
+              quality: 320,
+              playlistId: 42,
+              batchId,
+              batchTitle: playlistTitle
+            },
+            status: 'queued',
+            title: 'Engel',
+            youtubeId: 'demo-engel',
+            thumbnail: demoThumbnail('Engel', ['#164e63', '#22d3ee']),
+            progress: 0
+          },
+          {
+            id: 'pl-job-4',
+            request: {
+              url: 'https://www.youtube.com/watch?v=demo-links',
+              format: 'mp3',
+              quality: 320,
+              playlistId: 42,
+              batchId,
+              batchTitle: playlistTitle
+            },
+            status: 'processing',
+            title: 'Links 2 3 4',
+            youtubeId: 'demo-links',
+            thumbnail: demoThumbnail('Links', ['#3f3f46', '#84cc16']),
+            progress: 0.96
+          }
+        ];
+        useSearchStore.setState({
+          query: 'https://www.youtube.com/playlist?list=PL-industrial-demo',
+          results: [],
+          resultLimit: 12,
+          error: null
+        });
+        useDownloadsStore.setState({ jobs: playlistJobs });
       },
       prepareSonosDemo: async () => {
         const tracks = await window.fmusic.listTracks();

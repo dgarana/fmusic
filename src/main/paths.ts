@@ -24,6 +24,11 @@ export function ffmpegPath(): string {
   return path.join(binDir(), name);
 }
 
+export function ffprobePath(): string {
+  const name = process.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe';
+  return path.join(binDir(), name);
+}
+
 export function hasYtDlp(): boolean {
   try {
     return fs.existsSync(ytDlpPath());
@@ -35,6 +40,14 @@ export function hasYtDlp(): boolean {
 export function hasFfmpeg(): boolean {
   try {
     return fs.existsSync(ffmpegPath());
+  } catch {
+    return false;
+  }
+}
+
+export function hasFfprobe(): boolean {
+  try {
+    return fs.existsSync(ffprobePath());
   } catch {
     return false;
   }

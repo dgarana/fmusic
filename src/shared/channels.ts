@@ -82,6 +82,10 @@ export const Channels = {
   // Mobile Sync
   MobileSyncGetUrl: 'mobile-sync:get-url',
 
+  // Remote Controller
+  RemoteControllerInfo: 'remote-controller:info',
+  RemoteControllerRegenerate: 'remote-controller:regenerate',
+
   // Window Controls
   WindowMaximizeChange: 'window:maximize-change', // event, main -> renderer
   WindowIsMaximized: 'window:is-maximized'

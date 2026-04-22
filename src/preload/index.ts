@@ -6,6 +6,9 @@ import type {
   DownloadJob,
   DownloadRequest,
   Playlist,
+  RemoteControllerCommand,
+  RemoteControllerInfo,
+  RemotePlayerSnapshot,
   SearchResult,
   SonosDevice,
   Track,
@@ -192,6 +195,19 @@ const api = {
 
   // Mobile Sync
   getMobileSyncUrl: (trackId: number) => invoke<string>(Channels.MobileSyncGetUrl, trackId),
+
+  // Remote Controller
+  getRemoteControllerInfo: () =>
+    invoke<RemoteControllerInfo>(Channels.RemoteControllerInfo),
+  regenerateRemoteControllerToken: () =>
+    invoke<RemoteControllerInfo>(Channels.RemoteControllerRegenerate),
+  sendRemoteState: (state: RemotePlayerSnapshot) => ipcRenderer.send('remote:state-from-main', state),
+  onRemoteCommand: (handler: (cmd: RemoteControllerCommand) => void) =>
+    on<RemoteControllerCommand>('remote:command', handler),
+  onRemoteSeek: (handler: (seconds: number) => void) =>
+    on<number>('remote:seek-from-main', handler),
+  onRemoteVolume: (handler: (volume: number) => void) =>
+    on<number>('remote:volume-from-main', handler),
 
   // Window Controls
   minimize: () => ipcRenderer.send('window:minimize'),

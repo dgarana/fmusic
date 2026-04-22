@@ -5,7 +5,8 @@
     "playlists": "Playlists",
     "settings": "Settings",
     "yourPlaylists": "Your playlists",
-    "noPlaylistsYet": "No playlists yet"
+    "noPlaylistsYet": "No playlists yet",
+    "player": "Player"
   },
   "common": {
     "loading": "Loading...",
@@ -203,7 +204,17 @@
       "mobileSync": "Mobile sync",
       "mobileSyncDescription": "Allows downloading songs to your mobile device by scanning a QR code. Starts an internal HTTP server.",
       "mobileSyncPort": "Mobile sync port",
-      "mobileSyncPortDescription": "Port for the mobile sync server. Use 0 for a random available port."
+      "mobileSyncPortDescription": "Port for the mobile sync server. Use 0 for a random available port.",
+      "remoteController": "Remote controller",
+      "remoteControllerDescription": "Control playback and watch current downloads from another device on this local network.",
+      "remoteControllerPort": "Remote controller port",
+      "remoteControllerPortDescription": "Port for the remote controller server. Use 0 for a random available port.",
+      "remoteControllerQr": "Scan to open the remote controller",
+      "remoteControllerOpen": "Open",
+      "remoteControllerRegenerate": "Regenerate token",
+      "remoteControllerStarting": "Starting remote controller...",
+      "remoteControllerBetaTitle": "Beta feature",
+      "remoteControllerBetaDescription": "The remote controller is in BETA: you may hit bugs, rough edges or missing translations. Please report anything that looks off."
     },
     "dependencies": {
       "available": "available",
@@ -254,5 +265,63 @@
     "next": "⏭  Next",
     "openFmusic": "Open FMusic",
     "quit": "Quit"
+  },
+  "remote": {
+    "status": {
+      "connecting": "Connecting",
+      "live": "Live",
+      "disconnected": "Disconnected",
+      "betaBadge": "BETA",
+      "betaNotice": "BETA: expect rough edges and occasional bugs."
+    },
+    "player": {
+      "toggle": "Play or pause"
+    },
+    "library": {
+      "unknownArtist": "Unknown artist",
+      "search": "Search"
+    },
+    "download": {
+      "placeholder": "YouTube URL or search",
+      "searchOrDownload": "Search or download",
+      "working": "Working...",
+      "searchResults": "Search results",
+      "noResults": "No results",
+      "queue": "Queue",
+      "empty": "No active downloads",
+      "enqueued": "Download queued",
+      "queued": "Queued",
+      "failed": "Failed",
+      "cancelTooltip": "Cancel"
+    },
+    "actions": {
+      "playNow": "Play now",
+      "playNext": "Play next"
+    },
+    "playlists": {
+      "rename": "Rename",
+      "renameTooltip": "Rename playlist",
+      "deleteTooltip": "Delete playlist",
+      "openTooltip": "Open playlist",
+      "playTooltip": "Play playlist",
+      "moveDown": "Move down",
+      "remove": "Remove from playlist",
+      "namePrompt": "Playlist name",
+      "deletePrompt": "Delete playlist?"
+    },
+    "sonos": {
+      "discover": "Discover Sonos",
+      "stopAll": "Stop all",
+      "stopAllTooltip": "Stop all Sonos devices",
+      "addIpPlaceholder": "Add IP: 192.168.1.x",
+      "addIp": "Add by IP",
+      "castHere": "Cast here",
+      "stop": "Stop",
+      "noDevices": "No Sonos devices",
+      "localPlayback": "Local playback",
+      "castingTo": "Casting to {host}",
+      "searching": "Searching...",
+      "active": "Active"
+    }
   }
 }

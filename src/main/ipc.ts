@@ -48,6 +48,14 @@ import { getSchemaHistory } from './library/db.js';
 import { discoverSonos, addSonosByIp, initSonosFromCache, sonosPlayTrack, sonosPause, sonosResume, sonosStop, sonosSetVolume, sonosSeek, sonosGetPosition } from './sonos.js';
 import { startAudioServer, getTrackHttpUrl } from './sonos-server.js';
 import { startMobileServer, stopMobileServer, generateTrackMobileUrl } from './mobile-server.js';
+import {
+  broadcastRemoteControllerData,
+  broadcastRemoteControllerSettings,
+  getRemoteControllerInfo,
+  regenerateRemoteControllerToken,
+  startRemoteControllerServer,
+  stopRemoteControllerServer
+} from './remote-controller-server.js';
 import { refreshTrayLanguage } from './tray.js';
 import { checkForUpdates, downloadUpdate, quitAndInstall, getLastUpdaterStatus } from './app-updater.js';
 import { lookupTrackMetadata } from './musicbrainz.js';
@@ -98,6 +106,9 @@ export function registerIpc(): void {
 
     if (Object.prototype.hasOwnProperty.call(patch, 'language')) {
       refreshTrayLanguage();
+      // Push the new language to every connected remote controller client so
+      // the mobile web UI re-applies translations live, without reconnecting.
+      broadcastRemoteControllerSettings();
     }
 
     // Handle mobile server lifecycle on setting changes
@@ -109,6 +120,18 @@ export function registerIpc(): void {
       } else if (prev.mobileSyncEnabled) {
         // Stop if it was enabled and now is disabled
         stopMobileServer();
+      }
+    }
+
+    if (
+      patch.remoteControllerEnabled !== undefined ||
+      patch.remoteControllerPort !== undefined
+    ) {
+      if (next.remoteControllerEnabled) {
+        if (prev.remoteControllerEnabled) stopRemoteControllerServer();
+        void startRemoteControllerServer(next.remoteControllerPort).catch(console.error);
+      } else if (prev.remoteControllerEnabled) {
+        stopRemoteControllerServer();
       }
     }
 
@@ -131,7 +154,10 @@ export function registerIpc(): void {
   // ----- Downloads -----
   const dm = getDownloadManager();
   dm.onJobUpdate((job) => broadcast(Channels.DownloadJobUpdate, job));
-  dm.onTrackAdded((track) => broadcast(Channels.TracksAdded, track));
+  dm.onTrackAdded((track) => {
+    broadcast(Channels.TracksAdded, track);
+    broadcastRemoteControllerData();
+  });
 
   ipcMain.handle(
     Channels.DownloadEnqueue,
@@ -303,6 +329,10 @@ export function registerIpc(): void {
   ipcMain.handle(Channels.MobileSyncGetUrl, (_evt, trackId: number) => {
     return generateTrackMobileUrl(trackId);
   });
+
+  // ----- Remote Controller -----
+  ipcMain.handle(Channels.RemoteControllerInfo, () => getRemoteControllerInfo());
+  ipcMain.handle(Channels.RemoteControllerRegenerate, () => regenerateRemoteControllerToken());
 
   // ----- Window Controls -----
   ipcMain.on('window:minimize', () => {

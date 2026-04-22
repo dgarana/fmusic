@@ -11,6 +11,12 @@ import { getTrack, getTrackEmbeddedArtwork, resolveTrackFilePath, warmTrackArtwo
 import { stopActiveSonos } from './sonos.js';
 import { stopAudioServer } from './sonos-server.js';
 import { startMobileServer, stopMobileServer } from './mobile-server.js';
+import {
+  setRemoteControllerCommandHandler,
+  startRemoteControllerServer,
+  stopRemoteControllerServer,
+  updateRemoteControllerSnapshot
+} from './remote-controller-server.js';
 import { createTray, destroyTray, updateTray, type TrayPlayerState } from './tray.js';
 import { createMiniPlayer, showMiniPlayer, hideMiniPlayer, getMiniPlayer } from './miniplayer.js';
 import { initUpdater } from './app-updater.js';
@@ -270,6 +276,9 @@ app.whenReady().then(() => {
     if (settings.mobileSyncEnabled) {
       void startMobileServer(settings.mobileSyncPort).catch(console.error);
     }
+    if (settings.remoteControllerEnabled) {
+      void startRemoteControllerServer(settings.remoteControllerPort).catch(console.error);
+    }
   } catch (err) {
     console.error('[FMusic] Failed to initialize library database:', err);
   }
@@ -364,6 +373,20 @@ app.whenReady().then(() => {
     mainWindow?.webContents.send('mini:seek-from-main', seconds);
   });
 
+  ipcMain.on('remote:state-from-main', (_evt, state: unknown) => {
+    updateRemoteControllerSnapshot(state as Parameters<typeof updateRemoteControllerSnapshot>[0]);
+  });
+
+  setRemoteControllerCommandHandler((command) => {
+    if (command.type === 'seek') {
+      mainWindow?.webContents.send('remote:seek-from-main', command.seconds);
+    } else if (command.type === 'volume') {
+      mainWindow?.webContents.send('remote:volume-from-main', command.volume);
+    } else {
+      mainWindow?.webContents.send('remote:command', command);
+    }
+  });
+
   app.on('activate', () => {
     if (mainWindow) {
       mainWindow.show();
@@ -387,5 +410,6 @@ app.on('before-quit', () => {
   void stopActiveSonos();
   stopAudioServer();
   stopMobileServer();
+  stopRemoteControllerServer();
   closeDb();
 });

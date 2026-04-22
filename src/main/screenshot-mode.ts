@@ -1,4 +1,4 @@
-import { nativeImage, type BrowserWindow } from 'electron';
+import { BrowserWindow, nativeImage } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import NodeID3 from 'node-id3';
@@ -7,6 +7,10 @@ import { updateSettings } from './settings.js';
 import { getDb } from './library/db.js';
 import { ensureBuiltinPlaylists, createPlaylist, addTrackToPlaylist, listPlaylists } from './library/playlists-repo.js';
 import { insertTrack } from './library/tracks-repo.js';
+import {
+  getRemoteControllerInfo,
+  startRemoteControllerServer
+} from './remote-controller-server.js';
 
 export const screenshotMode = process.env.FMUSIC_SCREENSHOT_MODE === '1';
 const screenshotOutputDir = process.env.FMUSIC_SCREENSHOT_OUTPUT_DIR ?? '';
@@ -204,6 +208,106 @@ async function prepareSonosScreenshot(win: BrowserWindow): Promise<void> {
   await wait(1000);
 }
 
+/**
+ * Navigate Settings → Network, enable the Remote Controller toggle, wait for
+ * the server to start + the QR to render and capture the whole pane including
+ * the BETA notice.
+ */
+async function captureRemoteControllerSettings(win: BrowserWindow): Promise<void> {
+  await win.webContents.executeJavaScript(`(async () => {
+    window.location.hash = '#/settings';
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const tabs = Array.from(document.querySelectorAll('.pill-tab'));
+    const networkTab = tabs.find((b) => /network|red/i.test(b.textContent || ''));
+    if (networkTab) networkTab.click();
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    const labels = Array.from(document.querySelectorAll('label'));
+    for (const label of labels) {
+      if (/remote controller/i.test(label.textContent || '')) {
+        const cb = label.querySelector('input[type="checkbox"]');
+        if (cb && !cb.checked) cb.click();
+        break;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1400));
+    document.querySelector('.remote-controller-settings')?.scrollIntoView({ block: 'start' });
+  })()`);
+  await wait(1500);
+  const image = await win.capturePage();
+  fs.writeFileSync(path.join(screenshotOutputDir, 'remote-controller-settings.png'), image.toPNG());
+}
+
+/**
+ * Boot the remote controller server, open its web UI in a mobile-sized hidden
+ * BrowserWindow and screenshot the Player tab with an active track so the
+ * BETA notice, the equalizer highlight and the translated chrome are all
+ * visible. Returns without throwing when the server cannot be reached so a
+ * local screenshot run never hard-fails.
+ */
+async function captureRemoteControllerMobile(win: BrowserWindow): Promise<void> {
+  // The main window drives playback; seeding the Sonos demo flips the player
+  // store into isPlaying:true for the first seeded track, which is then
+  // forwarded to the remote server via TrayBridge's sendRemoteState effect.
+  await win.webContents.executeJavaScript(`(async () => {
+    await window.__fmusicScreenshot?.prepareSonosDemo?.();
+  })()`);
+  await wait(1000);
+
+  try {
+    await startRemoteControllerServer(0);
+  } catch (err) {
+    console.warn('[screenshot] Could not start remote controller server:', err);
+    return;
+  }
+  const info = getRemoteControllerInfo();
+  if (!info.url) {
+    console.warn('[screenshot] Remote controller URL unavailable; skipping mobile capture.');
+    return;
+  }
+
+  // Rewrite the LAN host to localhost so the capture works regardless of the
+  // network state on the machine running the script.
+  let localUrl: string;
+  try {
+    const parsed = new URL(info.url);
+    parsed.hostname = 'localhost';
+    localUrl = parsed.toString();
+  } catch {
+    localUrl = info.url;
+  }
+
+  const mobile = new BrowserWindow({
+    width: 390,
+    height: 810,
+    useContentSize: true,
+    show: true,
+    frame: false,
+    backgroundColor: '#101216',
+    title: 'FMusic Remote (mobile)',
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  });
+  mobile.setMenuBarVisibility(false);
+  try {
+    await mobile.loadURL(localUrl);
+    // Give the websocket handshake + initial state/data + applyI18n enough
+    // time to settle before grabbing the pixels.
+    await wait(2800);
+    const image = await mobile.capturePage();
+    fs.writeFileSync(
+      path.join(screenshotOutputDir, 'remote-controller-mobile.png'),
+      image.toPNG()
+    );
+  } catch (err) {
+    console.warn('[screenshot] Mobile remote capture failed:', err);
+  } finally {
+    mobile.destroy();
+  }
+}
+
 export async function runScreenshotCapture(win: BrowserWindow): Promise<void> {
   if (!screenshotMode) return;
   if (!screenshotOutputDir) {
@@ -272,4 +376,10 @@ export async function runScreenshotCapture(win: BrowserWindow): Promise<void> {
     const editImage = await win.capturePage();
     fs.writeFileSync(path.join(screenshotOutputDir, 'edit.png'), editImage.toPNG());
   }
+
+  // Remote Controller (BETA): capture the desktop settings pane (toggle +
+  // QR + BETA notice) and then the same controller rendered in a
+  // mobile-sized BrowserWindow so the README can showcase both sides.
+  await captureRemoteControllerSettings(win);
+  await captureRemoteControllerMobile(win);
 }

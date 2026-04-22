@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { DependencyStatus, Locale } from '../../../shared/types';
+import { QRCodeSVG } from 'qrcode.react';
+import type { DependencyStatus, Locale, RemoteControllerInfo } from '../../../shared/types';
 import { useSettingsStore } from '../store/settings';
 import { useT } from '../i18n';
 import { supportedLocales } from '../../../shared/i18n';
@@ -27,6 +28,7 @@ export function SettingsPage() {
   >([]);
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [remoteInfo, setRemoteInfo] = useState<RemoteControllerInfo | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -41,6 +43,27 @@ export function SettingsPage() {
       window.fmusic.depsVersion().then(setYtDlpVersion).catch(() => setYtDlpVersion(null));
     })();
   }, []);
+
+  useEffect(() => {
+    if (!settings?.remoteControllerEnabled) {
+      setRemoteInfo(null);
+      return;
+    }
+    let cancelled = false;
+    const refresh = () => {
+      window.fmusic.getRemoteControllerInfo().then((info) => {
+        if (!cancelled) setRemoteInfo(info);
+      }).catch(() => {
+        if (!cancelled) setRemoteInfo(null);
+      });
+    };
+    refresh();
+    const id = window.setTimeout(refresh, 400);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+  }, [settings?.remoteControllerEnabled, settings?.remoteControllerPort]);
 
   async function pickFolder() {
     const path = await window.fmusic.pickDirectory();
@@ -220,6 +243,68 @@ export function SettingsPage() {
                 style={{ width: 100, marginTop: 4 }}
               />
             </label>
+          )}
+          <ToggleSetting
+            label={t('settings.network.remoteController')}
+            description={t('settings.network.remoteControllerDescription')}
+            checked={settings.remoteControllerEnabled ?? false}
+            onChange={(v) => void update({ remoteControllerEnabled: v })}
+          />
+          {settings.remoteControllerEnabled && (
+            <div className="remote-controller-settings">
+              <div className="remote-controller-beta" role="note">
+                <span className="remote-controller-beta-badge">
+                  {t('remote.status.betaBadge')}
+                </span>
+                <div>
+                  <div style={{ fontWeight: 600 }}>
+                    {t('settings.network.remoteControllerBetaTitle')}
+                  </div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                    {t('settings.network.remoteControllerBetaDescription')}
+                  </div>
+                </div>
+              </div>
+              <label style={{ display: 'grid', gap: 4 }}>
+                <span style={{ fontWeight: 500 }}>{t('settings.network.remoteControllerPort')}</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                  {t('settings.network.remoteControllerPortDescription')}
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  max="65535"
+                  value={settings.remoteControllerPort || 0}
+                  onChange={(e) => void update({ remoteControllerPort: Number(e.target.value) })}
+                  style={{ width: 100, marginTop: 4 }}
+                />
+              </label>
+              {remoteInfo?.url ? (
+                <div className="remote-controller-qr">
+                  <QRCodeSVG value={remoteInfo.url} size={164} marginSize={2} />
+                  <div className="remote-controller-details">
+                    <div style={{ fontWeight: 500 }}>{t('settings.network.remoteControllerQr')}</div>
+                    <div className="remote-controller-url">{remoteInfo.url}</div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button onClick={() => void window.fmusic.openExternal(remoteInfo.url!)}>
+                        {t('settings.network.remoteControllerOpen')}
+                      </button>
+                      <button
+                        onClick={() =>
+                          void window.fmusic.regenerateRemoteControllerToken().then(setRemoteInfo)
+                        }
+                      >
+                        {t('settings.network.remoteControllerRegenerate')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                  {t('settings.network.remoteControllerStarting')}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}

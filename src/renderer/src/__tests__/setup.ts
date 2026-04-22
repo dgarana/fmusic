@@ -10,9 +10,26 @@ const fmusicMock = {
   removeTrackFromPlaylist: vi.fn().mockResolvedValue(undefined),
   sendTrayState: vi.fn(),
   sendMiniState: vi.fn(),
+  sendRemoteState: vi.fn(),
   onTrayCommand: vi.fn().mockReturnValue(() => {}),
+  onRemoteCommand: vi.fn().mockReturnValue(() => {}),
   onMiniSeek: vi.fn().mockReturnValue(() => {}),
-  sonosAddByIp: vi.fn().mockResolvedValue({ name: 'New Device', host: '192.168.1.99', port: 1400 }),
+  onRemoteSeek: vi.fn().mockReturnValue(() => {}),
+  onRemoteVolume: vi.fn().mockReturnValue(() => {}),
+  getTrack: vi.fn().mockResolvedValue(null),
+  getRemoteControllerInfo: vi.fn().mockResolvedValue({
+    enabled: false,
+    running: false,
+    url: null,
+    token: null
+  }),
+  regenerateRemoteControllerToken: vi.fn().mockResolvedValue({
+    enabled: false,
+    running: false,
+    url: null,
+    token: null
+  }),
+  sonosAddByIp: vi.fn().mockResolvedValue({ name: 'New Device', host: '************', port: 1400 }),
   sonosStop: vi.fn().mockResolvedValue(undefined),
   sonosInitFromCache: vi.fn().mockResolvedValue([]),
   sonosDiscover: vi.fn().mockResolvedValue([]),

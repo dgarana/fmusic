@@ -1,7 +1,7 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.7.0
+## v0.8.0
 
 ### Bug Fixes
 
@@ -29,6 +29,7 @@ _Generated from repository tags and commit history._
 - Add new logo and taskbar ([89cb913](https://github.com/dgarana/fmusic/commit/89cb91396bbcf6a2b392abcb4d865bd3f1ed5613))
 - Add different themes to the app ([38e6b91](https://github.com/dgarana/fmusic/commit/38e6b9199f44e331c0487b98d645e635db4b4d36))
 - Add downloading playlist feature ([2b95a66](https://github.com/dgarana/fmusic/commit/2b95a66a8cd049f44426cb022dd53cc0cb940baf))
+- Add remote media player ([ca17df1](https://github.com/dgarana/fmusic/commit/ca17df1a51260d6539f73e8977929f20064dd166))
 
 ### Miscellaneous
 
@@ -46,7 +47,8 @@ _Generated from repository tags and commit history._
 - Release v0.6.0 ([fa3a208](https://github.com/dgarana/fmusic/commit/fa3a208734c5c9f64dba52da254fb90fc81b409f))
 - Templating stuff ([9fa32c6](https://github.com/dgarana/fmusic/commit/9fa32c6d2607aa4e84bbfae3099dbf78c66d9296))
 - Fix minor bugs ([9a5aaa6](https://github.com/dgarana/fmusic/commit/9a5aaa68773a0621401fa521dd646db583ad4815))
-- Release v0.7.0 ([30506ab](https://github.com/dgarana/fmusic/commit/30506ab6090c3ad7ff6d4d61ff6bfa6725ceedbe))
+- Release v0.7.0 ([d4e60cd](https://github.com/dgarana/fmusic/commit/d4e60cd9a7ddef5c844ca1068d8df0a65a5d428c))
+- Release v0.8.0 ([89a4285](https://github.com/dgarana/fmusic/commit/89a4285bbcaca300d7b865def44875305f09ce08))
 
 ### Other
 
@@ -71,6 +73,9 @@ feat: Add new logo and taskbar ([1e0070a](https://github.com/dgarana/fmusic/comm
 - Merge pull request #6 from dgarana/fix_theme
 
 Fix theme ([694e1e6](https://github.com/dgarana/fmusic/commit/694e1e6373b68dbc4dfa186eb8efdc8acbb796d8))
+- Merge pull request #8 from dgarana/remote_player_controller
+
+feat: Add remote media player ([344ed6c](https://github.com/dgarana/fmusic/commit/344ed6ce6deea9d161849b9882e46350490ff15b))
 
 ### Testing
 

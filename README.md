@@ -190,57 +190,88 @@ players can see the updated title / artist / album / genre.
 FMusic/
 ├─ electron-builder.yml
 ├─ electron.vite.config.ts
+├─ vitest.config.ts
 ├─ scripts/
 │  └─ postinstall.js
-├─ resources/bin/                  # yt-dlp + ffmpeg (gitignored)
+├─ resources/bin/                      # yt-dlp + ffmpeg (gitignored)
 └─ src/
-   ├─ shared/                      # shared types and IPC channels
+   ├─ shared/                          # shared types, IPC channels and i18n bundles
    │  ├─ channels.ts
-   │  └─ types.ts
-   ├─ main/                        # Electron main process
-   │  ├─ index.ts                  # main window, FMusic-media: protocol, IPC
+   │  ├─ types.ts
+   │  └─ i18n/
+   │     ├─ en.json
+   │     ├─ es.json
+   │     └─ index.ts                   # translate(locale, key, params?) + supportedLocales
+   ├─ main/                            # Electron main process
+   │  ├─ index.ts                      # main window, FMusic-media: protocol, IPC
    │  ├─ ipc.ts
-   │  ├─ tray.ts                   # tray icon + context menu
-   │  ├─ miniplayer.ts             # floating mini player window
-   │  ├─ sonos.ts                  # UPnP control of Sonos devices
-   │  ├─ sonos-server.ts           # internal HTTP server for Sonos streaming
+   │  ├─ i18n.ts                       # t() helper backed by settings.language
+   │  ├─ tray.ts                       # tray icon + context menu
+   │  ├─ miniplayer.ts                 # floating mini player window
+   │  ├─ sonos.ts                      # UPnP control of Sonos devices
+   │  ├─ sonos-server.ts               # internal HTTP server for Sonos streaming
+   │  ├─ mobile-server.ts              # HTTP server for Mobile Sync QR downloads
+   │  ├─ remote-controller-server.ts   # HTTP + WebSocket server for the BETA remote controller
    │  ├─ paths.ts
    │  ├─ settings.ts
    │  ├─ download-manager.ts
-   │  ├─ musicbrainz.ts            # online metadata lookup + genre fallback
-   │  ├─ screenshot-mode.ts        # demo data + automated README screenshots
+   │  ├─ musicbrainz.ts                # online metadata lookup + genre fallback
+   │  ├─ screenshot-mode.ts            # demo data + automated README screenshots
    │  ├─ ytdlp.ts
-   │  ├─ updater.ts
+   │  ├─ updater.ts                    # in-app yt-dlp updater (Settings → Update download engine)
+   │  ├─ app-updater.ts                # electron-updater wiring for app self-updates
+   │  ├─ types.d.ts                    # ambient types (e.g. `*.sql?raw`)
    │  └─ library/
-   │     ├─ db.ts
-   │     ├─ tracks-repo.ts         # DB queries + MP3 metadata tag sync
+   │     ├─ db.ts                      # SQLite connection + migration runner
+   │     ├─ tracks-repo.ts             # DB queries + MP3 metadata tag sync
    │     ├─ playlists-repo.ts
    │     └─ migrations/
+   │        ├─ index.ts                # static list, imported via Vite `?raw`
+   │        ├─ 001_initial.sql
+   │        ├─ 002_favorites.sql       # seeds the Favorites built-in playlist
+   │        ├─ 003_rename_favorites.sql
+   │        └─ 004_playlist_slug.sql   # stable slug for built-in playlists
    ├─ preload/
-   │  └─ index.ts                  # contextBridge → window.FMusic
+   │  ├─ index.ts                      # contextBridge → window.fmusic
+   │  └─ index.d.ts                    # renderer-side typings for window.fmusic
    └─ renderer/
       ├─ index.html
       └─ src/
          ├─ App.tsx
          ├─ main.tsx
          ├─ styles.css
+         ├─ util.ts
+         ├─ i18n.ts                    # useT() hook + playlistDisplayName helper
          ├─ components/
          │  ├─ Sidebar.tsx
-         │  ├─ PlayerBar.tsx       # player with seek, favorites, Sonos
-         │  ├─ TrayBridge.tsx      # syncs state to tray and mini player
-         │  └─ SonosPanel.tsx      # Sonos devices panel
+         │  ├─ PlayerBar.tsx           # player with seek, favorites, Sonos
+         │  ├─ TrayBridge.tsx          # syncs state to tray and mini player
+         │  ├─ SonosPanel.tsx          # Sonos devices panel
+         │  ├─ NowPlayingIndicator.tsx # animated equalizer overlay for the active track
+         │  ├─ TrackTitleCell.tsx      # library/playlist cell with now-playing highlight
+         │  ├─ WindowTitleBar.tsx      # custom window chrome
+         │  └─ icons.tsx
          ├─ pages/
          │  ├─ DownloadPage.tsx
-         │  ├─ LibraryPage.tsx     # library table + inline metadata editor
-         │  ├─ EditPage.tsx        # audio manipulation workbench (trim, fade, volume)
+         │  ├─ LibraryPage.tsx         # library table + inline metadata editor
+         │  ├─ EditPage.tsx            # audio manipulation workbench (trim, fade, volume)
          │  ├─ PlaylistsPage.tsx
          │  ├─ SettingsPage.tsx
-         │  └─ MiniPlayerPage.tsx  # UI for the floating mini player
-         └─ store/
-            ├─ player.ts
-            ├─ downloads.ts
-            ├─ library.ts
-            └─ sonos.ts
+         │  └─ MiniPlayerPage.tsx      # UI for the floating mini player
+         ├─ store/                     # Zustand stores
+         │  ├─ player.ts               # queue + Howler playback
+         │  ├─ downloads.ts
+         │  ├─ library.ts
+         │  ├─ search.ts
+         │  ├─ settings.ts
+         │  └─ sonos.ts
+         └─ __tests__/                 # Vitest + Testing Library
+            ├─ setup.ts
+            ├─ util.test.ts
+            ├─ PlayerBar.test.tsx
+            ├─ Sidebar.test.tsx
+            ├─ SonosPanel.test.tsx
+            └─ TrayBridge.test.tsx
 ```
 
 ## IPC architecture (mini player and tray)

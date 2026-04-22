@@ -23,50 +23,83 @@ Three Electron processes plus a shared types module:
 
 ```
 src/
-├─ shared/                 # types + IPC channels (no Node/DOM deps)
+├─ shared/                          # types + IPC channels (no Node/DOM deps)
 │  ├─ types.ts
 │  ├─ channels.ts
-│  └─ i18n/                # translation registry (en.json, es.json, index.ts)
-├─ main/                   # Node.js -- lifecycle, FS, SQLite, spawn yt-dlp
-│  ├─ index.ts             # app lifecycle, BrowserWindow, CSP, IPC init
-│  ├─ ipc.ts               # ipcMain.handle for every channel
-│  ├─ paths.ts             # resolves binDir() in dev vs prod
-│  ├─ settings.ts          # electron-store with defaults
-│  ├─ ytdlp.ts             # wrapper: version/search/info/download
-│  ├─ download-manager.ts  # sequential queue, job-update/track-added events
-│  ├─ updater.ts           # re-downloads yt-dlp from Settings
-│  ├─ i18n.ts              # t() helper reading settings.language
-│  ├─ types.d.ts           # declares `*.sql?raw`
+│  └─ i18n/                         # translation registry
+│     ├─ en.json
+│     ├─ es.json
+│     └─ index.ts                   # translate(locale, key, params?) + supportedLocales
+├─ main/                            # Node.js -- lifecycle, FS, SQLite, spawn yt-dlp
+│  ├─ index.ts                      # app lifecycle, BrowserWindow, CSP, IPC init
+│  ├─ ipc.ts                        # ipcMain.handle for every channel
+│  ├─ paths.ts                      # resolves binDir() in dev vs prod
+│  ├─ settings.ts                   # electron-store with defaults
+│  ├─ ytdlp.ts                      # wrapper: version/search/info/download
+│  ├─ download-manager.ts           # sequential queue, job-update/track-added events
+│  ├─ updater.ts                    # re-downloads yt-dlp from Settings
+│  ├─ app-updater.ts                # electron-updater wiring for app self-updates
+│  ├─ i18n.ts                       # t() helper reading settings.language
+│  ├─ tray.ts                       # tray icon + context menu
+│  ├─ miniplayer.ts                 # floating mini player window
+│  ├─ sonos.ts                      # UPnP / AVTransport control of Sonos devices
+│  ├─ sonos-server.ts               # internal HTTP server (Range) for Sonos streaming
+│  ├─ mobile-server.ts              # HTTP server for Mobile Sync QR downloads
+│  ├─ remote-controller-server.ts   # HTTP + WebSocket server for the BETA remote controller
+│  ├─ musicbrainz.ts                # online metadata lookup + genre fallback
+│  ├─ screenshot-mode.ts            # demo data + automated README screenshots
+│  ├─ types.d.ts                    # declares `*.sql?raw`
 │  └─ library/
-│     ├─ db.ts             # better-sqlite3 + migration runner
+│     ├─ db.ts                      # better-sqlite3 + migration runner
 │     ├─ tracks-repo.ts
 │     ├─ playlists-repo.ts
 │     └─ migrations/
-│        ├─ index.ts       # static list (imports ?raw)
-│        └─ 001_initial.sql
+│        ├─ index.ts                # static list (imports ?raw)
+│        ├─ 001_initial.sql
+│        ├─ 002_favorites.sql       # seeds the Favorites built-in playlist
+│        ├─ 003_rename_favorites.sql
+│        └─ 004_playlist_slug.sql   # stable slug for built-in playlists
 ├─ preload/
-│  ├─ index.ts             # contextBridge -> window.fmusic
-│  └─ index.d.ts           # global types for the renderer
-└─ renderer/               # React + Vite
+│  ├─ index.ts                      # contextBridge -> window.fmusic
+│  └─ index.d.ts                    # global types for the renderer
+└─ renderer/                        # React + Vite
    ├─ index.html
    └─ src/
       ├─ main.tsx
-      ├─ App.tsx           # HashRouter + IPC subscriptions
+      ├─ App.tsx                    # HashRouter + IPC subscriptions
       ├─ styles.css
       ├─ util.ts
+      ├─ i18n.ts                    # useT() hook + playlistDisplayName helper
       ├─ components/
       │  ├─ Sidebar.tsx
-      │  └─ PlayerBar.tsx
-      ├─ i18n.ts              # useT() hook + playlistDisplayName helper
+      │  ├─ PlayerBar.tsx           # player with seek, favorites, Sonos
+      │  ├─ TrayBridge.tsx          # syncs state to tray and mini player
+      │  ├─ SonosPanel.tsx          # Sonos devices panel
+      │  ├─ NowPlayingIndicator.tsx # animated equalizer overlay for the active track
+      │  ├─ TrackTitleCell.tsx      # library/playlist cell with now-playing highlight
+      │  ├─ WindowTitleBar.tsx      # custom window chrome
+      │  └─ icons.tsx
       ├─ pages/
       │  ├─ DownloadPage.tsx
-      │  ├─ LibraryPage.tsx
+      │  ├─ LibraryPage.tsx         # library table + inline metadata editor
+      │  ├─ EditPage.tsx            # audio manipulation workbench (trim, fade, volume)
       │  ├─ PlaylistsPage.tsx
-      │  └─ SettingsPage.tsx
-      └─ store/            # Zustand
-         ├─ downloads.ts
-         ├─ library.ts
-         └─ player.ts      # Howler
+      │  ├─ SettingsPage.tsx
+      │  └─ MiniPlayerPage.tsx      # UI for the floating mini player
+      ├─ store/                     # Zustand
+      │  ├─ player.ts               # Howler
+      │  ├─ downloads.ts
+      │  ├─ library.ts
+      │  ├─ search.ts
+      │  ├─ settings.ts
+      │  └─ sonos.ts
+      └─ __tests__/                 # Vitest + Testing Library
+         ├─ setup.ts
+         ├─ util.test.ts
+         ├─ PlayerBar.test.tsx
+         ├─ Sidebar.test.tsx
+         ├─ SonosPanel.test.tsx
+         └─ TrayBridge.test.tsx
 ```
 
 Golden rule: **the renderer never calls Node APIs or the filesystem

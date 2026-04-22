@@ -132,8 +132,13 @@ a {
   align-items: stretch;
 }
 
-/* Add border only under main area, not sidebar logo */
-.window-title-bar::after {
+.window-title-bar.mac {
+  background: transparent;
+  left: 240px;
+}
+
+/* Add border only under main area, not sidebar logo, and only on non-mac */
+.window-title-bar:not(.mac)::after {
   content: '';
   position: absolute;
   bottom: 0;

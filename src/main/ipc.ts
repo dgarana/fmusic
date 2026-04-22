@@ -60,6 +60,7 @@ function broadcast(channel: string, payload: unknown) {
 export function registerIpc(): void {
   // ----- App / system -----
   ipcMain.handle(Channels.AppVersion, () => app.getVersion());
+  ipcMain.handle(Channels.AppPlatform, () => process.platform);
 
   // ----- Updater -----
   ipcMain.handle(Channels.UpdaterCheck, () => checkForUpdates());

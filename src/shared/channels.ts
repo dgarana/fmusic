@@ -2,6 +2,7 @@
 export const Channels = {
   // App / system
   AppVersion: 'app:version',
+  AppPlatform: 'app:platform',
   OpenExternal: 'app:open-external',
   OpenPath: 'app:open-path',
   PickDirectory: 'app:pick-directory',

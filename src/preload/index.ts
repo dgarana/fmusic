@@ -29,6 +29,7 @@ function on<T>(channel: string, handler: (payload: T) => void): () => void {
 const api = {
   // App / system
   getAppVersion: () => invoke<string>(Channels.AppVersion),
+  getPlatform: () => invoke<string>(Channels.AppPlatform),
   openExternal: (url: string) => invoke<void>(Channels.OpenExternal, url),
 
   // Updater

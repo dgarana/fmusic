@@ -11,6 +11,7 @@ const fmusicMock = {
   sendTrayState: vi.fn(),
   sendMiniState: vi.fn(),
   onTrayCommand: vi.fn().mockReturnValue(() => {}),
+  onMiniSeek: vi.fn().mockReturnValue(() => {}),
   sonosAddByIp: vi.fn().mockResolvedValue({ name: 'New Device', host: '192.168.1.99', port: 1400 }),
   sonosStop: vi.fn().mockResolvedValue(undefined),
   sonosInitFromCache: vi.fn().mockResolvedValue([]),

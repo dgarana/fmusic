@@ -180,7 +180,7 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
     setMobileSyncTrackId(trackId);
     setMobileSyncUrl(null);
     try {
-      const url = await window.fmusic.getMobileSyncUrl(trackId);
+      const url = await window.fmusic.getMobileSessionUrl();
       setMobileSyncUrl(url);
     } catch (err) {
       alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));

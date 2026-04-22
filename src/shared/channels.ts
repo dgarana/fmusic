@@ -81,6 +81,11 @@ export const Channels = {
 
   // Mobile Sync
   MobileSyncGetUrl: 'mobile-sync:get-url',
+  MobileSessionUrl: 'mobile:session-url',
+
+  // Mobile player bridge
+  PlayerStateUpdate: 'player:state-update', // renderer → main (ipcRenderer.send)
+  PlayerCommand: 'player:command',           // main → renderer (webContents.send)
 
   // Window Controls
   WindowMaximizeChange: 'window:maximize-change', // event, main -> renderer

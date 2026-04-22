@@ -149,6 +149,26 @@ export interface DependencyStatus {
   ffprobe: { present: boolean; path: string | null };
 }
 
+export interface MobilePlayerState {
+  current: Track | null;
+  isPlaying: boolean;
+  position: number;
+  duration: number;
+  volume: number;
+  queue: Track[];
+  queueIndex: number;
+}
+
+export type MobileCommand =
+  | { type: 'play' }
+  | { type: 'pause' }
+  | { type: 'next' }
+  | { type: 'prev' }
+  | { type: 'seek'; position: number }
+  | { type: 'volume'; value: number }
+  | { type: 'play-track'; trackId: number }
+  | { type: 'enqueue'; trackId: number };
+
 export type TrackSortKey = 'title' | 'artist' | 'album' | 'genre' | 'durationSec' | 'downloadedAt';
 export type SortDirection = 'asc' | 'desc';
 

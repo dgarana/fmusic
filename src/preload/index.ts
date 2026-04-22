@@ -5,6 +5,8 @@ import type {
   DependencyStatus,
   DownloadJob,
   DownloadRequest,
+  MobileCommand,
+  MobilePlayerState,
   Playlist,
   SearchResult,
   SonosDevice,
@@ -190,8 +192,12 @@ const api = {
   sonosGetPosition: (host: string) =>
     invoke<{ position: number; duration: number }>(Channels.SonosPosition, host),
 
-  // Mobile Sync
-  getMobileSyncUrl: (trackId: number) => invoke<string>(Channels.MobileSyncGetUrl, trackId),
+  // Mobile remote
+  getMobileSessionUrl: () => invoke<string | null>(Channels.MobileSessionUrl),
+  sendPlayerState: (state: MobilePlayerState) =>
+    ipcRenderer.send(Channels.PlayerStateUpdate, state),
+  onMobileCommand: (handler: (cmd: MobileCommand) => void) =>
+    on<MobileCommand>(Channels.PlayerCommand, handler),
 
   // Window Controls
   minimize: () => ipcRenderer.send('window:minimize'),

@@ -5,6 +5,8 @@ import type {
   AppSettings,
   DownloadJob,
   DownloadRequest,
+  MobileCommand,
+  MobilePlayerState,
   TrackQuery
 } from '../shared/types.js';
 import { getSettings, updateSettings } from './settings.js';
@@ -47,7 +49,13 @@ import {
 import { getSchemaHistory } from './library/db.js';
 import { discoverSonos, addSonosByIp, initSonosFromCache, sonosPlayTrack, sonosPause, sonosResume, sonosStop, sonosSetVolume, sonosSeek, sonosGetPosition } from './sonos.js';
 import { startAudioServer, getTrackHttpUrl } from './sonos-server.js';
-import { startMobileServer, stopMobileServer, generateTrackMobileUrl } from './mobile-server.js';
+import {
+  startMobileServer,
+  stopMobileServer,
+  broadcastPlayerState,
+  getMobileSessionUrl,
+  onMobileCommand
+} from './mobile-server.js';
 import { refreshTrayLanguage } from './tray.js';
 import { checkForUpdates, downloadUpdate, quitAndInstall, getLastUpdaterStatus } from './app-updater.js';
 import { lookupTrackMetadata } from './musicbrainz.js';
@@ -300,8 +308,16 @@ export function registerIpc(): void {
   ipcMain.handle(Channels.SonosPosition, (_evt, host: string) => sonosGetPosition(host));
 
   // ----- Mobile Sync -----
-  ipcMain.handle(Channels.MobileSyncGetUrl, (_evt, trackId: number) => {
-    return generateTrackMobileUrl(trackId);
+  ipcMain.handle(Channels.MobileSessionUrl, () => getMobileSessionUrl());
+
+  // Player state pushed from renderer → broadcast to all WS clients
+  ipcMain.on(Channels.PlayerStateUpdate, (_evt, state: MobilePlayerState) => {
+    broadcastPlayerState(state);
+  });
+
+  // Wire mobile commands (from WS clients) → renderer
+  onMobileCommand((cmd: MobileCommand) => {
+    broadcast(Channels.PlayerCommand, cmd);
   });
 
   // ----- Window Controls -----

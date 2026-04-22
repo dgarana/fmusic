@@ -3,6 +3,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { PlayerBar } from './components/PlayerBar';
 import { TrayBridge } from './components/TrayBridge';
+import { MobileBridge } from './components/MobileBridge';
 import { WindowTitleBar } from './components/WindowTitleBar';
 import { DownloadPage } from './pages/DownloadPage';
 import { LibraryPage } from './pages/LibraryPage';
@@ -253,6 +254,7 @@ export function App() {
             <div className="app-shell">
               <WindowTitleBar />
               <TrayBridge />
+              <MobileBridge />
               <Sidebar />
               <main className="main">
                 <Routes>

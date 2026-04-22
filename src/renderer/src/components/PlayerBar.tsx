@@ -116,6 +116,13 @@ export function PlayerBar() {
     ? (sonos.duration || current?.durationSec || 0)
     : (duration || current?.durationSec || 0);
 
+  // Percentage of the filled portion of each slider. Exposed through the
+  // --range-progress CSS variable so the track paints itself with the
+  // active theme's accent up to the current value.
+  const scrubProgress =
+    maxDuration > 0 ? Math.min(Math.max(displayPosition / maxDuration, 0), 1) * 100 : 0;
+  const volumeProgress = Math.min(Math.max(volume, 0), 1) * 100;
+
   function handleScrubStart() {
     setScrubValue(livePosition);
     setScrubbing(true);
@@ -194,6 +201,7 @@ export function PlayerBar() {
             onMouseUp={handleScrubEnd}
             onTouchEnd={handleScrubEnd}
             disabled={!current}
+            style={{ ['--range-progress' as string]: `${scrubProgress}%` }}
           />
           <span>{formatDuration(maxDuration)}</span>
         </div>
@@ -210,6 +218,7 @@ export function PlayerBar() {
             value={volume}
             onChange={(e) => handleVolume(Number(e.target.value))}
             aria-label={t('player.volume')}
+            style={{ ['--range-progress' as string]: `${volumeProgress}%` }}
           />
         </div>
       </div>

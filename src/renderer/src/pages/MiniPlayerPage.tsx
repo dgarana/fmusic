@@ -69,6 +69,10 @@ export function MiniPlayerPage() {
   const displayPosition = scrubbing ? scrubValue : state.position;
   const maxDuration = state.duration || 0;
   const canSeek = state.trackId !== null && maxDuration > 0;
+  const scrubProgress =
+    maxDuration > 0
+      ? Math.min(Math.max(displayPosition / maxDuration, 0), 1) * 100
+      : 0;
 
   function handleScrubStart() {
     if (!canSeek) return;
@@ -148,6 +152,7 @@ export function MiniPlayerPage() {
           onChange={handleScrubChange}
           onMouseUp={handleScrubEnd}
           onTouchEnd={handleScrubEnd}
+          style={{ ['--range-progress' as string]: `${scrubProgress}%` }}
         />
         <span className="mini-time">{formatDuration(maxDuration)}</span>
       </div>

@@ -141,6 +141,53 @@ export interface AppSettings {
   mobileSyncEnabled: boolean;
   /** Port for the mobile sync HTTP server. 0 for random available port. Default: 0. */
   mobileSyncPort: number;
+  /** Enable local remote controller web UI. Default: false. */
+  remoteControllerEnabled: boolean;
+  /** Port for the remote controller server. 0 for random available port. Default: 0. */
+  remoteControllerPort: number;
+}
+
+export type RemoteControllerCommand =
+  | { type: 'toggle-play' }
+  | { type: 'prev' }
+  | { type: 'next' }
+  | { type: 'seek'; seconds: number }
+  | { type: 'volume'; volume: number }
+  | { type: 'play-track'; trackId: number; queueTrackIds?: number[] }
+  | { type: 'play-next-track'; trackId: number; queueTrackIds?: number[] }
+  | { type: 'sonos-discover' }
+  | { type: 'sonos-add-by-ip'; host: string }
+  | { type: 'sonos-cast'; host: string }
+  | { type: 'sonos-stop'; host: string }
+  | { type: 'sonos-stop-all' };
+
+export interface RemoteControllerInfo {
+  enabled: boolean;
+  running: boolean;
+  url: string | null;
+  token: string | null;
+}
+
+export interface RemotePlayerSnapshot {
+  trackId: number | null;
+  title: string | null;
+  artist: string | null;
+  album: string | null;
+  isPlaying: boolean;
+  hasPrev: boolean;
+  hasNext: boolean;
+  position: number;
+  duration: number;
+  volume: number;
+  downloads: DownloadJob[];
+  sonos: {
+    enabled: boolean;
+    devices: SonosDevice[];
+    activeHost: string | null;
+    isPlaying: boolean;
+    discovering: boolean;
+    error: string | null;
+  };
 }
 
 export interface DependencyStatus {

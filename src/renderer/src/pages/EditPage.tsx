@@ -410,6 +410,16 @@ export function EditPage() {
                   seek(val);
                 }
               }}
+              style={{
+                ['--range-progress' as string]: `${
+                  duration > 0
+                    ? Math.min(
+                        Math.max((isCurrentTrack ? playerPosition : 0) / duration, 0),
+                        1
+                      ) * 100
+                    : 0
+                }%`
+              }}
             />
             <span className="time-display">{formatDuration(duration)}</span>
           </div>
@@ -560,6 +570,12 @@ export function EditPage() {
                   draft ? { ...draft, volume: parseInt(e.target.value, 10) } : draft
                 )
               }
+              style={{
+                ['--range-progress' as string]: `${Math.min(
+                  Math.max(audioDraft.volume / 200, 0),
+                  1
+                ) * 100}%`
+              }}
             />
           </div>
         </div>

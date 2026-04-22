@@ -54,7 +54,18 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   enqueue(track) {
-    const { queue } = get();
+    const { queue, current } = get();
+    if (queue.length === 0 && !current) {
+      set({
+        queue: [track],
+        index: 0,
+        current: track,
+        isPlaying: false,
+        position: 0,
+        duration: track.durationSec ?? 0
+      });
+      return;
+    }
     set({ queue: [...queue, track] });
   },
 

@@ -3,10 +3,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TrayBridge } from '../components/TrayBridge';
 import { usePlayerStore } from '../store/player';
 import { useSonosStore } from '../store/sonos';
+import { useDownloadsStore } from '../store/downloads';
+import { useSettingsStore } from '../store/settings';
 import type { Track } from '../../../shared/types';
 
 vi.mock('../store/player');
 vi.mock('../store/sonos');
+vi.mock('../store/downloads');
+vi.mock('../store/settings');
 
 const mockTrack: Track = {
   id: 1,
@@ -27,8 +31,16 @@ const mockNext = vi.fn().mockResolvedValue(undefined);
 const mockPrev = vi.fn().mockResolvedValue(undefined);
 const mockTogglePlay = vi.fn();
 const mockSeek = vi.fn();
+const mockPlayTrack = vi.fn().mockResolvedValue(undefined);
+const mockEnqueue = vi.fn();
+const mockSetVolume = vi.fn();
 const mockSonosTogglePlay = vi.fn().mockResolvedValue(undefined);
 const mockSonosSeek = vi.fn().mockResolvedValue(undefined);
+const mockSonosInitFromCache = vi.fn().mockResolvedValue(undefined);
+const mockSonosDiscover = vi.fn().mockResolvedValue(undefined);
+const mockSonosStartCasting = vi.fn().mockResolvedValue(undefined);
+const mockSonosStop = vi.fn().mockResolvedValue(undefined);
+const mockSonosStopAll = vi.fn().mockResolvedValue(undefined);
 
 function makeState(overrides = {}) {
   return {
@@ -38,10 +50,14 @@ function makeState(overrides = {}) {
     queue: [] as Track[],
     position: 0,
     duration: 0,
+    volume: 1,
     next: mockNext,
     prev: mockPrev,
     togglePlay: mockTogglePlay,
     seek: mockSeek,
+    playTrack: mockPlayTrack,
+    enqueue: mockEnqueue,
+    setVolume: mockSetVolume,
     ...overrides,
   };
 }
@@ -52,9 +68,31 @@ function makeSonosState(overrides = {}) {
     isPlaying: false,
     position: 0,
     duration: 0,
+    devices: [] as Array<{ name: string; host: string; port: number }>,
+    discovering: false,
+    error: null as string | null,
     togglePlay: mockSonosTogglePlay,
     seek: mockSonosSeek,
+    initFromCache: mockSonosInitFromCache,
+    discover: mockSonosDiscover,
+    startCasting: mockSonosStartCasting,
+    stop: mockSonosStop,
+    stopAll: mockSonosStopAll,
     ...overrides,
+  };
+}
+
+function makeDownloadsState(overrides = {}) {
+  return {
+    jobs: [],
+    ...overrides
+  };
+}
+
+function makeSettingsState(overrides = {}) {
+  return {
+    settings: { sonosEnabled: true },
+    ...overrides
   };
 }
 
@@ -67,7 +105,18 @@ beforeEach(() => {
     const state = makeSonosState();
     return typeof selector === 'function' ? selector(state) : state;
   });
+  vi.mocked(useDownloadsStore).mockImplementation((selector?: unknown) => {
+    const state = makeDownloadsState();
+    return typeof selector === 'function' ? selector(state) : state;
+  });
+  vi.mocked(useSettingsStore).mockImplementation((selector?: unknown) => {
+    const state = makeSettingsState();
+    return typeof selector === 'function' ? selector(state) : state;
+  });
   vi.mocked(window.fmusic.onMiniSeek).mockReturnValue(() => {});
+  vi.mocked(window.fmusic.onRemoteCommand).mockReturnValue(() => {});
+  vi.mocked(window.fmusic.onRemoteSeek).mockReturnValue(() => {});
+  vi.mocked(window.fmusic.onRemoteVolume).mockReturnValue(() => {});
   vi.clearAllMocks();
 });
 

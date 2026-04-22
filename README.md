@@ -80,6 +80,19 @@ required on the user's machine.
   - **⤢** button to restore the main window and hide the mini player.
 - 🗂️ **Tray context menu**: play/pause, previous, next, "Open FMusic" and "Quit", with the current track title and tooltip updated in real time.
 
+### Remote controller (BETA)
+- 📱 **Control FMusic from any phone** on the same Wi-Fi: the desktop app exposes a small web UI with player, library, downloads and playlists tabs.
+- 🔑 **Scan the QR** in Settings → Network → Remote controller to open the web UI already authenticated (single-use token per session, regenerable).
+- ▶️ **Now-playing awareness**: the current track is highlighted with a green border and an animated equalizer overlay on both the Library and Playlist views, mirroring the desktop behaviour.
+- 🌍 **Same translations as the desktop**: the controller speaks whichever language is active in the app and switches on the fly (no reload) when the user changes it in Settings.
+- ⚠️ Marked as **BETA** both in the settings pane and inside the mobile UI while we stabilize it.
+
+![Remote controller - Settings](docs/screenshots/remote-controller-settings.png)
+
+<p align="center">
+  <img src="docs/screenshots/remote-controller-mobile.png" width="340" alt="Remote controller - mobile view">
+</p>
+
 ### General
 - ⚙️ **Settings**: download folder, default format/quality, dependency status and a button to **update yt-dlp** without leaving the app.
 - 🔒 **"Ignore SSL errors" option** in Settings → Network: useful on corporate networks with SSL inspection (VPN). When a certificate error occurs on search or download, the UI shows a shortcut to this option.

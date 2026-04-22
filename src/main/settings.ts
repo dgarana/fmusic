@@ -26,7 +26,9 @@ function getStore(): Store<Schema> {
         closeToTray: true,
         miniPlayerEnabled: true,
         mobileSyncEnabled: false,
-        mobileSyncPort: 0
+        mobileSyncPort: 0,
+        remoteControllerEnabled: false,
+        remoteControllerPort: 0
       }
     }
   });

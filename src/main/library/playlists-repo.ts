@@ -8,6 +8,7 @@ interface PlaylistRow {
   created_at: string;
   cover_path: string | null;
   track_count: number;
+  source_url: string | null;
 }
 
 function rowToPlaylist(row: PlaylistRow): Playlist {
@@ -17,12 +18,13 @@ function rowToPlaylist(row: PlaylistRow): Playlist {
     slug: row.slug,
     createdAt: row.created_at,
     coverPath: row.cover_path,
-    trackCount: row.track_count
+    trackCount: row.track_count,
+    sourceUrl: row.source_url
   };
 }
 
 const SELECT_WITH_COUNT = `
-  SELECT p.id, p.name, p.slug, p.created_at, p.cover_path,
+  SELECT p.id, p.name, p.slug, p.created_at, p.cover_path, p.source_url,
          COUNT(pt.track_id) AS track_count
   FROM playlists p
   LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.id
@@ -54,8 +56,10 @@ export function getPlaylist(id: number): Playlist | null {
   return row ? rowToPlaylist(row) : null;
 }
 
-export function createPlaylist(name: string): Playlist {
-  const res = getDb().prepare('INSERT INTO playlists(name) VALUES (?)').run(name);
+export function createPlaylist(name: string, sourceUrl: string | null = null): Playlist {
+  const res = getDb()
+    .prepare('INSERT INTO playlists(name, source_url) VALUES (?, ?)')
+    .run(name, sourceUrl);
   return getPlaylist(Number(res.lastInsertRowid))!;
 }
 

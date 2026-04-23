@@ -11,7 +11,7 @@ import type {
 } from '../shared/types.js';
 import { DownloadProcess } from './ytdlp.js';
 import { getSettings } from './settings.js';
-import { findByYoutubeId, insertTrack } from './library/tracks-repo.js';
+import { findByYoutubeId, insertTrack, updateTrackSourceUrl } from './library/tracks-repo.js';
 import { addTrackToPlaylist } from './library/playlists-repo.js';
 
 type Listener = (...args: unknown[]) => void;
@@ -222,6 +222,10 @@ export class DownloadManager extends EventEmitter {
       const existing = findByYoutubeId(result.youtubeId);
       if (existing) {
         track = existing;
+        if (!track.sourceUrl) {
+          updateTrackSourceUrl(track.id, job.request.url);
+          track.sourceUrl = job.request.url;
+        }
       } else {
         track = insertTrack({
           youtubeId: result.youtubeId,
@@ -231,7 +235,8 @@ export class DownloadManager extends EventEmitter {
           genre,
           durationSec,
           filePath: result.filePath,
-          thumbnailPath: null
+          thumbnailPath: null,
+          sourceUrl: job.request.url
         });
       }
 

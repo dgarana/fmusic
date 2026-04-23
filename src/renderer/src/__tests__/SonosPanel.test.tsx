@@ -28,6 +28,7 @@ const mockTrack: Track = {
   downloadedAt: '2024-01-01',
   playCount: 0,
   lastPlayedAt: null,
+  sourceUrl: null,
 };
 
 const mockDevices: SonosDevice[] = [

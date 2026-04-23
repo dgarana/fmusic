@@ -29,6 +29,7 @@ const mockTrack: Track = {
   downloadedAt: '2024-01-01',
   playCount: 5,
   lastPlayedAt: '2024-01-10',
+  sourceUrl: null,
 };
 
 const favoritesPlaylist: Playlist = {
@@ -38,6 +39,7 @@ const favoritesPlaylist: Playlist = {
   createdAt: '2024-01-01',
   coverPath: null,
   trackCount: 3,
+  sourceUrl: null,
 };
 
 const mockTogglePlay = vi.fn();

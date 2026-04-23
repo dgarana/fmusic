@@ -142,7 +142,8 @@ export function seedScreenshotDemoData(userDataDir: string): DemoSeedResult {
       genre: demo.genre,
       durationSec: demo.durationSec,
       filePath,
-      thumbnailPath: null
+      thumbnailPath: null,
+      sourceUrl: null
     });
   });
 

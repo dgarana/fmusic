@@ -147,7 +147,7 @@ export function DownloadPage() {
       // step automatically once the track lands in the library.
       let localPlaylist: { id: number };
       try {
-        localPlaylist = await window.fmusic.createPlaylist(playlistTitle);
+        localPlaylist = await window.fmusic.createPlaylist(playlistTitle, url);
         await refreshPlaylists();
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
@@ -160,12 +160,13 @@ export function DownloadPage() {
 
       // Anything already in the library should still end up in the newly
       // created local playlist — we just skip the download part.
-      const preExistingIds = entryIds.filter((id) => alreadyIn.has(id));
-      if (preExistingIds.length > 0) {
+      const preExisting = entries.filter((e) => alreadyIn.has(e.id));
+      if (preExisting.length > 0) {
         try {
+          const idToUrl = Object.fromEntries(preExisting.map((e) => [e.id, e.url]));
           await window.fmusic.addTracksByYoutubeIdsToPlaylist(
             localPlaylist.id,
-            preExistingIds
+            idToUrl
           );
           await refreshPlaylists();
         } catch {

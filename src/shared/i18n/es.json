@@ -162,7 +162,11 @@
     "fileLocation": "Ubicación",
     "renameFailed": "No se ha podido renombrar el fichero: {detail}",
     "audioDescription": "Recorta el audio, añade fundidos o cambia el volumen. Puedes sobreescribir el original o exportar una nueva pista.",
-    "untitledFallback": "Sin título"
+    "untitledFallback": "Sin título",
+    "sourceUrl": "URL de origen",
+    "sourceUrlDescription": "URL original desde la que se descargó esta canción.",
+    "sourceUrlEmpty": "No hay URL de origen registrada para esta canción.",
+    "openSource": "Abrir origen"
   },
   "settings": {
     "title": "Ajustes",

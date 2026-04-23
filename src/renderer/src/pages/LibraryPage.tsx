@@ -203,7 +203,7 @@ export function LibraryPage() {
                                 title={name}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <span>{name}</span>
+                                {name}
                               </Link>
                             );
                           })}

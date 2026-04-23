@@ -227,6 +227,19 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
         </button>
       </div>
 
+      {playlist.sourceUrl && (
+        <div className="editor-file-location" style={{ marginBottom: 16 }}>
+          <span className="editor-file-location-label">{t('editor.sourceUrl')}</span>
+          <code>{playlist.sourceUrl}</code>
+          <button
+            onClick={() => void window.fmusic.openExternal(playlist.sourceUrl!)}
+            title={t('editor.openSource')}
+          >
+            {t('editor.openSource')}
+          </button>
+        </div>
+      )}
+
       {pickerOpen && (
         <div className="picker-card">
           <div className="picker-toolbar">

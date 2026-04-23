@@ -28,6 +28,7 @@ import {
   listTracks,
   resolveTrackFilePath,
   updateTrack,
+  updateTrackSourceUrl,
   getTrack,
   getTrackEmbeddedArtworkDataUrl,
   editTrack,
@@ -233,7 +234,10 @@ export function registerIpc(): void {
 
   // ----- Playlists -----
   ipcMain.handle(Channels.PlaylistsList, () => listPlaylists());
-  ipcMain.handle(Channels.PlaylistsCreate, (_evt, name: string) => createPlaylist(name));
+  ipcMain.handle(
+    Channels.PlaylistsCreate,
+    (_evt, name: string, sourceUrl: string | null = null) => createPlaylist(name, sourceUrl)
+  );
   ipcMain.handle(Channels.PlaylistsRename, (_evt, id: number, name: string) =>
     renamePlaylist(id, name)
   );
@@ -260,16 +264,19 @@ export function registerIpc(): void {
   });
   ipcMain.handle(
     Channels.PlaylistsAddTracksByYoutubeIds,
-    (_evt, playlistId: number, youtubeIds: string[]) => {
+    (_evt, playlistId: number, youtubeIdToUrl: Record<string, string>) => {
       // Adds every library track whose YouTube id is in the list to the given
       // playlist. Used when importing a YouTube playlist that contains videos
       // we already have locally — we still want them to appear in the newly
       // created local playlist, just without downloading them again.
       let added = 0;
-      for (const ytId of youtubeIds) {
+      for (const [ytId, url] of Object.entries(youtubeIdToUrl)) {
         const track = findByYoutubeId(ytId);
         if (!track) continue;
         try {
+          if (!track.sourceUrl && url) {
+            updateTrackSourceUrl(track.id, url);
+          }
           addTrackToPlaylist(playlistId, track.id);
           added++;
         } catch {

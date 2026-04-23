@@ -25,6 +25,7 @@ const mockTrack: Track = {
   downloadedAt: '2024-01-01',
   playCount: 0,
   lastPlayedAt: null,
+  sourceUrl: null,
 };
 
 const mockNext = vi.fn().mockResolvedValue(undefined);

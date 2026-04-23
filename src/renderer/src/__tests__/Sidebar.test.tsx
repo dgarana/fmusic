@@ -14,8 +14,8 @@ vi.mock('../store/settings', () => ({
 }));
 
 const mockPlaylists: Playlist[] = [
-  { id: 1, name: 'Favorites', slug: 'favorites', createdAt: '2024-01-01', coverPath: null, trackCount: 5 },
-  { id: 2, name: 'Road Trip', slug: null, createdAt: '2024-01-02', coverPath: null, trackCount: 12 },
+  { id: 1, name: 'Favorites', slug: 'favorites', createdAt: '2024-01-01', coverPath: null, trackCount: 5, sourceUrl: null },
+  { id: 2, name: 'Road Trip', slug: null, createdAt: '2024-01-02', coverPath: null, trackCount: 12, sourceUrl: null },
 ];
 
 function renderSidebar() {

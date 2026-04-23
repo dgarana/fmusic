@@ -357,6 +357,23 @@ export function EditPage() {
           </div>
         )}
 
+        <div className="editor-file-location">
+          <span className="editor-file-location-label">{t('editor.sourceUrl')}</span>
+          {track.sourceUrl ? (
+            <>
+              <code>{track.sourceUrl}</code>
+              <button
+                onClick={() => void window.fmusic.openExternal(track.sourceUrl!)}
+                title={t('editor.openSource')}
+              >
+                {t('editor.openSource')}
+              </button>
+            </>
+          ) : (
+            <small>{t('editor.sourceUrlEmpty')}</small>
+          )}
+        </div>
+
         <div className="editor-section-actions">
           <button onClick={() => navigate('/library')}>{t('common.cancel')}</button>
           <button

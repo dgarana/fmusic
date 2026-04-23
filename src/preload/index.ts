@@ -113,7 +113,8 @@ const api = {
 
   // Playlists
   listPlaylists: () => invoke<Playlist[]>(Channels.PlaylistsList),
-  createPlaylist: (name: string) => invoke<Playlist>(Channels.PlaylistsCreate, name),
+  createPlaylist: (name: string, sourceUrl: string | null = null) =>
+    invoke<Playlist>(Channels.PlaylistsCreate, name, sourceUrl),
   renamePlaylist: (id: number, name: string) =>
     invoke<Playlist | null>(Channels.PlaylistsRename, id, name),
   deletePlaylist: (id: number) => invoke<boolean>(Channels.PlaylistsDelete, id),
@@ -132,8 +133,8 @@ const api = {
     );
     return new Map(tuples);
   },
-  addTracksByYoutubeIdsToPlaylist: (playlistId: number, youtubeIds: string[]) =>
-    invoke<number>(Channels.PlaylistsAddTracksByYoutubeIds, playlistId, youtubeIds),
+  addTracksByYoutubeIdsToPlaylist: (playlistId: number, youtubeIdToUrl: Record<string, string>) =>
+    invoke<number>(Channels.PlaylistsAddTracksByYoutubeIds, playlistId, youtubeIdToUrl),
 
   // Schema
   schemaHistory: () =>

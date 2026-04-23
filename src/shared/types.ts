@@ -73,6 +73,12 @@ export interface Track {
   downloadedAt: string;
   playCount: number;
   lastPlayedAt: string | null;
+  /**
+   * URL the track was originally downloaded from (typically a YouTube watch
+   * URL). Null for tracks with no external origin, e.g. entries created by
+   * the in-app audio editor's "export" mode.
+   */
+  sourceUrl: string | null;
 }
 
 export interface TrackMetadataSuggestions {
@@ -111,6 +117,11 @@ export interface Playlist {
   createdAt: string;
   coverPath: string | null;
   trackCount: number;
+  /**
+   * URL the playlist was imported from (typically a YouTube playlist URL).
+   * Null for user-created playlists.
+   */
+  sourceUrl: string | null;
 }
 
 export interface PlaylistWithTracks extends Playlist {

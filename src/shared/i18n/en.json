@@ -162,7 +162,11 @@
     "fileLocation": "Location",
     "renameFailed": "Could not rename the file: {detail}",
     "audioDescription": "Trim the audio, add fades or change the volume. Overwrite the original file or export a new track.",
-    "untitledFallback": "Untitled"
+    "untitledFallback": "Untitled",
+    "sourceUrl": "Source URL",
+    "sourceUrlDescription": "Original URL this track was downloaded from.",
+    "sourceUrlEmpty": "No source URL recorded for this track.",
+    "openSource": "Open source"
   },
   "settings": {
     "title": "Settings",

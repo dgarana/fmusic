@@ -27,6 +27,7 @@ interface TrackRow {
   downloaded_at: string;
   play_count: number;
   last_played_at: string | null;
+  source_url: string | null;
 }
 
 function rowToTrack(row: TrackRow): Track {
@@ -42,7 +43,8 @@ function rowToTrack(row: TrackRow): Track {
     thumbnailPath: row.thumbnail_path,
     downloadedAt: row.downloaded_at,
     playCount: row.play_count,
-    lastPlayedAt: row.last_played_at
+    lastPlayedAt: row.last_played_at,
+    sourceUrl: row.source_url
   };
 }
 
@@ -55,6 +57,7 @@ export interface NewTrack {
   durationSec: number | null;
   filePath: string;
   thumbnailPath: string | null;
+  sourceUrl: string | null;
 }
 
 export function insertTrack(track: NewTrack): Track {
@@ -62,8 +65,8 @@ export function insertTrack(track: NewTrack): Track {
   const result = db
     .prepare(
       `INSERT INTO tracks
-       (youtube_id, title, artist, album, genre, duration_sec, file_path, thumbnail_path)
-       VALUES (@youtubeId, @title, @artist, @album, @genre, @durationSec, @filePath, @thumbnailPath)`
+       (youtube_id, title, artist, album, genre, duration_sec, file_path, thumbnail_path, source_url)
+       VALUES (@youtubeId, @title, @artist, @album, @genre, @durationSec, @filePath, @thumbnailPath, @sourceUrl)`
     )
     .run(track);
   return getTrack(Number(result.lastInsertRowid))!;
@@ -212,6 +215,10 @@ export function updateTrack(
   return getTrack(id);
 }
 
+export function updateTrackSourceUrl(id: number, sourceUrl: string): void {
+  getDb().prepare('UPDATE tracks SET source_url = ? WHERE id = ?').run(sourceUrl, id);
+}
+
 export function deleteTrack(id: number): boolean {
   const res = getDb().prepare('DELETE FROM tracks WHERE id = ?').run(id);
   return res.changes > 0;
@@ -355,7 +362,8 @@ export async function editTrack(
       genre: track.genre,
       durationSec,
       filePath: newDestPath,
-      thumbnailPath: track.thumbnailPath
+      thumbnailPath: track.thumbnailPath,
+      sourceUrl: null
     });
 
     return newTrack;

@@ -200,22 +200,21 @@ function createWindow(): void {
     mainWindow?.webContents.send(Channels.WindowMaximizeChange, false);
   });
 
-  // Tie the mini player's visibility to the main window: it only appears
-  // when the main window is hidden (closed to tray), never alongside it.
-  mainWindow.on('hide', () => {
-    if (getSettings().miniPlayerEnabled) showMiniPlayer();
-  });
+  // Hide the mini player whenever the main window becomes visible again.
   mainWindow.on('show', () => {
     hideMiniPlayer();
   });
 
   // Intercept close: hide to tray or quit depending on user setting.
+  // The mini player is shown here — and only here — so that focus loss
+  // never accidentally triggers it.
   mainWindow.on('close', (e) => {
     if (!isQuitting) {
-      const { closeToTray } = getSettings();
+      const { closeToTray, miniPlayerEnabled } = getSettings();
       if (closeToTray) {
         e.preventDefault();
         mainWindow?.hide();
+        if (miniPlayerEnabled) showMiniPlayer();
       } else {
         isQuitting = true;
         app.quit();

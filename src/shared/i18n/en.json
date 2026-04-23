@@ -247,7 +247,11 @@
     "stopDevice": "Stop this device",
     "addByIp": "Add by IP (useful with VPN)",
     "add": "Add",
-    "noDevicesFound": "No Sonos devices found on the network."
+    "noDevicesFound": "No Sonos devices found on the network.",
+    "sessionExpired": "Sonos session expired after inactivity. Please start casting again.",
+    "deviceNotFound": "Sonos device {host} not found.",
+    "deviceNotFoundDiscover": "Sonos device {host} not found — run discover first.",
+    "connectFailed": "Could not connect to Sonos device at {host}."
   },
   "miniPlayer": {
     "nothingPlaying": "Nothing playing",

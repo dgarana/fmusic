@@ -732,11 +732,54 @@ input[type='range']:active::-webkit-slider-thumb { background: var(--accent); }
   text-transform: capitalize;
   white-space: nowrap;
   max-width: 140px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   vertical-align: middle;
+  position: relative;
+  overflow: visible; /* Allow tooltips to show */
+}
+
+.status-pill-inner {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
+/* 
+ * Custom instant tooltip for long names. 
+ */
+.status-pill[data-title]:hover::after {
+  content: attr(data-title);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1f2c;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  z-index: 10000;
+  pointer-events: none;
+}
+/* Tooltip arrow */
+.status-pill[data-title]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #1a1f2c;
+  z-index: 10000;
+  pointer-events: none;
+}
+
 .status-pill.clickable {
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease;

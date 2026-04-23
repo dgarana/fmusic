@@ -201,9 +201,10 @@ export function LibraryPage() {
                                 to={`/playlists/${id}`}
                                 className="status-pill clickable"
                                 title={name}
+                                data-title={name}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                {name}
+                                <span className="status-pill-inner">{name}</span>
                               </Link>
                             );
                           })}

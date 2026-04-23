@@ -247,7 +247,11 @@
     "stopDevice": "Parar este dispositivo",
     "addByIp": "Añadir por IP (útil con VPN)",
     "add": "Añadir",
-    "noDevicesFound": "No se encontraron dispositivos Sonos en la red."
+    "noDevicesFound": "No se encontraron dispositivos Sonos en la red.",
+    "sessionExpired": "La sesión de Sonos ha caducado por inactividad. Por favor, vuelve a conectar.",
+    "deviceNotFound": "No se ha encontrado el dispositivo Sonos {host}.",
+    "deviceNotFoundDiscover": "No se ha encontrado el dispositivo Sonos {host} — busca dispositivos primero.",
+    "connectFailed": "No se ha podido conectar al dispositivo Sonos en {host}."
   },
   "miniPlayer": {
     "nothingPlaying": "Nada reproduciéndose",

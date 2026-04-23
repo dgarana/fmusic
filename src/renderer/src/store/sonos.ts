@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import type { SonosDevice } from '../../../shared/types';
+import { translate } from '../i18n';
 import { usePlayerStore } from './player';
+import { useSettingsStore } from './settings';
+
+const t = (key: string) => {
+  const locale = (useSettingsStore.getState().settings?.language ?? 'en') as any;
+  return translate(locale, key);
+};
 
 interface SonosState {
   devices: SonosDevice[];
@@ -51,7 +58,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
     try {
       const devices = await window.fmusic.sonosDiscover();
       set({ devices });
-      if (devices.length === 0) set({ error: 'No Sonos devices found on the network.' });
+      if (devices.length === 0) set({ error: t('sonos.noDevicesFound') });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     } finally {
@@ -108,7 +115,19 @@ export const useSonosStore = create<SonosState>((set, get) => ({
       await window.fmusic.sonosPause(activeHost);
       set({ isPlaying: false });
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('SONOS_STALE_SESSION')) {
+        get().stopPositionPolling();
+        set({
+          activeHost: null,
+          isPlaying: false,
+          position: 0,
+          duration: 0,
+          error: t('sonos.sessionExpired')
+        });
+      } else {
+        set({ error: msg });
+      }
     }
   },
 

@@ -732,16 +732,10 @@ input[type='range']:active::-webkit-slider-thumb { background: var(--accent); }
   text-transform: capitalize;
   white-space: nowrap;
   max-width: 140px;
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
   vertical-align: middle;
-}
-.status-pill > * {
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .status-pill.clickable {
   cursor: pointer;
@@ -750,7 +744,7 @@ input[type='range']:active::-webkit-slider-thumb { background: var(--accent); }
 .status-pill.clickable:hover {
   background: var(--accent-soft);
   color: var(--accent);
-  text-decoration: underline;
+  text-decoration: none;
 }
 .status-pill.downloading,
 .status-pill.processing,

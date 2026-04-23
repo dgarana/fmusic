@@ -13,6 +13,7 @@ import type {
 } from '../../shared/types.js';
 import { getDb } from './db.js';
 import { ffmpegPath } from '../paths.js';
+import { compileSmartPlaylistDefinition } from './smart-playlists.js';
 
 interface TrackRow {
   id: number;
@@ -111,16 +112,34 @@ export function listTracks(query: TrackQuery = {}): Track[] {
   const sortDir = query.sortDir === 'asc' ? 'ASC' : 'DESC';
   const limit = query.limit ?? 500;
   const offset = query.offset ?? 0;
+  let playlistKind: 'manual' | 'smart' | null = null;
 
   let sql = 'SELECT t.* FROM tracks t';
   if (query.playlistId !== undefined) {
-    sql += ' INNER JOIN playlist_tracks pt ON pt.track_id = t.id';
-    where.push('pt.playlist_id = @playlistId');
-    params.playlistId = query.playlistId;
+    const playlist = db
+      .prepare('SELECT kind, smart_definition FROM playlists WHERE id = ?')
+      .get(query.playlistId) as
+      | { kind: 'manual' | 'smart'; smart_definition: string | null }
+      | undefined;
+    if (!playlist) return [];
+    playlistKind = playlist.kind;
+    if (playlist.kind === 'smart') {
+      const definition = playlist.smart_definition
+        ? JSON.parse(playlist.smart_definition)
+        : null;
+      if (!definition) return [];
+      const compiled = compileSmartPlaylistDefinition(definition);
+      where.push(compiled.sql);
+      Object.assign(params, compiled.params);
+    } else {
+      sql += ' INNER JOIN playlist_tracks pt ON pt.track_id = t.id';
+      where.push('pt.playlist_id = @playlistId');
+      params.playlistId = query.playlistId;
+    }
   }
   if (where.length > 0) sql += ` WHERE ${where.join(' AND ')}`;
   sql +=
-    query.playlistId !== undefined
+    playlistKind === 'manual'
       ? ' ORDER BY pt.position ASC'
       : ` ORDER BY ${sortCol} ${sortDir}`;
   sql += ' LIMIT @limit OFFSET @offset';

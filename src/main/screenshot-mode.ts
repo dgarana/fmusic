@@ -2,10 +2,16 @@ import { BrowserWindow, nativeImage } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import NodeID3 from 'node-id3';
-import type { Track } from '../shared/types.js';
+import type { SmartPlaylistDefinition, Track } from '../shared/types.js';
 import { updateSettings } from './settings.js';
 import { getDb } from './library/db.js';
-import { ensureBuiltinPlaylists, createPlaylist, addTrackToPlaylist, listPlaylists } from './library/playlists-repo.js';
+import {
+  ensureBuiltinPlaylists,
+  createPlaylist,
+  createSmartPlaylist,
+  addTrackToPlaylist,
+  listPlaylists
+} from './library/playlists-repo.js';
 import { insertTrack } from './library/tracks-repo.js';
 import {
   getRemoteControllerInfo,
@@ -18,6 +24,7 @@ const screenshotOutputDir = process.env.FMUSIC_SCREENSHOT_OUTPUT_DIR ?? '';
 interface DemoSeedResult {
   tracks: Track[];
   playlistIds: number[];
+  smartPlaylistIds: number[];
 }
 
 let seededData: DemoSeedResult | null = null;
@@ -161,9 +168,42 @@ export function seedScreenshotDemoData(userDataDir: string): DemoSeedResult {
     addTrackToPlaylist(favorites.id, tracks[2].id);
   }
 
+  const lateNightDefinition: SmartPlaylistDefinition = {
+    match: 'any',
+    rules: [
+      {
+        id: 'smart-demo-1',
+        field: 'genre',
+        operator: 'isAnyOf',
+        value: { kind: 'text-list', values: ['Electronic', 'EDM', 'Electro House'] }
+      },
+      {
+        id: 'smart-demo-2',
+        field: 'artist',
+        operator: 'contains',
+        value: { kind: 'text', value: 'Porter' }
+      }
+    ]
+  };
+  const heavyDefinition: SmartPlaylistDefinition = {
+    match: 'all',
+    rules: [
+      {
+        id: 'smart-demo-3',
+        field: 'genre',
+        operator: 'contains',
+        value: { kind: 'text', value: 'Metal' }
+      }
+    ]
+  };
+
+  const lateNight = createSmartPlaylist('Late Night Energy', lateNightDefinition);
+  const heavy = createSmartPlaylist('Heavy Picks', heavyDefinition);
+
   seededData = {
     tracks,
-    playlistIds: [synthwave.id, gym.id]
+    playlistIds: [synthwave.id, gym.id],
+    smartPlaylistIds: [lateNight.id, heavy.id]
   };
   return seededData;
 }
@@ -207,6 +247,69 @@ async function prepareSonosScreenshot(win: BrowserWindow): Promise<void> {
     document.querySelector('.sonos-btn')?.click();
   })()`);
   await wait(1000);
+}
+
+async function captureSmartPlaylistBuilder(win: BrowserWindow): Promise<void> {
+  await win.webContents.executeJavaScript(`(async () => {
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const clickButton = (matcher) => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const button = buttons.find((node) => matcher((node.textContent || '').trim()));
+      if (!button) throw new Error('Button not found');
+      button.click();
+    };
+    const setInputValue = (input, value) => {
+      const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+      descriptor?.set?.call(input, value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    window.location.hash = '#/playlists';
+    await wait(700);
+    clickButton((text) => text === 'Smart playlist');
+    await wait(400);
+
+    const nameInput = document.querySelector('.smart-playlist-panel input');
+    if (!(nameInput instanceof HTMLInputElement)) {
+      throw new Error('Smart playlist name input not found');
+    }
+    setInputValue(nameInput, 'Late Night Energy');
+    await wait(150);
+
+    clickButton((text) => text === 'genre');
+    await wait(120);
+    clickButton((text) => text === 'is any of');
+    await wait(120);
+
+    const tokenInput = document.querySelector('.smart-token-input');
+    if (!(tokenInput instanceof HTMLInputElement)) {
+      throw new Error('Smart playlist token input not found');
+    }
+    setInputValue(tokenInput, 'Electronic');
+    await wait(120);
+    clickButton((text) => text === 'Electronic');
+    await wait(120);
+
+    setInputValue(tokenInput, 'EDM');
+    await wait(120);
+    clickButton((text) => text.includes('Add "EDM"'));
+    await wait(120);
+    clickButton((text) => text.includes('Finish this filter'));
+    await wait(180);
+
+    clickButton((text) => text === 'artist');
+    await wait(120);
+    clickButton((text) => text === 'contains');
+    await wait(120);
+    setInputValue(tokenInput, 'Porter');
+    await wait(120);
+    clickButton((text) => text.includes('Use "Porter"'));
+    await wait(350);
+  })()`);
+  await wait(900);
+  const image = await win.capturePage();
+  fs.writeFileSync(path.join(screenshotOutputDir, 'smart-playlist-builder.png'), image.toPNG());
 }
 
 /**
@@ -332,8 +435,16 @@ export async function runScreenshotCapture(win: BrowserWindow): Promise<void> {
   const sonosImage = await win.capturePage();
   fs.writeFileSync(path.join(screenshotOutputDir, 'sonos.png'), sonosImage.toPNG());
   await captureRoute(win, '#/playlists', 'playlists.png');
+  await captureSmartPlaylistBuilder(win);
   if (seededData?.playlistIds[0]) {
     await captureRoute(win, `#/playlists/${seededData.playlistIds[0]}`, 'playlist-detail.png');
+  }
+  if (seededData?.smartPlaylistIds[0]) {
+    await captureRoute(
+      win,
+      `#/playlists/${seededData.smartPlaylistIds[0]}`,
+      'smart-playlist-detail.png'
+    );
   }
   await captureRoute(win, '#/settings', 'settings.png');
 

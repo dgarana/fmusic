@@ -34,6 +34,7 @@ required on the user's machine.
 - 🧠 **Smart metadata matching**: the lookup tries title + artist + album first, then progressively broader searches, and falls back across recording / release / release-group / artist genres.
 - 💾 **Metadata persistence**: manual edits are saved to the app database and also written back to the audio file for **MP3** tracks (ID3 tags).
 - 📝 **Playlists** with add / remove / reorder tracks.
+- ??? **Smart playlists**: create dynamic playlists from saved filter chips like `artist contains`, `genre is any of` and similar rules directly from the UI.
 - ♥ **Favorites**: protected special playlist (cannot be deleted); heart button in the player toggles the current track in Favorites instantly.
 - 📱 **Mobile Sync**: download specific tracks to your mobile device by scanning a dynamically generated QR code.
 - 🔄 **Real-time refresh**: opening a playlist and adding tracks from elsewhere in the app updates the view without a reload.
@@ -44,7 +45,11 @@ required on the user's machine.
 
 ![Playlists](docs/screenshots/playlists.png)
 
+![Smart playlist builder](docs/screenshots/smart-playlist-builder.png)
+
 ![Playlist detail](docs/screenshots/playlist-detail.png)
+
+![Smart playlist detail](docs/screenshots/smart-playlist-detail.png)
 
 ### Edit Audio
 - ✂️ **Workbench**: professional-grade audio manipulation workspace for every track.
@@ -177,7 +182,7 @@ databases. `004_playlist_slug.sql` adds a stable `slug` column so built-in
 playlists (like Favorites) keep a language-independent identifier while
 their display name is translated on the fly. Additionally,
 `ensureBuiltinPlaylists()` guarantees the Favorites row on every startup
-(matched by slug, not by name).
+(matched by slug, not by name). `006_smart_playlists.sql` adds dynamic playlists backed by a saved filter definition.
 
 Track metadata edits are not implemented as migrations: they update the
 existing `tracks` row in place. When the track resolves to an `.mp3`
@@ -326,6 +331,19 @@ the `playlists` table. The name stored in the DB is a canonical English
 string; the UI resolves the displayed name via `playlistDisplayName(p, t)`
 so it always reflects the active language. User-created playlists leave
 `slug` as `NULL` and are shown verbatim.
+
+## Smart playlists
+
+Smart playlists save a filter definition in the database and resolve
+their tracks dynamically from the library. The current builder supports
+chip-based rules for fields such as `title`, `artist`, `album` and
+`genre`, with operators like `contains`, `is` and `is any of`.
+
+Because they are dynamic:
+
+- tracks appear automatically when their metadata matches the saved rules
+- they are shown alongside regular playlists in the Library badges
+- they cannot be reordered manually or edited one track at a time
 
 ## `FMusic-media:` protocol
 

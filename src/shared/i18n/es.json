@@ -136,7 +136,56 @@
     },
     "playTooltip": "Reproducir",
     "moveUpTooltip": "Subir",
-    "removeTooltip": "Quitar"
+    "removeTooltip": "Quitar",
+    "smart": {
+      "openComposer": "Smart playlist",
+      "title": "Smart playlist",
+      "subtitle": "La construyes escribiendo. Cada filtro se convierte en un chip, como una búsqueda por tokens.",
+      "name": "Nombre",
+      "namePlaceholder": "Metal nocturno, Chill instrumental, Favoritas 2026...",
+      "match": "Modo de coincidencia",
+      "matchAll": "Cumplir todas",
+      "matchAny": "Cumplir cualquiera",
+      "removeRule": "Quitar filtro",
+      "preview": "Vista previa",
+      "previewCount": "{count} canciones coinciden",
+      "previewMatches": "Coincidencias de ejemplo",
+      "previewEmpty": "Añade filtros para ver canciones que coinciden.",
+      "untitled": "Smart playlist sin nombre",
+      "noSuggestions": "Ahora mismo no hay sugerencias.",
+      "save": "Guardar smart playlist",
+      "saveChanges": "Guardar cambios",
+      "saveRequirements": "Añade un nombre y al menos un filtro para poder guardar.",
+      "readyToSave": "Esta smart playlist ya está lista para guardarse.",
+      "saveError": "No se ha podido guardar esta smart playlist: {detail}",
+      "dynamicNotice": "Esta es una smart playlist. Sus canciones se actualizan automáticamente según los filtros guardados.",
+      "edit": "Editar filtros",
+      "badge": "Smart",
+      "draftNotice": "Esta smart playlist se actualiza dinámicamente a partir de los filtros que guardes aquí.",
+      "debugTitle": "Definición actual",
+      "hints": {
+        "field": "Escribe un campo como artista, álbum o género...",
+        "operator": "Elige cómo debe coincidir {field}...",
+        "value": "Escribe un valor para {field}...",
+        "valueList": "Añade valores uno a uno y luego termina el filtro..."
+      },
+      "fields": {
+        "title": "Título",
+        "artist": "Artista",
+        "album": "Álbum",
+        "genre": "Género"
+      },
+      "operators": {
+        "contains": "contiene",
+        "is": "es",
+        "isAnyOf": "es cualquiera de"
+      },
+      "actions": {
+        "useValue": "Usar \"{value}\"",
+        "addValue": "Añadir \"{value}\"",
+        "finishList": "Terminar este filtro ({count})"
+      }
+    }
   },
   "editor": {
     "title": "Editor: {title}",

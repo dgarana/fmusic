@@ -39,6 +39,8 @@ const favoritesPlaylist: Playlist = {
   createdAt: '2024-01-01',
   coverPath: null,
   trackCount: 3,
+  kind: 'manual',
+  smartDefinition: null,
   sourceUrl: null,
 };
 

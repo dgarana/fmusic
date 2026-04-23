@@ -48,6 +48,8 @@ export const Channels = {
   // Library - playlists
   PlaylistsList: 'playlists:list',
   PlaylistsCreate: 'playlists:create',
+  PlaylistsCreateSmart: 'playlists:create-smart',
+  PlaylistsUpdateSmart: 'playlists:update-smart',
   PlaylistsRename: 'playlists:rename',
   PlaylistsDelete: 'playlists:delete',
   PlaylistsAddTrack: 'playlists:add-track',

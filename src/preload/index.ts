@@ -6,6 +6,7 @@ import type {
   DownloadJob,
   DownloadRequest,
   Playlist,
+  SmartPlaylistDefinition,
   RemoteControllerCommand,
   RemoteControllerInfo,
   RemotePlayerSnapshot,
@@ -115,6 +116,10 @@ const api = {
   listPlaylists: () => invoke<Playlist[]>(Channels.PlaylistsList),
   createPlaylist: (name: string, sourceUrl: string | null = null) =>
     invoke<Playlist>(Channels.PlaylistsCreate, name, sourceUrl),
+  createSmartPlaylist: (name: string, definition: SmartPlaylistDefinition) =>
+    invoke<Playlist>(Channels.PlaylistsCreateSmart, name, definition),
+  updateSmartPlaylist: (id: number, name: string, definition: SmartPlaylistDefinition) =>
+    invoke<Playlist | null>(Channels.PlaylistsUpdateSmart, id, name, definition),
   renamePlaylist: (id: number, name: string) =>
     invoke<Playlist | null>(Channels.PlaylistsRename, id, name),
   deletePlaylist: (id: number) => invoke<boolean>(Channels.PlaylistsDelete, id),

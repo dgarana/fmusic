@@ -1,7 +1,7 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.8.0
+## v0.9.0
 
 ### Bug Fixes
 
@@ -12,10 +12,13 @@ _Generated from repository tags and commit history._
 - Force github actions to use node 24 ([4303b13](https://github.com/dgarana/fmusic/commit/4303b135f753057fde448690520fecd92be56af7))
 - MacOS window not renderind properly ([cc4363d](https://github.com/dgarana/fmusic/commit/cc4363d5f3a119c32c3a4c5572f41807d90838f3))
 - Fix test suite ([f337495](https://github.com/dgarana/fmusic/commit/f33749546e197c9b87b790f607a981cf6d48d3a7))
+- Handle Sonos UPnP 701 stale session error on pause gracefully ([be648b0](https://github.com/dgarana/fmusic/commit/be648b0a4733248d07b638333d54f340fd1af027))
+- Show mini player only on close-to-tray, not on focus loss ([144b2a7](https://github.com/dgarana/fmusic/commit/144b2a79fdf5cfac05b9d881a85d8353827afe81))
 
 ### Documentation
 
 - Update README according to latest changes ([a03c875](https://github.com/dgarana/fmusic/commit/a03c875c779dc2d4c97201cd1c7e23f131ad9a9c))
+- Update AGENTS and README ([7271d5c](https://github.com/dgarana/fmusic/commit/7271d5ce7cf044f073763ae206b3a6133fb1edd2))
 
 ### Features
 
@@ -30,6 +33,8 @@ _Generated from repository tags and commit history._
 - Add different themes to the app ([38e6b91](https://github.com/dgarana/fmusic/commit/38e6b9199f44e331c0487b98d645e635db4b4d36))
 - Add downloading playlist feature ([2b95a66](https://github.com/dgarana/fmusic/commit/2b95a66a8cd049f44426cb022dd53cc0cb940baf))
 - Add remote media player ([ca17df1](https://github.com/dgarana/fmusic/commit/ca17df1a51260d6539f73e8977929f20064dd166))
+- Persist YouTube source URL for tracks and playlists (#11) ([5bdc08b](https://github.com/dgarana/fmusic/commit/5bdc08bd1c65b250a5de7a3e0aa2e108d6d53fc9))
+- Playlist improvements and fixes ([40e30ae](https://github.com/dgarana/fmusic/commit/40e30ae0b516c3fea6fc5fb49bf84e0c08bd2f30))
 
 ### Miscellaneous
 
@@ -48,7 +53,8 @@ _Generated from repository tags and commit history._
 - Templating stuff ([9fa32c6](https://github.com/dgarana/fmusic/commit/9fa32c6d2607aa4e84bbfae3099dbf78c66d9296))
 - Fix minor bugs ([9a5aaa6](https://github.com/dgarana/fmusic/commit/9a5aaa68773a0621401fa521dd646db583ad4815))
 - Release v0.7.0 ([d4e60cd](https://github.com/dgarana/fmusic/commit/d4e60cd9a7ddef5c844ca1068d8df0a65a5d428c))
-- Release v0.8.0 ([89a4285](https://github.com/dgarana/fmusic/commit/89a4285bbcaca300d7b865def44875305f09ce08))
+- Release v0.8.0 ([b6f6d4e](https://github.com/dgarana/fmusic/commit/b6f6d4e3a964d27ffa67cd957fc3c6787a4cb8ad))
+- Release v0.9.0 ([a85a388](https://github.com/dgarana/fmusic/commit/a85a388ea5264f56c539c96278130d78489e7210))
 
 ### Other
 

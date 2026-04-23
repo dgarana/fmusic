@@ -196,26 +196,15 @@ export function LibraryPage() {
                             const name = playlistsById.get(id);
                             if (!name) return null;
                             return (
-                              <span
+                              <Link
                                 key={id}
+                                to={`/playlists/${id}`}
                                 className="status-pill clickable"
                                 title={name}
+                                onClick={(e) => e.stopPropagation()}
                               >
-                                <Link
-                                  to={`/playlists/${id}`}
-                                  style={{
-                                    color: 'inherit',
-                                    textDecoration: 'inherit',
-                                    display: 'block',
-                                    width: '100%',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis'
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {name}
-                                </Link>
-                              </span>
+                                <span>{name}</span>
+                              </Link>
                             );
                           })}
                         </div>

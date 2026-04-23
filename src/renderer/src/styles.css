@@ -732,13 +732,11 @@ input[type='range']:active::-webkit-slider-thumb { background: var(--accent); }
   text-transform: capitalize;
   white-space: nowrap;
   max-width: 140px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   vertical-align: middle;
-}
-.status-pill > * {
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .status-pill.clickable {
   cursor: pointer;
@@ -749,7 +747,7 @@ input[type='range']:active::-webkit-slider-thumb { background: var(--accent); }
   color: var(--accent);
   text-decoration: none;
 }
-.status-pill.clickable:hover > * {
+.status-pill.clickable:hover span {
   text-decoration: underline;
 }
 .status-pill.downloading,

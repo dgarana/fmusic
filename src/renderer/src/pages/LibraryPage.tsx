@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLibraryStore } from '../store/library';
 import { usePlayerStore } from '../store/player';
@@ -172,9 +172,7 @@ export function LibraryPage() {
           </thead>
           <tbody>
             {tracks.map((tr) => {
-              const trackPlaylists = (playlistsByTrack.get(tr.id) ?? [])
-                .map((id) => playlistsById.get(id))
-                .filter((name): name is string => Boolean(name));
+              const trackPlaylistIds = playlistsByTrack.get(tr.id) ?? [];
               const isCurrent = currentTrack?.id === tr.id;
               return (
                 <Fragment key={tr.id}>
@@ -190,15 +188,25 @@ export function LibraryPage() {
                     <td className="cell-ellipsis" title={tr.album ?? undefined}>{tr.album ?? '-'}</td>
                     <td className="cell-narrow">{formatDuration(tr.durationSec)}</td>
                     <td>
-                      {trackPlaylists.length === 0 ? (
+                      {trackPlaylistIds.length === 0 ? (
                         <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>
                       ) : (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                          {trackPlaylists.map((name) => (
-                            <span key={name} className="status-pill" title={name}>
-                              {name}
-                            </span>
-                          ))}
+                          {trackPlaylistIds.map((id) => {
+                            const name = playlistsById.get(id);
+                            if (!name) return null;
+                            return (
+                              <Link
+                                key={id}
+                                to={`/playlists/${id}`}
+                                className="status-pill clickable"
+                                title={name}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {name}
+                              </Link>
+                            );
+                          })}
                         </div>
                       )}
                     </td>

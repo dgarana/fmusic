@@ -731,10 +731,24 @@ input[type='range']:active::-webkit-slider-thumb { background: var(--accent); }
   color: var(--text-muted);
   text-transform: capitalize;
   white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  vertical-align: middle;
+}
+.status-pill.clickable {
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.status-pill.clickable:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  text-decoration: none;
 }
 .status-pill.downloading,
 .status-pill.processing,
-.status-pill\-fetching-metadata {
+.status-pill.fetching-metadata {
   background: var(--accent-soft);
   color: var(--accent);
 }

@@ -271,6 +271,19 @@ export interface SonosDevice {
   port: number;
 }
 
+export type SonosTransportState =
+  | 'STOPPED'
+  | 'PLAYING'
+  | 'PAUSED_PLAYBACK'
+  | 'TRANSITIONING'
+  | string;
+
+export interface SonosPositionInfo {
+  position: number;
+  duration: number;
+  transportState: SonosTransportState;
+}
+
 export type UpdateStatus =
   | { status: 'idle' }
   | { status: 'checking' }

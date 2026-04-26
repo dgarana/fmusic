@@ -69,6 +69,7 @@ function makeSonosState(overrides = {}) {
     isPlaying: false,
     position: 0,
     duration: 0,
+    transportState: null as string | null,
     devices: [] as Array<{ name: string; host: string; port: number }>,
     discovering: false,
     error: null as string | null,

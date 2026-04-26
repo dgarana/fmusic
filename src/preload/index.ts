@@ -12,6 +12,7 @@ import type {
   RemotePlayerSnapshot,
   SearchResult,
   SonosDevice,
+  SonosPositionInfo,
   Track,
   TrackEditOptions,
   TrackMetadataLookupResult,
@@ -197,7 +198,7 @@ const api = {
   sonosSeek: (host: string, seconds: number) =>
     invoke<void>(Channels.SonosSeek, host, seconds),
   sonosGetPosition: (host: string) =>
-    invoke<{ position: number; duration: number }>(Channels.SonosPosition, host),
+    invoke<SonosPositionInfo>(Channels.SonosPosition, host),
 
   // Mobile Sync
   getMobileSyncUrl: (trackId: number) => invoke<string>(Channels.MobileSyncGetUrl, trackId),

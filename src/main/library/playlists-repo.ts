@@ -92,7 +92,19 @@ export function updateSmartPlaylist(
 }
 
 export function renamePlaylist(id: number, name: string): Playlist | null {
-  getDb().prepare('UPDATE playlists SET name = ? WHERE id = ?').run(name, id);
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    throw new Error('Playlist name cannot be empty.');
+  }
+
+  const row = getDb().prepare('SELECT slug FROM playlists WHERE id = ?').get(id) as
+    | { slug: string | null }
+    | undefined;
+  if (row?.slug) {
+    throw new Error('Built-in playlists cannot be renamed.');
+  }
+
+  getDb().prepare('UPDATE playlists SET name = ? WHERE id = ?').run(trimmedName, id);
   return getPlaylist(id);
 }
 

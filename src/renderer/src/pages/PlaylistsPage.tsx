@@ -21,6 +21,18 @@ import {
   SparklesIcon
 } from '../components/icons';
 
+function getRenamePlaylistErrorMessage(
+  error: unknown,
+  attemptedName: string,
+  t: ReturnType<typeof useT>
+) {
+  const detail = error instanceof Error ? error.message : String(error);
+  if (detail.includes('UNIQUE constraint failed: playlists.name')) {
+    return t('playlists.renameDuplicate', { name: attemptedName });
+  }
+  return t('playlists.renameError', { detail });
+}
+
 export function PlaylistsPage() {
   const t = useT();
   const navigate = useNavigate();
@@ -104,16 +116,19 @@ export function PlaylistsPage() {
                     <button>{t('playlists.open')}</button>
                   </a>
                   {!isBuiltin && (
-                    <button
-                      className="danger"
-                      onClick={async () => {
-                        if (!confirm(t('playlists.deleteConfirm', { name: displayName }))) return;
-                        await window.fmusic.deletePlaylist(p.id);
-                        await refreshPlaylists();
-                      }}
-                    >
-                      {t('playlists.delete')}
-                    </button>
+                    <>
+                      <RenamePlaylistControl playlist={p} refreshPlaylists={refreshPlaylists} />
+                      <button
+                        className="danger"
+                        onClick={async () => {
+                          if (!confirm(t('playlists.deleteConfirm', { name: displayName }))) return;
+                          await window.fmusic.deletePlaylist(p.id);
+                          await refreshPlaylists();
+                        }}
+                      >
+                        {t('playlists.delete')}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -255,6 +270,9 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
             <SparklesIcon size={12} />
             <span>{t('playlists.smart.badge')}</span>
           </span>
+        )}
+        {!playlist.slug && (
+          <RenamePlaylistControl playlist={playlist} refreshPlaylists={refreshPlaylists} />
         )}
         {!isSmartPlaylist && (
           <button className="primary" onClick={() => void openPicker()}>
@@ -484,6 +502,95 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
           </tbody>
         </table>
       )}
+    </div>
+  );
+}
+
+function RenamePlaylistControl({
+  playlist,
+  refreshPlaylists
+}: {
+  playlist: Pick<Playlist, 'id' | 'name' | 'slug'>;
+  refreshPlaylists: () => Promise<void>;
+}) {
+  const t = useT();
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftName, setDraftName] = useState(playlist.name);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setDraftName(playlist.name);
+    }
+  }, [playlist.name, isEditing]);
+
+  if (playlist.slug) return null;
+
+  async function submitRename() {
+    const trimmedName = draftName.trim();
+    if (!trimmedName) {
+      alert(t('playlists.renameEmpty'));
+      return;
+    }
+
+    if (trimmedName === playlist.name) {
+      setIsEditing(false);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await window.fmusic.renamePlaylist(playlist.id, trimmedName);
+      await refreshPlaylists();
+      setIsEditing(false);
+    } catch (error) {
+      alert(getRenamePlaylistErrorMessage(error, trimmedName, t));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!isEditing) {
+    return (
+      <button
+        onClick={() => {
+          setDraftName(playlist.name);
+          setIsEditing(true);
+        }}
+      >
+        {t('playlists.rename')}
+      </button>
+    );
+  }
+
+  return (
+    <div className="inline-rename">
+      <input
+        value={draftName}
+        onChange={(e) => setDraftName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') void submitRename();
+          if (e.key === 'Escape') {
+            setDraftName(playlist.name);
+            setIsEditing(false);
+          }
+        }}
+        placeholder={t('playlists.renamePrompt')}
+        aria-label={t('playlists.renamePrompt')}
+        autoFocus
+      />
+      <button className="primary" onClick={() => void submitRename()} disabled={saving}>
+        {saving ? t('playlists.renameSaving') : t('playlists.renameSave')}
+      </button>
+      <button
+        onClick={() => {
+          setDraftName(playlist.name);
+          setIsEditing(false);
+        }}
+        disabled={saving}
+      >
+        {t('common.cancel')}
+      </button>
     </div>
   );
 }

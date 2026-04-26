@@ -693,6 +693,18 @@ input[type='range']:active::-webkit-slider-thumb { background: var(--accent); }
   padding-top: 4px;
 }
 
+.inline-rename {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.inline-rename input {
+  min-width: 160px;
+  flex: 1 1 180px;
+}
+
 /* --- Download queue --- */
 
 .jobs { display: flex; flex-direction: column; gap: 10px; }

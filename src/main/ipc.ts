@@ -5,6 +5,7 @@ import type {
   AppSettings,
   DownloadJob,
   DownloadRequest,
+  SmartPlaylistDefinition,
   TrackQuery
 } from '../shared/types.js';
 import { getSettings, updateSettings } from './settings.js';
@@ -37,13 +38,15 @@ import {
 import {
   addTrackToPlaylist,
   createPlaylist,
+  createSmartPlaylist,
   deletePlaylist,
   listPlaylists,
   playlistsForTrack,
   playlistsForTracks,
   removeTrackFromPlaylist,
   renamePlaylist,
-  reorderPlaylist
+  reorderPlaylist,
+  updateSmartPlaylist
 } from './library/playlists-repo.js';
 import { getSchemaHistory } from './library/db.js';
 import { discoverSonos, addSonosByIp, initSonosFromCache, sonosPlayTrack, sonosPause, sonosResume, sonosStop, sonosSetVolume, sonosSeek, sonosGetPosition } from './sonos.js';
@@ -237,6 +240,16 @@ export function registerIpc(): void {
   ipcMain.handle(
     Channels.PlaylistsCreate,
     (_evt, name: string, sourceUrl: string | null = null) => createPlaylist(name, sourceUrl)
+  );
+  ipcMain.handle(
+    Channels.PlaylistsCreateSmart,
+    (_evt, name: string, definition: SmartPlaylistDefinition) =>
+      createSmartPlaylist(name, definition)
+  );
+  ipcMain.handle(
+    Channels.PlaylistsUpdateSmart,
+    (_evt, id: number, name: string, definition: SmartPlaylistDefinition) =>
+      updateSmartPlaylist(id, name, definition)
   );
   ipcMain.handle(Channels.PlaylistsRename, (_evt, id: number, name: string) =>
     renamePlaylist(id, name)

@@ -7,7 +7,7 @@ import { useSonosStore } from '../store/sonos';
 import { useSettingsStore } from '../store/settings';
 import { formatDuration } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
-import type { Track, TrackSortKey } from '../../../shared/types';
+import type { Playlist, Track, TrackSortKey } from '../../../shared/types';
 import { TrackTitleCell } from '../components/TrackTitleCell';
 import {
   PlayIcon,
@@ -15,7 +15,8 @@ import {
   QrCodeIcon,
   PlusIcon,
   CloseIcon,
-  SearchIcon
+  SearchIcon,
+  SparklesIcon
 } from '../components/icons';
 
 export function LibraryPage() {
@@ -47,8 +48,10 @@ export function LibraryPage() {
   const [playlistsByTrack, setPlaylistsByTrack] = useState<Map<number, number[]>>(new Map());
 
   const playlistsById = useMemo(() => {
-    const map = new Map<number, string>();
-    playlists.forEach((p) => map.set(p.id, playlistDisplayName(p, t)));
+    const map = new Map<number, { name: string; kind: Playlist['kind'] }>();
+    playlists.forEach((p) =>
+      map.set(p.id, { name: playlistDisplayName(p, t), kind: p.kind })
+    );
     return map;
   }, [playlists, t]);
 
@@ -193,18 +196,23 @@ export function LibraryPage() {
                       ) : (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                           {trackPlaylistIds.map((id) => {
-                            const name = playlistsById.get(id);
-                            if (!name) return null;
+                            const playlist = playlistsById.get(id);
+                            if (!playlist) return null;
                             return (
                               <Link
                                 key={id}
                                 to={`/playlists/${id}`}
                                 className="status-pill clickable"
-                                title={name}
-                                data-title={name}
+                                title={playlist.name}
+                                data-title={playlist.name}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <span className="status-pill-inner">{name}</span>
+                                {playlist.kind === 'smart' && (
+                                  <span className="status-pill-icon" aria-hidden="true">
+                                    <SparklesIcon size={11} />
+                                  </span>
+                                )}
+                                <span className="status-pill-inner">{playlist.name}</span>
                               </Link>
                             );
                           })}

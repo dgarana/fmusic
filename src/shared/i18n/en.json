@@ -134,6 +134,55 @@
       "artist": "Artist",
       "duration": "Duration"
     },
+    "smart": {
+      "openComposer": "Smart playlist",
+      "title": "Smart playlist",
+      "subtitle": "Build it by typing. Each filter becomes a chip, just like a search token.",
+      "name": "Name",
+      "namePlaceholder": "Late night metal, Chill instrumentals, 2026 favorites...",
+      "match": "Match mode",
+      "matchAll": "Match all",
+      "matchAny": "Match any",
+      "removeRule": "Remove filter",
+      "preview": "Preview",
+      "previewCount": "{count} matching tracks",
+      "previewMatches": "Sample matches",
+      "previewEmpty": "Add some filters to see matching tracks.",
+      "untitled": "Untitled smart playlist",
+      "noSuggestions": "No suggestions right now.",
+      "save": "Save smart playlist",
+      "saveChanges": "Save changes",
+      "saveRequirements": "Add a name and at least one filter to enable saving.",
+      "readyToSave": "This smart playlist is ready to save.",
+      "saveError": "Could not save this smart playlist: {detail}",
+      "dynamicNotice": "This is a smart playlist. Its tracks update automatically from the saved filters.",
+      "edit": "Edit filters",
+      "badge": "Smart",
+      "draftNotice": "This smart playlist updates dynamically from the filters you save here.",
+      "debugTitle": "Current definition",
+      "hints": {
+        "field": "Type a field like artist, album or genre...",
+        "operator": "Choose how {field} should match...",
+        "value": "Type a value for {field}...",
+        "valueList": "Add values one by one, then finish the filter..."
+      },
+      "fields": {
+        "title": "title",
+        "artist": "artist",
+        "album": "album",
+        "genre": "genre"
+      },
+      "operators": {
+        "contains": "contains",
+        "is": "is",
+        "isAnyOf": "is any of"
+      },
+      "actions": {
+        "useValue": "Use \"{value}\"",
+        "addValue": "Add \"{value}\"",
+        "finishList": "Finish this filter ({count})"
+      }
+    },
     "playTooltip": "Play",
     "moveUpTooltip": "Move up",
     "removeTooltip": "Remove"

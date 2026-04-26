@@ -117,6 +117,8 @@ export interface Playlist {
   createdAt: string;
   coverPath: string | null;
   trackCount: number;
+  kind: 'manual' | 'smart';
+  smartDefinition: SmartPlaylistDefinition | null;
   /**
    * URL the playlist was imported from (typically a YouTube playlist URL).
    * Null for user-created playlists.
@@ -126,6 +128,49 @@ export interface Playlist {
 
 export interface PlaylistWithTracks extends Playlist {
   tracks: Track[];
+}
+
+export type SmartPlaylistMatchMode = 'all' | 'any';
+
+export type SmartPlaylistField =
+  | 'title'
+  | 'artist'
+  | 'album'
+  | 'genre'
+  | 'playCount'
+  | 'downloadedAt'
+  | 'lastPlayedAt'
+  | 'durationSec';
+
+export type SmartPlaylistOperator =
+  | 'contains'
+  | 'is'
+  | 'isNot'
+  | 'isAnyOf'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'between'
+  | 'inLastDays';
+
+export type SmartPlaylistValue =
+  | { kind: 'text'; value: string }
+  | { kind: 'text-list'; values: string[] }
+  | { kind: 'number'; value: number }
+  | { kind: 'number-range'; min: number; max: number }
+  | { kind: 'days'; value: number };
+
+export interface SmartPlaylistRule {
+  id: string;
+  field: SmartPlaylistField;
+  operator: SmartPlaylistOperator;
+  value: SmartPlaylistValue;
+}
+
+export interface SmartPlaylistDefinition {
+  match: SmartPlaylistMatchMode;
+  rules: SmartPlaylistRule[];
 }
 
 export type Locale = 'en' | 'es';

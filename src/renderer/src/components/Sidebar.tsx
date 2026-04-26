@@ -7,7 +7,8 @@ import {
   DownloadIcon,
   LibraryIcon,
   PlaylistIcon,
-  SettingsIcon
+  SettingsIcon,
+  SparklesIcon
 } from './icons';
 
 const RELEASES_URL = 'https://github.com/dgarana/fmusic/releases/latest';
@@ -68,7 +69,14 @@ export function Sidebar() {
             to={`/playlists/${p.id}`}
             className={({ isActive }) => 'playlist-item' + (isActive ? ' active' : '')}
           >
-            <span>{playlistDisplayName(p, t)}</span>
+            <span className="sidebar-playlist-label">
+              <span>{playlistDisplayName(p, t)}</span>
+              {p.kind === 'smart' && (
+                <span className="sidebar-smart-marker" title={t('playlists.smart.badge')}>
+                  <SparklesIcon size={11} />
+                </span>
+              )}
+            </span>
             <span>{p.trackCount}</span>
           </NavLink>
         ))}

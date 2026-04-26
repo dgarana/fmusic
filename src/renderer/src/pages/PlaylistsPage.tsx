@@ -8,6 +8,7 @@ import { useSettingsStore } from '../store/settings';
 import { formatDuration } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
 import type { Playlist, Track } from '../../../shared/types';
+import { SmartPlaylistComposer } from '../components/SmartPlaylistComposer';
 import { TrackTitleCell } from '../components/TrackTitleCell';
 import {
   MusicIcon,
@@ -16,14 +17,17 @@ import {
   QrCodeIcon,
   ChevronUpIcon,
   CloseIcon,
-  SearchIcon
+  SearchIcon,
+  SparklesIcon
 } from '../components/icons';
 
 export function PlaylistsPage() {
   const t = useT();
+  const navigate = useNavigate();
   const params = useParams();
   const { playlists, refreshPlaylists } = useLibraryStore();
   const [newName, setNewName] = useState('');
+  const [smartComposerOpen, setSmartComposerOpen] = useState(false);
 
   const activeId = params.id ? Number(params.id) : null;
   const activePlaylist = useMemo(
@@ -58,7 +62,22 @@ export function PlaylistsPage() {
         <button className="primary" onClick={() => void createPlaylist()}>
           {t('playlists.create')}
         </button>
+        <button onClick={() => setSmartComposerOpen((current) => !current)}>
+          {t('playlists.smart.openComposer')}
+        </button>
       </div>
+
+      {smartComposerOpen && (
+        <SmartPlaylistComposer
+          onClose={() => setSmartComposerOpen(false)}
+          onCreated={(playlistId) => {
+            void (async () => {
+              await refreshPlaylists();
+              navigate(`/playlists/${playlistId}`);
+            })();
+          }}
+        />
+      )}
 
       {playlists.length === 0 ? (
         <div className="empty">{t('playlists.none')}</div>
@@ -67,10 +86,17 @@ export function PlaylistsPage() {
           {playlists.map((p) => {
             const displayName = playlistDisplayName(p, t);
             const isBuiltin = Boolean(p.slug);
+            const isSmart = p.kind === 'smart';
             return (
               <div key={p.id} className="result-card" style={{ padding: 16 }}>
-                <div className="title" style={{ fontSize: 16 }}>
-                  {displayName}
+                <div className="title" style={{ fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>{displayName}</span>
+                  {isSmart && (
+                    <span className="smart-playlist-badge" title={t('playlists.smart.badge')}>
+                      <SparklesIcon size={12} />
+                      <span>{t('playlists.smart.badge')}</span>
+                    </span>
+                  )}
                 </div>
                 <div className="channel">{t('playlists.tracks', { count: p.trackCount })}</div>
                 <div className="actions" style={{ marginTop: 10 }}>
@@ -104,12 +130,14 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
   const navigate = useNavigate();
   const { id } = playlist;
   const name = playlistDisplayName(playlist, t);
+  const isSmartPlaylist = playlist.kind === 'smart';
   const [tracks, setTracks] = useState<Track[]>([]);
   const [allTracks, setAllTracks] = useState<Track[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [adding, setAdding] = useState(false);
+  const [editingSmartPlaylist, setEditingSmartPlaylist] = useState(false);
   const [mobileSyncTrackId, setMobileSyncTrackId] = useState<number | null>(null);
   const [mobileSyncUrl, setMobileSyncUrl] = useState<string | null>(null);
   const playTrack = usePlayerStore((s) => s.playTrack);
@@ -222,10 +250,44 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
         <h1 style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
           <MusicIcon size={22} /> {name}
         </h1>
-        <button className="primary" onClick={() => void openPicker()}>
-          {t('playlists.addTracks')}
-        </button>
+        {isSmartPlaylist && (
+          <span className="smart-playlist-badge" title={t('playlists.smart.badge')}>
+            <SparklesIcon size={12} />
+            <span>{t('playlists.smart.badge')}</span>
+          </span>
+        )}
+        {!isSmartPlaylist && (
+          <button className="primary" onClick={() => void openPicker()}>
+            {t('playlists.addTracks')}
+          </button>
+        )}
+        {isSmartPlaylist && (
+          <button onClick={() => setEditingSmartPlaylist(true)}>
+            {t('playlists.smart.edit')}
+          </button>
+        )}
       </div>
+
+      {isSmartPlaylist && (
+        <div className="smart-playlist-footnote" style={{ marginBottom: 18 }}>
+          {t('playlists.smart.dynamicNotice')}
+        </div>
+      )}
+
+      {editingSmartPlaylist && playlist.smartDefinition && (
+        <SmartPlaylistComposer
+          playlistId={playlist.id}
+          initialName={playlist.name}
+          initialDefinition={playlist.smartDefinition}
+          onClose={() => setEditingSmartPlaylist(false)}
+          onSaved={() => {
+            void (async () => {
+              await refreshPlaylists();
+              await refresh();
+            })();
+          }}
+        />
+      )}
 
       {playlist.sourceUrl && (
         <div className="editor-file-location" style={{ marginBottom: 16 }}>
@@ -350,21 +412,25 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
                             <QrCodeIcon size={14} />
                           </button>
                         )}
-                        <button
-                          className="icon-btn sm"
-                          onClick={() => void moveUp(i)}
-                          disabled={i === 0}
-                          title={t('playlists.moveUpTooltip')}
-                        >
-                          <ChevronUpIcon size={14} />
-                        </button>
-                        <button
-                          className="icon-btn sm danger"
-                          onClick={() => void remove(tr.id)}
-                          title={t('playlists.removeTooltip')}
-                        >
-                          <CloseIcon size={14} />
-                        </button>
+                        {!isSmartPlaylist && (
+                          <>
+                            <button
+                              className="icon-btn sm"
+                              onClick={() => void moveUp(i)}
+                              disabled={i === 0}
+                              title={t('playlists.moveUpTooltip')}
+                            >
+                              <ChevronUpIcon size={14} />
+                            </button>
+                            <button
+                              className="icon-btn sm danger"
+                              onClick={() => void remove(tr.id)}
+                              title={t('playlists.removeTooltip')}
+                            >
+                              <CloseIcon size={14} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

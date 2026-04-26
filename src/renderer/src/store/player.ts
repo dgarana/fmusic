@@ -2,6 +2,7 @@ import { Howl } from 'howler';
 import { create } from 'zustand';
 import type { Track } from '../../../shared/types';
 import { useSonosStore } from './sonos';
+import { clampSeekPosition, offsetSeekPosition } from '../util';
 
 interface PlayerState {
   queue: Track[];
@@ -22,6 +23,7 @@ interface PlayerState {
   next: () => Promise<void>;
   prev: () => Promise<void>;
   seek: (seconds: number) => void;
+  seekBy: (delta: number) => void;
   setVolume: (volume: number) => void;
 }
 
@@ -195,10 +197,16 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   seek(seconds) {
-    const { howl } = get();
+    const { howl, duration, current } = get();
     if (!howl) return;
-    howl.seek(seconds);
-    set({ position: seconds });
+    const nextPosition = clampSeekPosition(seconds, duration || current?.durationSec || 0);
+    howl.seek(nextPosition);
+    set({ position: nextPosition });
+  },
+
+  seekBy(delta) {
+    const { position, duration, current } = get();
+    get().seek(offsetSeekPosition(position, delta, duration || current?.durationSec || 0));
   },
 
   setVolume(volume) {

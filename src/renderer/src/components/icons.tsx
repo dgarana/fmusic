@@ -71,6 +71,26 @@ export function NextIcon(props: IconProps) {
   );
 }
 
+export function SeekBackIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M10 7.4A6.8 6.8 0 1 0 18.3 10" />
+      <path d="M10 4.5 6.5 7.6 10 10.8" />
+      <path d="M13.4 9.2 10.2 12l3.2 2.8" />
+    </Base>
+  );
+}
+
+export function SeekForwardIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M14 7.4A6.8 6.8 0 1 1 5.7 10" />
+      <path d="m14 4.5 3.5 3.1-3.5 3.2" />
+      <path d="m10.6 9.2 3.2 2.8-3.2 2.8" />
+    </Base>
+  );
+}
+
 export function HeartIcon(props: IconProps) {
   return (
     <Base {...props}>

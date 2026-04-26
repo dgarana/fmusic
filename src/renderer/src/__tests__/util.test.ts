@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { formatDuration, isYouTubeUrl, extractYoutubeId } from '../util';
+import {
+  clampSeekPosition,
+  extractYoutubeId,
+  formatDuration,
+  isYouTubeUrl,
+  offsetSeekPosition
+} from '../util';
 
 describe('formatDuration', () => {
   it('returns --:-- for null', () => {
@@ -74,6 +80,32 @@ describe('isYouTubeUrl', () => {
 
   it('ignores leading and trailing spaces', () => {
     expect(isYouTubeUrl('  https://youtu.be/abc  ')).toBe(true);
+  });
+});
+
+describe('clampSeekPosition', () => {
+  it('clamps negative seek values to zero', () => {
+    expect(clampSeekPosition(-5, 240)).toBe(0);
+  });
+
+  it('clamps past-the-end seek values to the track duration', () => {
+    expect(clampSeekPosition(999, 240)).toBe(240);
+  });
+
+  it('keeps in-range seek values unchanged', () => {
+    expect(clampSeekPosition(42, 240)).toBe(42);
+  });
+
+  it('still protects against negative values when duration is unknown', () => {
+    expect(clampSeekPosition(-8, 0)).toBe(0);
+  });
+});
+
+describe('offsetSeekPosition', () => {
+  it('applies the delta and clamps the result', () => {
+    expect(offsetSeekPosition(5, -10, 240)).toBe(0);
+    expect(offsetSeekPosition(235, 10, 240)).toBe(240);
+    expect(offsetSeekPosition(30, 10, 240)).toBe(40);
   });
 });
 

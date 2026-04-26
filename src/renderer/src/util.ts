@@ -12,6 +12,25 @@ export function isYouTubeUrl(input: string): boolean {
   return /(^https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(input.trim());
 }
 
+export function clampSeekPosition(
+  seconds: number,
+  duration: number | null | undefined
+): number {
+  const safeSeconds = Number.isFinite(seconds) ? seconds : 0;
+  if (duration == null || !Number.isFinite(duration) || duration <= 0) {
+    return Math.max(0, safeSeconds);
+  }
+  return Math.min(Math.max(0, safeSeconds), duration);
+}
+
+export function offsetSeekPosition(
+  position: number,
+  delta: number,
+  duration: number | null | undefined
+): number {
+  return clampSeekPosition(position + delta, duration);
+}
+
 /**
  * Extracts the YouTube video id from a URL, returning null if none is found.
  * Handles `youtu.be/<id>`, `youtube.com/watch?v=<id>`, `youtube.com/embed/<id>`,

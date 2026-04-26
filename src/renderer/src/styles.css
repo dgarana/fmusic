@@ -1173,12 +1173,12 @@ body.theme-light .track-thumb-overlay {
 }
 .player-controls .buttons {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
 }
 .player-controls .scrub {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   width: 460px;
   max-width: 46vw;
@@ -1187,6 +1187,19 @@ body.theme-light .track-thumb-overlay {
   font-variant-numeric: tabular-nums;
 }
 .player-controls .scrub input[type='range'] { flex: 1; }
+.seek-jump-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1px solid transparent;
+}
+.seek-jump-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text);
+  border-color: transparent;
+}
 .player-controls .play-btn {
   width: 42px;
   height: 42px;
@@ -1549,7 +1562,7 @@ body.theme-light .track-thumb-overlay {
 .mini-controls {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
   flex-shrink: 0;
   -webkit-app-region: no-drag;
   cursor: default;
@@ -1569,6 +1582,15 @@ body.theme-light .track-thumb-overlay {
 }
 .mini-controls button:hover:not(:disabled) { background: var(--bg-hover); }
 .mini-controls button:disabled { opacity: 0.3; cursor: default; }
+.mini-seek-btn {
+  width: 30px !important;
+  height: 30px !important;
+  padding: 0 !important;
+  color: var(--text-muted) !important;
+}
+.mini-seek-btn:hover:not(:disabled) {
+  color: var(--text) !important;
+}
 .mini-play {
   width: 34px !important;
   height: 34px !important;

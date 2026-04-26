@@ -48,6 +48,7 @@ const mockTogglePlay = vi.fn();
 const mockNext = vi.fn().mockResolvedValue(undefined);
 const mockPrev = vi.fn().mockResolvedValue(undefined);
 const mockSeek = vi.fn();
+const mockSeekBy = vi.fn();
 const mockSetVolume = vi.fn();
 const mockRefreshPlaylists = vi.fn().mockResolvedValue(undefined);
 
@@ -64,6 +65,7 @@ function makePlayerState(overrides = {}) {
     next: mockNext,
     prev: mockPrev,
     seek: mockSeek,
+    seekBy: mockSeekBy,
     setVolume: mockSetVolume,
     pause: vi.fn(),
     ...overrides,
@@ -80,6 +82,7 @@ function makeSonosState(overrides = {}) {
     togglePlay: vi.fn().mockResolvedValue(undefined),
     setVolume: vi.fn().mockResolvedValue(undefined),
     seek: vi.fn().mockResolvedValue(undefined),
+    seekBy: vi.fn().mockResolvedValue(undefined),
     sendTrack: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
@@ -209,6 +212,45 @@ describe('PlayerBar', () => {
     });
     render(<PlayerBar />);
     expect(screen.getByTitle(/next/i)).toHaveStyle({ visibility: 'visible' });
+  });
+
+  it('seeks back 10 seconds through the local player', () => {
+    vi.mocked(usePlayerStore).mockImplementation((selector?: unknown) => {
+      const state = makePlayerState({
+        current: mockTrack,
+        duration: mockTrack.durationSec,
+        position: 35,
+        seekBy: mockSeekBy
+      });
+      return typeof selector === 'function' ? selector(state) : state;
+    });
+    render(<PlayerBar />);
+    fireEvent.click(screen.getByRole('button', { name: /back 10 seconds/i }));
+    expect(mockSeekBy).toHaveBeenCalledWith(-10);
+  });
+
+  it('seeks forward 10 seconds through Sonos when casting', () => {
+    const mockSonosSeekBy = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(usePlayerStore).mockImplementation((selector?: unknown) => {
+      const state = makePlayerState({
+        current: mockTrack,
+        duration: mockTrack.durationSec,
+        position: 35
+      });
+      return typeof selector === 'function' ? selector(state) : state;
+    });
+    vi.mocked(useSonosStore).mockImplementation((selector?: unknown) => {
+      const state = makeSonosState({
+        activeHost: '192.168.1.2',
+        duration: mockTrack.durationSec,
+        position: 35,
+        seekBy: mockSonosSeekBy
+      });
+      return typeof selector === 'function' ? selector(state) : state;
+    });
+    render(<PlayerBar />);
+    fireEvent.click(screen.getByRole('button', { name: /forward 10 seconds/i }));
+    expect(mockSonosSeekBy).toHaveBeenCalledWith(10);
   });
 
   it('renders the volume slider', () => {

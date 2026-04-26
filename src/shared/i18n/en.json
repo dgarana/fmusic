@@ -25,6 +25,8 @@
     "nothingPlaying": "Nothing playing",
     "previous": "Previous",
     "next": "Next",
+    "seekBack10": "Back 10 seconds",
+    "seekForward10": "Forward 10 seconds",
     "play": "Play",
     "pause": "Pause",
     "volume": "Volume",
@@ -310,6 +312,8 @@
     "nothingPlaying": "Nothing playing",
     "previous": "Previous",
     "next": "Next",
+    "seekBack10": "Back 10 seconds",
+    "seekForward10": "Forward 10 seconds",
     "play": "Play",
     "pause": "Pause",
     "openFmusic": "Open FMusic"

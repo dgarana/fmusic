@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useT } from '../i18n';
-import { formatDuration } from '../util';
+import { formatDuration, offsetSeekPosition } from '../util';
 import {
   PrevIcon,
   NextIcon,
+  SeekBackIcon,
+  SeekForwardIcon,
   PlayIcon,
   PauseIcon,
   ExpandIcon,
@@ -90,6 +92,14 @@ export function MiniPlayerPage() {
     if (canSeek) window.fmusic.sendMiniSeek(seconds);
   }
 
+  function handleQuickSeek(delta: number) {
+    if (!canSeek) return;
+    const nextPosition = offsetSeekPosition(displayPosition, delta, maxDuration);
+    setScrubbing(false);
+    setScrubValue(nextPosition);
+    window.fmusic.sendMiniSeek(nextPosition);
+  }
+
   return (
     <div className="mini-player">
       <div className="mini-top">
@@ -118,12 +128,30 @@ export function MiniPlayerPage() {
             <PrevIcon size={16} />
           </button>
           <button
+            className="mini-seek-btn"
+            onClick={() => handleQuickSeek(-10)}
+            disabled={!canSeek}
+            title={t('miniPlayer.seekBack10')}
+            aria-label={t('miniPlayer.seekBack10')}
+          >
+            <SeekBackIcon size={15} />
+          </button>
+          <button
             className="primary mini-play"
             onClick={() => send('toggle-play')}
             disabled={!state.title}
             title={state.isPlaying ? t('miniPlayer.pause') : t('miniPlayer.play')}
           >
             {state.isPlaying ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
+          </button>
+          <button
+            className="mini-seek-btn"
+            onClick={() => handleQuickSeek(10)}
+            disabled={!canSeek}
+            title={t('miniPlayer.seekForward10')}
+            aria-label={t('miniPlayer.seekForward10')}
+          >
+            <SeekForwardIcon size={15} />
           </button>
           <button
             onClick={() => send('next')}

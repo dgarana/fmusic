@@ -3,6 +3,7 @@ import type { SonosDevice, SonosTransportState } from '../../../shared/types';
 import { translate } from '../i18n';
 import { usePlayerStore } from './player';
 import { useSettingsStore } from './settings';
+import { clampSeekPosition, offsetSeekPosition } from '../util';
 
 const t = (key: string) => {
   const locale = (useSettingsStore.getState().settings?.language ?? 'en') as any;
@@ -30,6 +31,7 @@ interface SonosState {
   stop: () => Promise<void>;
   setVolume: (volume: number) => Promise<void>;
   seek: (seconds: number) => Promise<void>;
+  seekBy: (delta: number) => Promise<void>;
   startPositionPolling: () => void;
   stopPositionPolling: () => void;
 }
@@ -200,11 +202,19 @@ export const useSonosStore = create<SonosState>((set, get) => ({
     const { activeHost } = get();
     if (!activeHost) return;
     try {
-      await window.fmusic.sonosSeek(activeHost, seconds);
-      set({ position: seconds });
+      const fallbackDuration = usePlayerStore.getState().current?.durationSec ?? 0;
+      const nextPosition = clampSeekPosition(seconds, get().duration || fallbackDuration);
+      await window.fmusic.sonosSeek(activeHost, nextPosition);
+      set({ position: nextPosition });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }
+  },
+
+  async seekBy(delta) {
+    const { position, duration } = get();
+    const fallbackDuration = usePlayerStore.getState().current?.durationSec ?? 0;
+    await get().seek(offsetSeekPosition(position, delta, duration || fallbackDuration));
   },
 
   startPositionPolling() {

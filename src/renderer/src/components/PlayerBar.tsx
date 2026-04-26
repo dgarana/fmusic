@@ -4,11 +4,13 @@ import { useLibraryStore } from '../store/library';
 import { useSonosStore } from '../store/sonos';
 import { useSettingsStore } from '../store/settings';
 import { SonosPanel } from './SonosPanel';
-import { formatDuration } from '../util';
+import { formatDuration, offsetSeekPosition } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
 import {
   PrevIcon,
   NextIcon,
+  SeekBackIcon,
+  SeekForwardIcon,
   PlayIcon,
   PauseIcon,
   HeartIcon,
@@ -35,6 +37,7 @@ export function PlayerBar() {
     next: localNext,
     prev: localPrev,
     seek,
+    seekBy: localSeekBy,
     setVolume: localSetVolume
   } = usePlayerStore();
 
@@ -77,6 +80,25 @@ export function PlayerBar() {
   function handleVolume(v: number) {
     localSetVolume(v);
     if (isCasting) void sonos.setVolume(v);
+  }
+
+  function handleSeekTo(seconds: number) {
+    if (isCasting) {
+      void sonos.seek(seconds);
+    } else {
+      seek(seconds);
+    }
+  }
+
+  function handleQuickSeek(delta: number) {
+    if (!current) return;
+    setScrubbing(false);
+    setScrubValue(offsetSeekPosition(displayPosition, delta, maxDuration));
+    if (isCasting) {
+      void sonos.seekBy(delta);
+    } else {
+      localSeekBy(delta);
+    }
   }
 
   const { playlists, refreshPlaylists } = useLibraryStore();
@@ -133,8 +155,7 @@ export function PlayerBar() {
   function handleScrubEnd(e: React.MouseEvent<HTMLInputElement> | React.TouchEvent<HTMLInputElement>) {
     const s = Number((e.target as HTMLInputElement).value);
     setScrubbing(false);
-    seek(s);
-    if (isCasting) void sonos.seek(s);
+    handleSeekTo(s);
   }
 
   return (
@@ -171,12 +192,30 @@ export function PlayerBar() {
             <PrevIcon size={20} />
           </button>
           <button
+            className="icon-btn seek-jump-btn"
+            onClick={() => handleQuickSeek(-10)}
+            disabled={!current}
+            title={t('player.seekBack10')}
+            aria-label={t('player.seekBack10')}
+          >
+            <SeekBackIcon size={17} />
+          </button>
+          <button
             className="play-btn"
             onClick={handleTogglePlay}
             disabled={!current}
             title={isPlaying ? t('player.pause') : t('player.play')}
           >
             {isPlaying ? <PauseIcon size={20} /> : <PlayIcon size={20} />}
+          </button>
+          <button
+            className="icon-btn seek-jump-btn"
+            onClick={() => handleQuickSeek(10)}
+            disabled={!current}
+            title={t('player.seekForward10')}
+            aria-label={t('player.seekForward10')}
+          >
+            <SeekForwardIcon size={17} />
           </button>
           <button
             className="icon-btn"

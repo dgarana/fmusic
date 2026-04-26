@@ -25,6 +25,8 @@
     "nothingPlaying": "Nada reproduciéndose",
     "previous": "Anterior",
     "next": "Siguiente",
+    "seekBack10": "Retroceder 10 segundos",
+    "seekForward10": "Avanzar 10 segundos",
     "play": "Reproducir",
     "pause": "Pausar",
     "volume": "Volumen",
@@ -310,6 +312,8 @@
     "nothingPlaying": "Nada reproduciéndose",
     "previous": "Anterior",
     "next": "Siguiente",
+    "seekBack10": "Retroceder 10 segundos",
+    "seekForward10": "Avanzar 10 segundos",
     "play": "Reproducir",
     "pause": "Pausar",
     "openFmusic": "Abrir FMusic"

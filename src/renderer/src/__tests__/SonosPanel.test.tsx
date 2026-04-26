@@ -51,6 +51,7 @@ function makeSonosState(overrides = {}) {
     isPlaying: false,
     position: 0,
     duration: 0,
+    transportState: null as string | null,
     initFromCache: mockInitFromCache,
     discover: mockDiscover,
     startCasting: mockStartCasting,

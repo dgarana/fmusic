@@ -38,7 +38,11 @@ const fmusicMock = {
   sonosResume: vi.fn().mockResolvedValue(undefined),
   sonosSeek: vi.fn().mockResolvedValue(undefined),
   sonosSetVolume: vi.fn().mockResolvedValue(undefined),
-  sonosGetPosition: vi.fn().mockResolvedValue({ position: 0, duration: 0 }),
+  sonosGetPosition: vi.fn().mockResolvedValue({
+    position: 0,
+    duration: 0,
+    transportState: 'STOPPED'
+  }),
   trackStreamUrl: vi.fn().mockResolvedValue('blob:test'),
   markTrackPlayed: vi.fn().mockResolvedValue(undefined),
   downloadUpdate: vi.fn().mockResolvedValue(undefined),

@@ -76,6 +76,7 @@ function makeSonosState(overrides = {}) {
     isPlaying: false,
     position: 0,
     duration: 0,
+    transportState: null as string | null,
     togglePlay: vi.fn().mockResolvedValue(undefined),
     setVolume: vi.fn().mockResolvedValue(undefined),
     seek: vi.fn().mockResolvedValue(undefined),

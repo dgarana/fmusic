@@ -1,5 +1,5 @@
 import { SonosManager, SonosDevice as SonosDeviceLib } from '@svrooij/sonos';
-import type { SonosDevice } from '../shared/types.js';
+import type { SonosDevice, SonosPositionInfo } from '../shared/types.js';
 import { t } from './i18n.js';
 import { getSettings, updateSettings } from './settings.js';
 
@@ -149,13 +149,17 @@ function parseTimeToSeconds(time: string): number {
   return 0;
 }
 
-export async function sonosGetPosition(host: string): Promise<{ position: number; duration: number }> {
+export async function sonosGetPosition(host: string): Promise<SonosPositionInfo> {
   const device = getDevice(host);
   if (!device) throw new Error(t('sonos.deviceNotFound', { host }));
-  const info = await device.AVTransportService.GetPositionInfo({ InstanceID: 0 });
+  const [info, transport] = await Promise.all([
+    device.AVTransportService.GetPositionInfo({ InstanceID: 0 }),
+    device.AVTransportService.GetTransportInfo({ InstanceID: 0 })
+  ]);
   return {
     position: parseTimeToSeconds(info.RelTime ?? '0:00:00'),
-    duration: parseTimeToSeconds(info.TrackDuration ?? '0:00:00')
+    duration: parseTimeToSeconds(info.TrackDuration ?? '0:00:00'),
+    transportState: transport.CurrentTransportState ?? 'STOPPED'
   };
 }
 

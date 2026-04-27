@@ -305,7 +305,7 @@ export function DownloadPage() {
   );
 
   return (
-    <div>
+    <div className="main">
       <h1>{t('download.title')}</h1>
       <div className="search-row">
         <div className="input-with-icon">
@@ -324,13 +324,13 @@ export function DownloadPage() {
         </button>
       </div>
       {error && (
-        <div style={{ color: 'var(--danger)', marginBottom: 12 }}>
+        <div className="text-danger mb-12">
           {error}
           {isSslError(error) && (
-            <div style={{ marginTop: 6, fontSize: 13, color: 'var(--text-muted)' }}>
+            <div className="mt-6 fs-13 text-muted">
               {t('download.sslHintBefore')}
               <button
-                style={{ padding: '1px 8px', fontSize: 12 }}
+                className="btn-xs"
                 onClick={() => navigate('/settings')}
               >
                 {t('download.ignoreSslErrors')}
@@ -340,34 +340,18 @@ export function DownloadPage() {
           )}
         </div>
       )}
-      {info && <div style={{ color: 'var(--text-muted)', marginBottom: 12 }}>{info}</div>}
+      {info && <div className="text-muted mb-12">{info}</div>}
 
       {batches.map((batch) => {
         const activeCount = batch.jobs.filter((j) => ACTIVE_STATUSES.includes(j.status)).length;
         const completedCount = batch.jobs.filter((j) => j.status === 'completed').length;
         return (
-          <section className="download-batch" key={batch.id} style={{ marginBottom: 16 }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 12,
-                marginBottom: 8
-              }}
-            >
-              <h2 style={{ margin: 0 }}>
+          <section className="download-batch mb-16" key={batch.id}>
+            <div className="flex items-center justify-between gap-12 mb-8">
+              <h2 className="m-0">
                 {t('download.playlistBatchTitle', { title: batch.title })}
               </h2>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  fontSize: 13,
-                  color: 'var(--text-muted)'
-                }}
-              >
+              <div className="flex items-center gap-8 fs-13 text-muted">
                 <span>
                   {t('download.playlistBatchProgress', {
                     done: completedCount,
@@ -396,7 +380,7 @@ export function DownloadPage() {
                         : job.error ?? ''}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className="flex items-center gap-8">
                     <span className={`status-pill ${job.status}`}>{job.status}</span>
                     {ACTIVE_STATUSES.includes(job.status) ? (
                       <button onClick={() => void window.fmusic.cancelDownload(job.id)}>
@@ -438,7 +422,7 @@ export function DownloadPage() {
                       : job.error ?? ''}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div className="flex items-center gap-8">
                   <span className={`status-pill ${job.status}`}>{job.status}</span>
                   {ACTIVE_STATUSES.includes(job.status) ? (
                     <button onClick={() => void window.fmusic.cancelDownload(job.id)}>
@@ -477,7 +461,7 @@ export function DownloadPage() {
                   {r.thumbnail ? (
                     <img src={r.thumbnail} alt="" />
                   ) : (
-                    <div style={{ aspectRatio: '16/9' }} />
+                    <div className="aspect-16-9" />
                   )}
                   <div className="body">
                     <div className="title">{r.title}</div>
@@ -486,19 +470,19 @@ export function DownloadPage() {
                     </div>
 
                     {isPreviewing && (
-                      <div style={{ marginTop: 8 }}>
+                      <div className="mt-8">
                         {preview!.loading && (
-                          <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                          <div className="text-muted fs-12">
                             {t('download.fetchingStream')}
                           </div>
                         )}
                         {preview!.error && (
-                          <div style={{ color: 'var(--danger)', fontSize: 12 }}>
+                          <div className="text-danger fs-12">
                             {preview!.error}
                             <div>
                               <button
                                 onClick={() => void window.fmusic.openExternal(r.url)}
-                                style={{ marginTop: 6 }}
+                                className="mt-6"
                               >
                                 {t('download.openInBrowser')}
                               </button>
@@ -510,24 +494,15 @@ export function DownloadPage() {
                             controls
                             autoPlay
                             src={preview!.streamUrl}
-                            style={{ width: '100%' }}
+                            className="w-full"
                           />
                         )}
                       </div>
                     )}
 
                     {active && (
-                      <div style={{ marginTop: 6 }}>
-                        <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            fontSize: 12,
-                            color: 'var(--text-muted)',
-                            marginBottom: 4
-                          }}
-                        >
+                      <div className="mt-6">
+                        <div className="flex justify-between items-center fs-12 text-muted mb-4">
                           <span className={`status-pill ${job!.status}`}>{job!.status}</span>
                           <span>{Math.round(job!.progress * 100)}%</span>
                         </div>
@@ -539,7 +514,7 @@ export function DownloadPage() {
                           />
                         </div>
                         {job!.status === 'downloading' && (job!.speedHuman || job!.etaSeconds) && (
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                          <div className="fs-11 text-muted mt-4">
                             {job!.speedHuman ?? ''}
                             {job!.etaSeconds != null && ` · ETA ${formatDuration(job!.etaSeconds)}`}
                           </div>
@@ -548,12 +523,12 @@ export function DownloadPage() {
                     )}
 
                     {job?.status === 'failed' && (
-                      <div style={{ color: 'var(--danger)', fontSize: 12, marginTop: 6 }}>
+                      <div className="text-danger fs-12 mt-6">
                         {t('download.errorPrefix')} {job.error ?? t('download.failed')}
                         {isSslError(job.error ?? '') && (
-                          <div style={{ marginTop: 4, color: 'var(--text-muted)' }}>
+                          <div className="mt-4 text-muted">
                             <button
-                              style={{ padding: '1px 6px', fontSize: 11 }}
+                              className="btn-xxs"
                               onClick={() => navigate('/settings')}
                             >
                               {t('download.enableIgnoreSsl')}
@@ -582,9 +557,8 @@ export function DownloadPage() {
                         </button>
                       ) : (
                         <button
-                          className="primary"
+                          className="primary flex items-center gap-6"
                           onClick={() => void enqueue(r.url, r.id)}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                         >
                           <DownloadIcon size={14} />
                           {t('download.download')}
@@ -597,7 +571,7 @@ export function DownloadPage() {
             })}
           </div>
           {results.length >= resultLimit && (
-            <div style={{ textAlign: 'center', marginTop: 16 }}>
+            <div className="text-center mt-16">
               <button onClick={() => void loadMore()} disabled={loadingMore}>
                 {loadingMore ? t('download.loading') : t('download.loadMore')}
               </button>

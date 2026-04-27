@@ -63,7 +63,7 @@ export function SettingsPage() {
       cancelled = true;
       window.clearTimeout(id);
     };
-  }, [settings?.remoteControllerEnabled, settings?.remoteControllerPort]);
+  }, [settings?.remoteControllerEnabled, settings?.localServerPort]);
 
   async function pickFolder() {
     const path = await window.fmusic.pickDirectory();
@@ -105,14 +105,14 @@ export function SettingsPage() {
       </div>
 
       {tab === 'downloads' && (
-        <div style={{ display: 'grid', gap: 14, maxWidth: 520 }}>
+        <div className="grid gap-14 max-w-520">
           <label>
             {t('settings.downloads.folder')}
-            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+            <div className="flex gap-6 mt-4">
               <input
                 readOnly
                 value={settings.downloadDir}
-                style={{ flex: 1, fontFamily: 'monospace' }}
+                className="flex-1 font-mono"
               />
               <button onClick={() => void pickFolder()}>{t('settings.downloads.change')}</button>
               <button onClick={() => void window.fmusic.openPath(settings.downloadDir)}>
@@ -127,7 +127,7 @@ export function SettingsPage() {
               onChange={(e) =>
                 void update({ defaultFormat: e.target.value as typeof settings.defaultFormat })
               }
-              style={{ marginLeft: 8 }}
+              className="ml-8"
             >
               <option value="mp3">MP3</option>
               <option value="m4a">M4A</option>
@@ -139,7 +139,7 @@ export function SettingsPage() {
             <select
               value={settings.defaultQuality}
               onChange={(e) => void update({ defaultQuality: Number(e.target.value) })}
-              style={{ marginLeft: 8 }}
+              className="ml-8"
             >
               <option value={128}>128 kbps</option>
               <option value={192}>192 kbps</option>
@@ -151,16 +151,16 @@ export function SettingsPage() {
       )}
 
       {tab === 'system' && (
-        <div style={{ display: 'grid', gap: 16, maxWidth: 520 }}>
-          <label style={{ display: 'grid', gap: 4 }}>
-            <span style={{ fontWeight: 500 }}>{t('settings.system.language')}</span>
-            <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+        <div className="grid gap-16 max-w-520">
+          <label className="grid gap-4">
+            <span className="fw-500">{t('settings.system.language')}</span>
+            <span className="text-muted fs-12">
               {t('settings.system.languageDescription')}
             </span>
             <select
               value={settings.language ?? 'en'}
               onChange={(e) => void update({ language: e.target.value as Locale })}
-              style={{ width: 'fit-content', marginTop: 4 }}
+              className="w-fit mt-4"
             >
               {supportedLocales.map((loc) => (
                 <option key={loc.code} value={loc.code}>
@@ -169,15 +169,15 @@ export function SettingsPage() {
               ))}
             </select>
           </label>
-          <label style={{ display: 'grid', gap: 4 }}>
-            <span style={{ fontWeight: 500 }}>{t('settings.system.theme')}</span>
-            <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+          <label className="grid gap-4">
+            <span className="fw-500">{t('settings.system.theme')}</span>
+            <span className="text-muted fs-12">
               {t('settings.system.themeDescription')}
             </span>
             <select
               value={settings.theme ?? 'original'}
               onChange={(e) => void update({ theme: e.target.value as any })}
-              style={{ width: 'fit-content', marginTop: 4 }}
+              className="w-fit mt-4"
             >
               <option value="original">{t('settings.system.themes.original')}</option>
               <option value="light">{t('settings.system.themes.light')}</option>
@@ -201,7 +201,7 @@ export function SettingsPage() {
             onChange={(v) => void update({ miniPlayerEnabled: v })}
           />
           {appVersion && (
-            <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 8 }}>
+            <div className="text-muted fs-12 mt-8">
               {t('settings.system.appVersion')}: v{appVersion}
             </div>
           )}
@@ -209,13 +209,27 @@ export function SettingsPage() {
       )}
 
       {tab === 'network' && (
-        <div style={{ display: 'grid', gap: 16, maxWidth: 520 }}>
+        <div className="grid gap-16 max-w-520">
           <ToggleSetting
             label={t('settings.network.skipCert')}
             description={t('settings.network.skipCertDescription')}
             checked={settings.skipCertCheck ?? false}
             onChange={(v) => void update({ skipCertCheck: v })}
           />
+          <label className="grid gap-4">
+            <span className="fw-500">{t('settings.network.localServerPort')}</span>
+            <span className="text-muted fs-12">
+              {t('settings.network.localServerPortDescription')}
+            </span>
+            <input
+              type="number"
+              min="0"
+              max="65535"
+              value={settings.localServerPort || 0}
+              onChange={(e) => void update({ localServerPort: Number(e.target.value) })}
+              className="w-100px mt-4"
+            />
+          </label>
           <ToggleSetting
             label={t('settings.network.sonos')}
             description={t('settings.network.sonosDescription')}
@@ -228,22 +242,6 @@ export function SettingsPage() {
             checked={settings.mobileSyncEnabled ?? false}
             onChange={(v) => void update({ mobileSyncEnabled: v })}
           />
-          {settings.mobileSyncEnabled && (
-            <label style={{ display: 'grid', gap: 4, marginLeft: 28 }}>
-              <span style={{ fontWeight: 500 }}>{t('settings.network.mobileSyncPort')}</span>
-              <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                {t('settings.network.mobileSyncPortDescription')}
-              </span>
-              <input
-                type="number"
-                min="0"
-                max="65535"
-                value={settings.mobileSyncPort || 0}
-                onChange={(e) => void update({ mobileSyncPort: Number(e.target.value) })}
-                style={{ width: 100, marginTop: 4 }}
-              />
-            </label>
-          )}
           <ToggleSetting
             label={t('settings.network.remoteController')}
             description={t('settings.network.remoteControllerDescription')}
@@ -257,35 +255,21 @@ export function SettingsPage() {
                   {t('remote.status.betaBadge')}
                 </span>
                 <div>
-                  <div style={{ fontWeight: 600 }}>
+                  <div className="fw-600">
                     {t('settings.network.remoteControllerBetaTitle')}
                   </div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                  <div className="text-muted fs-12">
                     {t('settings.network.remoteControllerBetaDescription')}
                   </div>
                 </div>
               </div>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span style={{ fontWeight: 500 }}>{t('settings.network.remoteControllerPort')}</span>
-                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                  {t('settings.network.remoteControllerPortDescription')}
-                </span>
-                <input
-                  type="number"
-                  min="0"
-                  max="65535"
-                  value={settings.remoteControllerPort || 0}
-                  onChange={(e) => void update({ remoteControllerPort: Number(e.target.value) })}
-                  style={{ width: 100, marginTop: 4 }}
-                />
-              </label>
               {remoteInfo?.url ? (
                 <div className="remote-controller-qr">
                   <QRCodeSVG value={remoteInfo.url} size={164} marginSize={2} />
                   <div className="remote-controller-details">
-                    <div style={{ fontWeight: 500 }}>{t('settings.network.remoteControllerQr')}</div>
+                    <div className="fw-500">{t('settings.network.remoteControllerQr')}</div>
                     <div className="remote-controller-url">{remoteInfo.url}</div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <div className="flex gap-8 flex-wrap">
                       <button onClick={() => void window.fmusic.openExternal(remoteInfo.url!)}>
                         {t('settings.network.remoteControllerOpen')}
                       </button>
@@ -300,7 +284,7 @@ export function SettingsPage() {
                   </div>
                 </div>
               ) : (
-                <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                <div className="text-muted fs-12">
                   {t('settings.network.remoteControllerStarting')}
                 </div>
               )}
@@ -322,44 +306,44 @@ export function SettingsPage() {
                   ? ' ' + t('settings.dependencies.checkingVersion')
                   : ''}
                 {deps.ytDlp.path && (
-                  <div style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 11 }}>
+                  <div className="text-muted font-mono fs-11">
                     {deps.ytDlp.path}
                   </div>
                 )}
               </div>
-              <div style={{ marginTop: 6 }}>
+              <div className="mt-6">
                 <strong>ffmpeg</strong>:{' '}
                 {deps.ffmpeg.present ? t('settings.dependencies.available') : t('settings.dependencies.notFound')}
                 {deps.ffmpeg.path && (
-                  <div style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 11 }}>
+                  <div className="text-muted font-mono fs-11">
                     {deps.ffmpeg.path}
                   </div>
                 )}
               </div>
-              <div style={{ marginTop: 6 }}>
+              <div className="mt-6">
                 <strong>ffprobe</strong>:{' '}
                 {deps.ffprobe.present ? t('settings.dependencies.available') : t('settings.dependencies.notFound')}
                 {deps.ffprobe.path && (
-                  <div style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 11 }}>
+                  <div className="text-muted font-mono fs-11">
                     {deps.ffprobe.path}
                   </div>
                 )}
               </div>
-              <div style={{ marginTop: 12 }}>
+              <div className="mt-12">
                 <button className="primary" onClick={() => void updateYtDlp()} disabled={updating}>
                   {updating ? t('settings.dependencies.updating') : t('settings.dependencies.updateEngine')}
                 </button>
                 {message && (
-                  <span style={{ marginLeft: 10, color: 'var(--text-muted)' }}>{message}</span>
+                  <span className="text-muted ml-10">{message}</span>
                 )}
               </div>
             </>
           ) : (
-            <div style={{ color: 'var(--text-muted)' }}>{t('settings.loading')}</div>
+            <div className="text-muted">{t('settings.loading')}</div>
           )}
 
           <h2>{t('settings.dependencies.schemaTitle')}</h2>
-          <table className="track-table" style={{ maxWidth: 520 }}>
+          <table className="track-table max-w-520">
             <thead>
               <tr>
                 <th>{t('settings.dependencies.version')}</th>
@@ -394,10 +378,8 @@ interface ToggleSettingProps {
 function ToggleSetting({ label, description, checked, disabled, onChange }: ToggleSettingProps) {
   return (
     <label
+      className="flex items-start gap-12"
       style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 12,
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.45 : 1
       }}
@@ -406,12 +388,13 @@ function ToggleSetting({ label, description, checked, disabled, onChange }: Togg
         type="checkbox"
         checked={checked}
         disabled={disabled}
-        style={{ marginTop: 3, flexShrink: 0 }}
+        className="mt-4 flex-shrink-0"
+        style={{ marginTop: 3 }} // Kept exact 3px for fine-tuning checkbox alignment
         onChange={(e) => onChange(e.target.checked)}
       />
       <span>
-        <div style={{ fontWeight: 500 }}>{label}</div>
-        <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 2 }}>{description}</div>
+        <div className="fw-500">{label}</div>
+        <div className="text-muted fs-12 mt-2">{description}</div>
       </span>
     </label>
   );

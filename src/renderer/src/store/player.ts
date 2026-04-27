@@ -213,5 +213,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const { howl } = get();
     if (howl) howl.volume(volume);
     set({ volume });
+
+    const sonos = useSonosStore.getState();
+    if (sonos.activeHost) {
+      void sonos.setVolume(volume);
+    }
   }
 }));

@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import type { SonosDevice, SonosTransportState } from '../../../shared/types';
-import { translate } from '../i18n';
+import { toErrorMessage } from '../../../shared/errors';
+import { translate, type Locale } from '../i18n';
 import { usePlayerStore } from './player';
 import { useSettingsStore } from './settings';
 import { clampSeekPosition, offsetSeekPosition } from '../util';
 
 const t = (key: string) => {
-  const locale = (useSettingsStore.getState().settings?.language ?? 'en') as any;
+  const locale = (useSettingsStore.getState().settings?.language ?? 'en') as Locale;
   return translate(locale, key);
 };
 
@@ -22,6 +23,7 @@ interface SonosState {
 
   initFromCache: () => Promise<void>;
   discover: () => Promise<void>;
+  addByIp: (host: string) => Promise<void>;
   stopAll: () => Promise<void>;
   startCasting: (host: string, trackId: number, title?: string, artist?: string, seekTo?: number) => Promise<void>;
   sendTrack: (trackId: number, title?: string, artist?: string) => Promise<void>;
@@ -69,9 +71,25 @@ export const useSonosStore = create<SonosState>((set, get) => ({
       set({ devices });
       if (devices.length === 0) set({ error: t('sonos.noDevicesFound') });
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: toErrorMessage(err) });
     } finally {
       set({ discovering: false });
+    }
+  },
+
+  async addByIp(host) {
+    const normalizedHost = host.trim();
+    if (!normalizedHost) return;
+    set({ error: null });
+    try {
+      const device = await window.fmusic.sonosAddByIp(normalizedHost);
+      set((s) => ({
+        devices: s.devices.some((d) => d.host === device.host) ? s.devices : [...s.devices, device],
+        error: null
+      }));
+    } catch (err) {
+      set({ error: toErrorMessage(err) });
+      throw err;
     }
   },
 
@@ -83,7 +101,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
       await Promise.allSettled(devices.map((d) => window.fmusic.sonosStop(d.host)));
       set({ activeHost: null, isPlaying: false, position: 0, duration: 0, transportState: null });
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: toErrorMessage(err) });
     } finally {
       set({ discovering: false });
     }
@@ -107,7 +125,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
         await window.fmusic.sonosSeek(host, seekTo);
       }
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: toErrorMessage(err) });
     }
   },
 
@@ -119,7 +137,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
       set({ isPlaying: true, position: 0, duration: 0, transportState: 'TRANSITIONING' });
       get().startPositionPolling();
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: toErrorMessage(err) });
     }
   },
 
@@ -154,7 +172,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
       await window.fmusic.sonosResume(activeHost);
       set({ isPlaying: true, transportState: 'PLAYING' });
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: toErrorMessage(err) });
     }
   },
 
@@ -194,7 +212,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
     try {
       await window.fmusic.sonosSetVolume(activeHost, volume);
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: toErrorMessage(err) });
     }
   },
 
@@ -207,7 +225,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
       await window.fmusic.sonosSeek(activeHost, nextPosition);
       set({ position: nextPosition });
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) });
+      set({ error: toErrorMessage(err) });
     }
   },
 

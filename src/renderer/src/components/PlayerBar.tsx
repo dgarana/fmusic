@@ -79,7 +79,6 @@ export function PlayerBar() {
 
   function handleVolume(v: number) {
     localSetVolume(v);
-    if (isCasting) void sonos.setVolume(v);
   }
 
   function handleSeekTo(seconds: number) {
@@ -164,7 +163,7 @@ export function PlayerBar() {
         <div className="cover">
           {cover ? <img src={cover} alt="" /> : null}
         </div>
-        <div style={{ minWidth: 0 }}>
+        <div className="min-w-0">
           <div className="title">{current?.title ?? t('player.nothingPlaying')}</div>
           <div className="artist">{current?.artist ?? ''}</div>
         </div>
@@ -184,10 +183,9 @@ export function PlayerBar() {
       <div className="player-controls">
         <div className="buttons">
           <button
-            className="icon-btn"
+            className={`icon-btn ${hasPrev ? 'visible' : 'hidden'}`}
             onClick={() => void handlePrev()}
             title={t('player.previous')}
-            style={{ visibility: hasPrev ? 'visible' : 'hidden' }}
           >
             <PrevIcon size={20} />
           </button>
@@ -218,10 +216,9 @@ export function PlayerBar() {
             <SeekForwardIcon size={17} />
           </button>
           <button
-            className="icon-btn"
+            className={`icon-btn ${hasNext ? 'visible' : 'hidden'}`}
             onClick={() => void handleNext()}
             title={t('player.next')}
-            style={{ visibility: hasNext ? 'visible' : 'hidden' }}
           >
             <NextIcon size={20} />
           </button>

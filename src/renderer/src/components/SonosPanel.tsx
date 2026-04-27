@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { toErrorMessage } from '../../../shared/errors';
 import { useSonosStore } from '../store/sonos';
 import { usePlayerStore } from '../store/player';
 import { useT } from '../i18n';
@@ -10,7 +11,7 @@ export function SonosPanel() {
   const playerPosition = usePlayerStore((s) => s.position);
   const playerPause = usePlayerStore((s) => s.pause);
 
-  const { devices, activeHost, discovering, error, initFromCache, discover, startCasting, stop } =
+  const { devices, activeHost, discovering, error, initFromCache, discover, addByIp, startCasting, stop } =
     useSonosStore();
 
   const [open, setOpen] = useState(false);
@@ -26,16 +27,10 @@ export function SonosPanel() {
     setAddingIp(true);
     setIpError(null);
     try {
-      const device = await window.fmusic.sonosAddByIp(ip);
-      useSonosStore.setState((s) => ({
-        devices: s.devices.some((d) => d.host === device.host)
-          ? s.devices
-          : [...s.devices, device],
-        error: null
-      }));
+      await addByIp(ip);
       setManualIp('');
     } catch (err) {
-      setIpError(err instanceof Error ? err.message : String(err));
+      setIpError(toErrorMessage(err));
     } finally {
       setAddingIp(false);
     }
@@ -94,7 +89,7 @@ export function SonosPanel() {
           {error && <div className="sonos-error">{error}</div>}
 
           {devices.length === 0 ? (
-            <button onClick={() => void discover()} disabled={discovering} style={{ width: '100%' }}>
+            <button onClick={() => void discover()} disabled={discovering} className="w-full">
               {discovering ? t('common.searching') : t('sonos.search')}
             </button>
           ) : (
@@ -124,7 +119,7 @@ export function SonosPanel() {
               <button
                 onClick={() => void discover()}
                 disabled={discovering}
-                style={{ marginTop: 8, width: '100%', fontSize: 11 }}
+                className="mt-8 w-full fs-11"
               >
                 {discovering ? t('common.searching') : t('sonos.searchAgain')}
               </button>
@@ -139,14 +134,14 @@ export function SonosPanel() {
                 value={manualIp}
                 onChange={(e) => setManualIp(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') void handleAddByIp(); }}
-                style={{ flex: 1, fontSize: 12 }}
+                className="flex-1 fs-12"
               />
               <button onClick={() => void handleAddByIp()} disabled={addingIp || !manualIp.trim()}>
                 {addingIp ? '…' : t('sonos.add')}
               </button>
             </div>
             {ipError && (
-              <div style={{ color: 'var(--danger)', fontSize: 11, marginTop: 4 }}>{ipError}</div>
+              <div className="text-danger fs-11 mt-4">{ipError}</div>
             )}
           </div>
         </div>

@@ -184,7 +184,8 @@ describe('PlayerBar', () => {
     });
     render(<PlayerBar />);
     const prevBtn = screen.getByTitle(/previous/i);
-    expect(prevBtn).toHaveStyle({ visibility: 'hidden' });
+    expect(prevBtn).toHaveClass('hidden');
+    expect(prevBtn).not.toHaveClass('visible');
   });
 
   it('shows previous button when not at the start of the queue', () => {
@@ -193,7 +194,9 @@ describe('PlayerBar', () => {
       return typeof selector === 'function' ? selector(state) : state;
     });
     render(<PlayerBar />);
-    expect(screen.getByTitle(/previous/i)).toHaveStyle({ visibility: 'visible' });
+    const prevBtn = screen.getByTitle(/previous/i);
+    expect(prevBtn).toHaveClass('visible');
+    expect(prevBtn).not.toHaveClass('hidden');
   });
 
   it('hides next button when at the end of the queue', () => {
@@ -202,7 +205,9 @@ describe('PlayerBar', () => {
       return typeof selector === 'function' ? selector(state) : state;
     });
     render(<PlayerBar />);
-    expect(screen.getByTitle(/next/i)).toHaveStyle({ visibility: 'hidden' });
+    const nextBtn = screen.getByTitle(/next/i);
+    expect(nextBtn).toHaveClass('hidden');
+    expect(nextBtn).not.toHaveClass('visible');
   });
 
   it('shows next button when there are tracks ahead', () => {
@@ -211,7 +216,9 @@ describe('PlayerBar', () => {
       return typeof selector === 'function' ? selector(state) : state;
     });
     render(<PlayerBar />);
-    expect(screen.getByTitle(/next/i)).toHaveStyle({ visibility: 'visible' });
+    const nextBtn = screen.getByTitle(/next/i);
+    expect(nextBtn).toHaveClass('visible');
+    expect(nextBtn).not.toHaveClass('hidden');
   });
 
   it('seeks back 10 seconds through the local player', () => {

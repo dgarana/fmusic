@@ -195,12 +195,10 @@ export interface AppSettings {
   miniPlayerEnabled: boolean;
   /** Enable local HTTP server for mobile sync via QR codes. Default: false. */
   mobileSyncEnabled: boolean;
-  /** Port for the mobile sync HTTP server. 0 for random available port. Default: 0. */
-  mobileSyncPort: number;
   /** Enable local remote controller web UI. Default: false. */
   remoteControllerEnabled: boolean;
-  /** Port for the remote controller server. 0 for random available port. Default: 0. */
-  remoteControllerPort: number;
+  /** Port for the local unified server (Sonos, Mobile Sync, Remote). 0 for random available port. Default: 0. */
+  localServerPort: number;
 }
 
 export type RemoteControllerCommand =

@@ -64,16 +64,28 @@ beforeEach(() => {
 describe('PlaylistsPage', () => {
   it('shows rename only for user-created playlists', () => {
     renderPlaylistsPage();
-    expect(screen.getAllByRole('button', { name: 'Rename' })).toHaveLength(1);
+    
+    // User-created playlist has a tooltip/title "Playlist name" (from renamePrompt)
+    const editableTitle = screen.getByText('Road Trip');
+    expect(editableTitle.getAttribute('title')).toBe('Playlist name');
+    
+    // Built-in playlist does NOT have the editable title marker
+    const builtinTitle = screen.getByText('Favorites');
+    expect(builtinTitle.getAttribute('title')).toBeNull();
   });
 
   it('trims names before renaming a playlist', async () => {
     renderPlaylistsPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Playlist name' }), {
-      target: { value: '  Evening Mix  ' }
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    
+    // Enter edit mode
+    fireEvent.click(screen.getByText('Road Trip'));
+    
+    // Change value
+    const input = screen.getByPlaceholderText('Playlist name');
+    fireEvent.change(input, { target: { value: '  Evening Mix  ' } });
+    
+    // Save by blurring
+    fireEvent.blur(input);
 
     await waitFor(() => {
       expect(window.fmusic.renamePlaylist).toHaveBeenCalledWith(2, 'Evening Mix');
@@ -82,17 +94,19 @@ describe('PlaylistsPage', () => {
   });
 
   it('prevents empty playlist names when renaming', () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
-
     renderPlaylistsPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Playlist name' }), {
-      target: { value: '   ' }
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    
+    // Enter edit mode
+    fireEvent.click(screen.getByText('Road Trip'));
+    
+    const input = screen.getByPlaceholderText('Playlist name');
+    fireEvent.change(input, { target: { value: '   ' } });
+    
+    // Save by blurring
+    fireEvent.blur(input);
 
     expect(window.fmusic.renamePlaylist).not.toHaveBeenCalled();
-    expect(alertSpy).toHaveBeenCalledWith('Playlist name cannot be empty.');
+    // It should just revert to original value, which is internal to EditableTitle
   });
 
   it('shows a friendly duplicate-name error', async () => {
@@ -102,11 +116,15 @@ describe('PlaylistsPage', () => {
     );
 
     renderPlaylistsPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Playlist name' }), {
-      target: { value: 'Favorites' }
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    
+    // Enter edit mode
+    fireEvent.click(screen.getByText('Road Trip'));
+    
+    const input = screen.getByPlaceholderText('Playlist name');
+    fireEvent.change(input, { target: { value: 'Favorites' } });
+    
+    // Save by blurring
+    fireEvent.blur(input);
 
     await waitFor(() => {
       expect(alertSpy).toHaveBeenCalledWith('A playlist named "Favorites" already exists.');

@@ -1,7 +1,7 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.9.0
+## v0.10.0
 
 ### Bug Fixes
 
@@ -35,6 +35,10 @@ _Generated from repository tags and commit history._
 - Add remote media player ([ca17df1](https://github.com/dgarana/fmusic/commit/ca17df1a51260d6539f73e8977929f20064dd166))
 - Persist YouTube source URL for tracks and playlists (#11) ([5bdc08b](https://github.com/dgarana/fmusic/commit/5bdc08bd1c65b250a5de7a3e0aa2e108d6d53fc9))
 - Playlist improvements and fixes ([40e30ae](https://github.com/dgarana/fmusic/commit/40e30ae0b516c3fea6fc5fb49bf84e0c08bd2f30))
+- Add smart lists (#23) ([8f108c2](https://github.com/dgarana/fmusic/commit/8f108c24c0237d73a3f56df617fefc02b62240ff))
+- Fix Sonos queue advance after track end (#24) ([41c33bb](https://github.com/dgarana/fmusic/commit/41c33bbfd4116bd89b89b081d9180d9ca3db56ae))
+- Add quick seek controls (#25) ([da909ec](https://github.com/dgarana/fmusic/commit/da909ec7b2697dd3b9ae0a208dbc3e2efa837a1e))
+- Add renaming feature to playlists (#26) ([0cedbac](https://github.com/dgarana/fmusic/commit/0cedbac3674998376f94ebcbab72f60a0b0242f0))
 
 ### Miscellaneous
 
@@ -54,7 +58,8 @@ _Generated from repository tags and commit history._
 - Fix minor bugs ([9a5aaa6](https://github.com/dgarana/fmusic/commit/9a5aaa68773a0621401fa521dd646db583ad4815))
 - Release v0.7.0 ([d4e60cd](https://github.com/dgarana/fmusic/commit/d4e60cd9a7ddef5c844ca1068d8df0a65a5d428c))
 - Release v0.8.0 ([b6f6d4e](https://github.com/dgarana/fmusic/commit/b6f6d4e3a964d27ffa67cd957fc3c6787a4cb8ad))
-- Release v0.9.0 ([a85a388](https://github.com/dgarana/fmusic/commit/a85a388ea5264f56c539c96278130d78489e7210))
+- Release v0.9.0 ([97bf8f8](https://github.com/dgarana/fmusic/commit/97bf8f820701052e2ecc0a75ec0d1563784e0c3b))
+- Release v0.10.0 ([2ba8b15](https://github.com/dgarana/fmusic/commit/2ba8b15d9e03d1a286d86e2eb4c544c2f4d951a9))
 
 ### Other
 

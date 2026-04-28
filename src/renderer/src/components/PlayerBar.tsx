@@ -44,6 +44,13 @@ export function PlayerBar() {
   const sonos = useSonosStore();
   const isCasting = sonos.activeHost !== null;
 
+  // If sonos is disabled while casting, stop it and revert to local playback
+  useEffect(() => {
+    if (!sonosEnabled && isCasting) {
+      void sonos.stop();
+    }
+  }, [sonosEnabled, isCasting, sonos]);
+
   // When casting and the local player advances to a new track, forward it to Sonos.
   const prevTrackId = useRef<number | null>(null);
   useEffect(() => {

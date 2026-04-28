@@ -51,7 +51,7 @@ import {
   updateSmartPlaylist
 } from './library/playlists-repo.js';
 import { getSchemaHistory } from './library/db.js';
-import { discoverSonos, addSonosByIp, initSonosFromCache, sonosPlayTrack, sonosPause, sonosResume, sonosStop, sonosSetVolume, sonosSeek, sonosGetPosition } from './sonos.js';
+import { discoverSonos, addSonosByIp, initSonosFromCache, sonosPlayTrack, sonosPause, sonosResume, sonosStop, stopActiveSonos, sonosSetVolume, sonosSeek, sonosGetPosition } from './sonos.js';
 import { getTrackHttpUrl } from './sonos-server.js';
 import { generateTrackMobileUrl } from './mobile-server.js';
 import {
@@ -119,7 +119,7 @@ export function registerIpc(): void {
 
   // ----- Settings -----
   ipcMain.handle(Channels.SettingsGet, () => getSettings());
-  ipcMain.handle(Channels.SettingsUpdate, (_evt, patch: Partial<AppSettings>) => {
+  ipcMain.handle(Channels.SettingsUpdate, async (_evt, patch: Partial<AppSettings>) => {
     const prev = getSettings();
     const next = updateSettings(patch);
 
@@ -130,7 +130,7 @@ export function registerIpc(): void {
       broadcastRemoteControllerSettings();
     }
 
-    function updateServerLifecycle() {
+    async function updateServerLifecycle() {
       const s = getSettings();
       if (s.mobileSyncEnabled || s.remoteControllerEnabled || s.sonosEnabled) {
         void startUnifiedServer().catch(console.error);
@@ -148,6 +148,10 @@ export function registerIpc(): void {
     ) {
       if (patch.sonosEnabled !== undefined) {
         console.log(`[settings] Sonos integration ${patch.sonosEnabled ? 'enabled' : 'disabled'}`);
+        if (!patch.sonosEnabled) {
+          // IMPORTANT: Stop playback before the server (which hosts the files) is shut down
+          await stopActiveSonos();
+        }
       }
       if (patch.mobileSyncEnabled !== undefined) {
         console.log(`[settings] Mobile sync ${patch.mobileSyncEnabled ? 'enabled' : 'disabled'}`);
@@ -155,7 +159,7 @@ export function registerIpc(): void {
       if (patch.remoteControllerEnabled !== undefined) {
         console.log(`[settings] Remote controller ${patch.remoteControllerEnabled ? 'enabled' : 'disabled'}`);
       }
-      updateServerLifecycle();
+      await updateServerLifecycle();
     }
 
     // Notify every renderer (main window, mini player, …) so they can keep
@@ -372,19 +376,27 @@ export function registerIpc(): void {
     return sonosResume(host);
   });
   ipcMain.handle(Channels.SonosStop, async (_evt, host: string) => {
-    await ensureSonosEnabled();
-    return sonosStop(host);
+    try {
+      return await sonosStop(host);
+    } catch (err) {
+      console.error(`[ipc] Error in sonos:stop for ${host}:`, err);
+      throw err;
+    }
   });
   ipcMain.handle(Channels.SonosVolume, async (_evt, host: string, volume: number) => {
-    await ensureSonosEnabled();
+    if (!getSettings().sonosEnabled) return;
     return sonosSetVolume(host, volume);
   });
+
   ipcMain.handle(Channels.SonosSeek, async (_evt, host: string, seconds: number) => {
-    await ensureSonosEnabled();
+    if (!getSettings().sonosEnabled) return;
     return sonosSeek(host, seconds);
   });
+
   ipcMain.handle(Channels.SonosPosition, async (_evt, host: string) => {
-    await ensureSonosEnabled();
+    if (!getSettings().sonosEnabled) {
+      return { position: 0, duration: 0, transportState: 'STOPPED' };
+    }
     return sonosGetPosition(host);
   });
 

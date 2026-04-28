@@ -74,6 +74,4 @@ export function getTrackHttpUrl(trackId: number, filePath?: string): string {
   return `http://${getLocalIp()}:${port}/track/${trackId}${ext}`;
 }
 
-export function isSonosEnabled(): boolean {
-  return getSettings().sonosEnabled;
-}
+

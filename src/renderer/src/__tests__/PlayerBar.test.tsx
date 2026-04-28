@@ -11,7 +11,7 @@ vi.mock('../store/library');
 vi.mock('../store/sonos');
 vi.mock('../store/settings', () => ({
   useSettingsStore: vi.fn((selector?: unknown) => {
-    const state = { settings: { language: 'en', sonosEnabled: false } };
+    const state = { settings: { language: 'en', sonosEnabled: true } };
     return typeof selector === 'function' ? selector(state) : state;
   }),
 }));
@@ -84,6 +84,7 @@ function makeSonosState(overrides = {}) {
     seek: vi.fn().mockResolvedValue(undefined),
     seekBy: vi.fn().mockResolvedValue(undefined),
     sendTrack: vi.fn().mockResolvedValue(undefined),
+    stop: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }

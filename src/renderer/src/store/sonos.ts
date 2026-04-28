@@ -118,6 +118,10 @@ export const useSonosStore = create<SonosState>((set, get) => ({
         duration: 0,
         transportState: 'TRANSITIONING'
       });
+
+      // Sync current volume to the device immediately
+      await get().setVolume(usePlayerStore.getState().volume);
+
       get().startPositionPolling();
       if (seekTo && seekTo > 0) {
         // Sonos needs time to buffer before accepting a seek

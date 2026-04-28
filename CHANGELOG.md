@@ -1,7 +1,7 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.11.0
+## v0.11.1
 
 ### Bug Fixes
 
@@ -16,6 +16,7 @@ _Generated from repository tags and commit history._
 - Show mini player only on close-to-tray, not on focus loss ([144b2a7](https://github.com/dgarana/fmusic/commit/144b2a79fdf5cfac05b9d881a85d8353827afe81))
 - Sync Sonos volume with player UI when casting starts (#29) ([bb403f7](https://github.com/dgarana/fmusic/commit/bb403f7e21f45b10e14589c0b7d33cf48c4cc558))
 - Prevent multiple app instances using single instance lock (#30) ([464f006](https://github.com/dgarana/fmusic/commit/464f00609272f424c327c7d373636d4e3c44fd2c))
+- Error in player when disabling sonos if already streaming (#32) ([b286d33](https://github.com/dgarana/fmusic/commit/b286d330c86a56ae6dbac8ec1e2ddd55e779680a))
 
 ### Documentation
 
@@ -63,7 +64,8 @@ _Generated from repository tags and commit history._
 - Release v0.9.0 ([97bf8f8](https://github.com/dgarana/fmusic/commit/97bf8f820701052e2ecc0a75ec0d1563784e0c3b))
 - Release v0.10.0 ([0fab4ec](https://github.com/dgarana/fmusic/commit/0fab4ece09b0081d58da6c2c506b03e3d6b27b35))
 - Release v0.10.1 ([d1f426c](https://github.com/dgarana/fmusic/commit/d1f426c06d1bde8ae922f745131c56e2620211ff))
-- Release v0.11.0 ([e85d350](https://github.com/dgarana/fmusic/commit/e85d350e7f63223f87bcf0436e8ab1adb18c3181))
+- Release v0.11.0 ([1a466aa](https://github.com/dgarana/fmusic/commit/1a466aa23ba411afca18016a92b00e08d174c8f1))
+- Release v0.11.1 ([eb2dc9e](https://github.com/dgarana/fmusic/commit/eb2dc9e48f494243372c649d958c954e6015e798))
 
 ### Other
 

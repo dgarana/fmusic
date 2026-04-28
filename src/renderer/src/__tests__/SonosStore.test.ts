@@ -93,4 +93,14 @@ describe('useSonosStore', () => {
     expect(mockNext).not.toHaveBeenCalled();
     expect(useSonosStore.getState().isPlaying).toBe(false);
   });
+
+  it('syncs volume when starting to cast', async () => {
+    mockPlayerGetState.mockReturnValue({
+      volume: 0.75
+    });
+
+    await useSonosStore.getState().startCasting('192.168.1.50', 123);
+
+    expect(window.fmusic.sonosSetVolume).toHaveBeenCalledWith('192.168.1.50', 0.75);
+  });
 });

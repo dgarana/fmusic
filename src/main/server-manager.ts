@@ -4,10 +4,17 @@ import { getSettings } from './settings.js';
 import { registerServicePort, unregisterServicePort } from './network.js';
 import { handleRemoteRequest, handleRemoteUpgrade, isRemoteEnabled } from './remote-controller-server.js';
 import { handleMobileRequest, isMobileSyncEnabled } from './mobile-server.js';
-import { handleSonosRequest, isSonosEnabled } from './sonos-server.js';
+import { handleSonosRequest } from './sonos-server.js';
 
 let server: http.Server | null = null;
 let serverPort = 0;
+
+export function isSonosEnabled(): boolean {
+  // We check if the setting is enabled OR if the server is still running.
+  // This allows the Sonos speaker to finish its current buffer/request
+  // during the split second between the setting change and the server shutdown.
+  return getSettings().sonosEnabled || server !== null;
+}
 
 export async function startUnifiedServer(): Promise<number> {
   if (server) return serverPort;

@@ -7,7 +7,7 @@ import { registerIpc } from './ipc.js';
 import { getSettings } from './settings.js';
 import { getDb, closeDb } from './library/db.js';
 import { ensureBuiltinPlaylists } from './library/playlists-repo.js';
-import { getTrack, getTrackEmbeddedArtwork, resolveTrackFilePath, warmTrackArtworkCache } from './library/tracks-repo.js';
+import { getTrack, getTrackEmbeddedArtwork, resolveTrackFilePath, warmTrackArtworkCache, syncLibraryWithDisk } from './library/tracks-repo.js';
 import { stopActiveSonos } from './sonos.js';
 import {
   updateRemoteControllerSnapshot,
@@ -265,6 +265,7 @@ if (!isSingleInstance) {
     try {
     getDb();
     ensureBuiltinPlaylists();
+    void syncLibraryWithDisk().catch(console.error);
     if (screenshotMode) {
       seedScreenshotDemoData(app.getPath('userData'));
     }

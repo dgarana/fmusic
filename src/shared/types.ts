@@ -290,3 +290,9 @@ export type UpdateStatus =
   | { status: 'downloading'; percent: number }
   | { status: 'ready'; version: string }
   | { status: 'error'; message: string };
+
+export interface ImportSummary {
+  importedCount: number;
+  skippedCount: number;
+  failedCount: number;
+}

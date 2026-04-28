@@ -29,6 +29,7 @@ export function SettingsPage() {
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [remoteInfo, setRemoteInfo] = useState<RemoteControllerInfo | null>(null);
+  const [moving, setMoving] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -66,8 +67,25 @@ export function SettingsPage() {
   }, [settings?.remoteControllerEnabled, settings?.localServerPort]);
 
   async function pickFolder() {
-    const path = await window.fmusic.pickDirectory();
-    if (path) await update({ downloadDir: path });
+    const newPath = await window.fmusic.pickDirectory();
+    if (!newPath || newPath === settings?.downloadDir) return;
+
+    const tracks = await window.fmusic.listTracks({ limit: 1 });
+    if (tracks.length > 0) {
+      const ok = confirm(t('settings.downloads.moveLibraryConfirm'));
+      if (ok) {
+        setMoving(true);
+        try {
+          await window.fmusic.moveLibrary(settings!.downloadDir, newPath);
+        } catch (err) {
+          console.error('Failed to move library:', err);
+          alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
+        } finally {
+          setMoving(false);
+        }
+      }
+    }
+    await update({ downloadDir: newPath });
   }
 
   async function updateYtDlp() {
@@ -114,8 +132,10 @@ export function SettingsPage() {
                 value={settings.downloadDir}
                 className="flex-1 font-mono"
               />
-              <button onClick={() => void pickFolder()}>{t('settings.downloads.change')}</button>
-              <button onClick={() => void window.fmusic.openPath(settings.downloadDir)}>
+              <button onClick={() => void pickFolder()} disabled={moving}>
+                {moving ? t('settings.downloads.movingLibrary') : t('settings.downloads.change')}
+              </button>
+              <button onClick={() => void window.fmusic.openPath(settings.downloadDir)} disabled={moving}>
                 {t('settings.downloads.open')}
               </button>
             </div>

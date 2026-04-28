@@ -5,6 +5,7 @@ import type {
   DependencyStatus,
   DownloadJob,
   DownloadRequest,
+  ImportSummary,
   Playlist,
   SmartPlaylistDefinition,
   RemoteControllerCommand,
@@ -47,6 +48,8 @@ const api = {
     on<UpdateStatus>(Channels.UpdaterStatus, handler),
   openPath: (p: string) => invoke<void>(Channels.OpenPath, p),
   pickDirectory: () => invoke<string | null>(Channels.PickDirectory),
+  pickFiles: () => invoke<string[]>(Channels.PickFiles),
+  moveLibrary: (oldDir: string, newDir: string) => invoke<void>(Channels.MoveLibrary, oldDir, newDir),
 
   // Dependencies
   depsStatus: () => invoke<DependencyStatus>(Channels.DepsStatus),
@@ -108,6 +111,8 @@ const api = {
     invoke<Track | null>(Channels.TracksEdit, id, options),
   renameTrackFile: (id: number, basename: string) =>
     invoke<Track | null>(Channels.TracksRename, id, basename),
+  importLocalTracks: (filePaths: string[]) =>
+    invoke<ImportSummary>(Channels.TracksImportLocal, filePaths),
   getTrack: (id: number) => invoke<Track | null>(Channels.TracksGet, id),
   downloadedYoutubeIds: (ids: string[]) =>
     invoke<string[]>(Channels.TracksDownloadedIds, ids),

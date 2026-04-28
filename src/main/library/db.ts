@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { backupsDir, libraryDbPath } from '../paths.js';
 import { migrations } from './migrations/index.js';
+import { migrateToRelativePaths } from './tracks-repo.js';
 
 let dbInstance: Database.Database | null = null;
 
@@ -47,6 +48,10 @@ function runMigrations(db: Database.Database): void {
       db.pragma(`user_version = ${migration.version}`);
     });
     runMigration();
+
+    if (migration.version === 7) {
+      migrateToRelativePaths(db);
+    }
   }
 }
 

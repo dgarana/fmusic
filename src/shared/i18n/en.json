@@ -68,6 +68,11 @@
   },
   "library": {
     "title": "Library",
+    "import": "Import",
+    "importFiles": "Import files",
+    "importFolder": "Import folder",
+    "importing": "Importing...",
+    "importSummary": "{importedCount} new songs added. {skippedCount} were already present.",
     "searchPlaceholder": "Search by title, artist, album or genre...",
     "allGenres": "All genres",
     "empty": "Your library is empty. Download your first song from the Download tab.",
@@ -239,6 +244,8 @@
       "folder": "Download folder",
       "change": "Change",
       "open": "Open",
+      "moveLibraryConfirm": "Do you want to move your existing music library to the new location? If you choose 'No', the files will stay in the old folder and might become unavailable in FMusic.",
+      "movingLibrary": "Moving music library...",
       "format": "Default format",
       "quality": "Default quality"
     },

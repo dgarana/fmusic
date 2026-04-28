@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import NodeID3 from 'node-id3';
 import { parseFile } from 'music-metadata';
 import { app } from 'electron';
+import Database from 'better-sqlite3';
 import type {
   Track,
   TrackEditOptions,
@@ -14,6 +15,8 @@ import type {
 import { getDb } from './db.js';
 import { ffmpegPath } from '../paths.js';
 import { compileSmartPlaylistDefinition } from './smart-playlists.js';
+
+import { getSettings } from '../settings.js';
 
 interface TrackRow {
   id: number;
@@ -31,6 +34,53 @@ interface TrackRow {
   source_url: string | null;
 }
 
+/**
+ * Normalizes a path to be relative to the download directory if it's inside it.
+ * Otherwise returns the original absolute path.
+ */
+function toRelativePath(absolutePath: string): string {
+  const downloadDir = getSettings().downloadDir;
+  const normalizedBase = path.normalize(downloadDir).toLowerCase();
+  const normalizedFile = path.normalize(absolutePath).toLowerCase();
+
+  if (normalizedFile.startsWith(normalizedBase)) {
+    const rel = path.relative(downloadDir, absolutePath);
+    // Use forward slashes in the database for cross-platform compatibility
+    return rel.split(path.sep).join('/');
+  }
+  return absolutePath;
+}
+
+/**
+ * Resolves a stored path (which might be relative or absolute) to an absolute
+ * path on the current machine.
+ */
+function toAbsolutePath(storedPath: string): string {
+  if (path.isAbsolute(storedPath)) {
+    return storedPath;
+  }
+  // path.join handles the forward slashes from the DB correctly on all platforms
+  return path.join(getSettings().downloadDir, storedPath);
+}
+
+export function migrateToRelativePaths(db?: Database.Database): void {
+  const targetDb = db ?? getDb();
+  const tracks = targetDb.prepare('SELECT id, file_path FROM tracks').all() as Array<{
+    id: number;
+    file_path: string;
+  }>;
+
+  const update = targetDb.prepare('UPDATE tracks SET file_path = ? WHERE id = ?');
+  targetDb.transaction(() => {
+    for (const t of tracks) {
+      const rel = toRelativePath(t.file_path);
+      if (rel !== t.file_path) {
+        update.run(rel, t.id);
+      }
+    }
+  })();
+}
+
 function rowToTrack(row: TrackRow): Track {
   return {
     id: row.id,
@@ -40,7 +90,7 @@ function rowToTrack(row: TrackRow): Track {
     album: row.album,
     genre: row.genre,
     durationSec: row.duration_sec,
-    filePath: row.file_path,
+    filePath: toAbsolutePath(row.file_path),
     thumbnailPath: row.thumbnail_path,
     downloadedAt: row.downloaded_at,
     playCount: row.play_count,
@@ -63,14 +113,105 @@ export interface NewTrack {
 
 export function insertTrack(track: NewTrack): Track {
   const db = getDb();
+  const relativePath = toRelativePath(track.filePath);
   const result = db
     .prepare(
       `INSERT INTO tracks
        (youtube_id, title, artist, album, genre, duration_sec, file_path, thumbnail_path, source_url)
        VALUES (@youtubeId, @title, @artist, @album, @genre, @durationSec, @filePath, @thumbnailPath, @sourceUrl)`
     )
-    .run(track);
+    .run({ ...track, filePath: relativePath });
   return getTrack(Number(result.lastInsertRowid))!;
+}
+
+export interface ImportSummary {
+  importedCount: number;
+  skippedCount: number;
+  failedCount: number;
+}
+
+export async function importLocalTracks(filePaths: string[]): Promise<ImportSummary> {
+  let importedCount = 0;
+  let skippedCount = 0;
+  let failedCount = 0;
+  const downloadDir = getSettings().downloadDir;
+
+  const allFiles: string[] = [];
+  const collect = (p: string) => {
+    if (!fs.existsSync(p)) return;
+    const stat = fs.statSync(p);
+    if (stat.isDirectory()) {
+      fs.readdirSync(p).forEach((f) => collect(path.join(p, f)));
+    } else if (stat.isFile()) {
+      allFiles.push(p);
+    }
+  };
+  filePaths.forEach(collect);
+
+  for (const sourcePath of allFiles) {
+    try {
+      const ext = path.extname(sourcePath).toLowerCase();
+      if (!['.mp3', '.m4a', '.opus', '.ogg', '.flac', '.wav'].includes(ext)) continue;
+
+      // Check if this path (relative or absolute) is already in the DB
+      const relative = toRelativePath(sourcePath);
+      const existing = getDb()
+        .prepare('SELECT id FROM tracks WHERE file_path = ?')
+        .get(relative);
+      if (existing) {
+        skippedCount++;
+        continue;
+      }
+
+      // 1. Copy to library folder if not already there
+      let targetPath = sourcePath;
+      if (!path.normalize(sourcePath).toLowerCase().startsWith(path.normalize(downloadDir).toLowerCase())) {
+        const destPath = path.join(downloadDir, path.basename(sourcePath));
+        
+        // Double check if the destination path is already in the DB
+        const destRelative = toRelativePath(destPath);
+        const existingDest = getDb()
+          .prepare('SELECT id FROM tracks WHERE file_path = ?')
+          .get(destRelative);
+        if (existingDest) {
+          skippedCount++;
+          continue;
+        }
+
+        if (fs.existsSync(destPath)) {
+          // If file exists on disk but not in DB, it might be a collision or a manual copy.
+          // For now, let's just use a timestamp to avoid overwriting.
+          const parsed = path.parse(destPath);
+          targetPath = path.join(downloadDir, `${parsed.name}-${Date.now()}${parsed.ext}`);
+        } else {
+          targetPath = destPath;
+        }
+        fs.copyFileSync(sourcePath, targetPath);
+      }
+
+      // 2. Read metadata
+      const metadata = await parseFile(targetPath);
+      const { common, format } = metadata;
+
+      insertTrack({
+        youtubeId: null,
+        title: common.title || path.basename(sourcePath, ext),
+        artist: common.artist || null,
+        album: common.album || null,
+        genre: common.genre?.[0] || null,
+        durationSec: format.duration ? Math.round(format.duration) : null,
+        filePath: targetPath,
+        thumbnailPath: null,
+        sourceUrl: null
+      });
+
+      importedCount++;
+    } catch (err) {
+      console.error(`[tracks] Failed to import ${sourcePath}:`, err);
+      failedCount++;
+    }
+  }
+  return { importedCount, skippedCount, failedCount };
 }
 
 export function getTrack(id: number): Track | null {
@@ -405,7 +546,8 @@ export function findByYoutubeId(youtubeId: string): Track | null {
 }
 
 function updateFilePath(id: number, nextPath: string): void {
-  getDb().prepare('UPDATE tracks SET file_path = ? WHERE id = ?').run(nextPath, id);
+  const relative = toRelativePath(nextPath);
+  getDb().prepare('UPDATE tracks SET file_path = ? WHERE id = ?').run(relative, id);
 }
 
 function updateThumbnailPath(id: number, nextPath: string | null): void {
@@ -615,4 +757,85 @@ export function findDownloadedYoutubeIds(youtubeIds: string[]): string[] {
     )
     .all(...youtubeIds) as Array<{ youtube_id: string }>;
   return rows.map((r) => r.youtube_id);
+}
+
+export async function syncLibraryWithDisk(): Promise<void> {
+  const db = getDb();
+  const downloadDir = getSettings().downloadDir;
+  if (!fs.existsSync(downloadDir)) return;
+
+  // 1. Cleanup missing tracks
+  const dbTracks = db.prepare('SELECT id, file_path, youtube_id FROM tracks').all() as Array<{
+    id: number;
+    file_path: string;
+    youtube_id: string | null;
+  }>;
+
+  const deleteStmt = db.prepare('DELETE FROM tracks WHERE id = ?');
+  let removed = 0;
+
+  for (const t of dbTracks) {
+    const absolutePath = toAbsolutePath(t.file_path);
+    if (!fs.existsSync(absolutePath)) {
+      // Try one last-ditch recovery if it has a youtubeId (handles some encoding/NFC edge cases)
+      const recovered = resolveTrackFilePath({ id: t.id, filePath: t.file_path, youtubeId: t.youtube_id } as any);
+      if (!recovered) {
+        deleteStmt.run(t.id);
+        removed++;
+      }
+    }
+  }
+
+  if (removed > 0) {
+    console.log(`[sync] Removed ${removed} missing tracks from the library.`);
+  }
+
+  // 2. Discover and import new files
+  const dbFilePaths = new Set(dbTracks.map((t) => toRelativePath(toAbsolutePath(t.file_path))));
+  const newFiles: string[] = [];
+
+  const collect = (p: string) => {
+    if (!fs.existsSync(p)) return;
+    const stat = fs.statSync(p);
+    if (stat.isDirectory()) {
+      fs.readdirSync(p).forEach((f) => collect(path.join(p, f)));
+    } else if (stat.isFile()) {
+      const ext = path.extname(p).toLowerCase();
+      if (['.mp3', '.m4a', '.opus', '.ogg', '.flac', '.wav'].includes(ext)) {
+        const rel = toRelativePath(p);
+        if (!dbFilePaths.has(rel)) {
+          newFiles.push(p);
+        }
+      }
+    }
+  };
+
+  collect(downloadDir);
+
+  if (newFiles.length > 0) {
+    console.log(`[sync] Found ${newFiles.length} new files in DownloadDir, importing...`);
+    const summary = await importLocalTracks(newFiles);
+    console.log(`[sync] Imported ${summary.importedCount} new tracks.`);
+  }
+}
+
+export async function moveLibrary(oldDir: string, newDir: string): Promise<void> {
+  if (!fs.existsSync(oldDir)) return;
+  if (!fs.existsSync(newDir)) {
+    fs.mkdirSync(newDir, { recursive: true });
+  }
+
+  const entries = fs.readdirSync(oldDir);
+  for (const entry of entries) {
+    const src = path.join(oldDir, entry);
+    const dest = path.join(newDir, entry);
+    
+    // We use cpSync + rmSync to handle cross-partition moves safely
+    try {
+      fs.cpSync(src, dest, { recursive: true, preserveTimestamps: true });
+      fs.rmSync(src, { recursive: true, force: true });
+    } catch (err) {
+      console.error(`[tracks] Failed to move ${src} to ${dest}:`, err);
+    }
+  }
 }

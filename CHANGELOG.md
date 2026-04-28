@@ -1,7 +1,7 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.10.1
+## v0.11.0
 
 ### Bug Fixes
 
@@ -14,6 +14,8 @@ _Generated from repository tags and commit history._
 - Fix test suite ([f337495](https://github.com/dgarana/fmusic/commit/f33749546e197c9b87b790f607a981cf6d48d3a7))
 - Handle Sonos UPnP 701 stale session error on pause gracefully ([be648b0](https://github.com/dgarana/fmusic/commit/be648b0a4733248d07b638333d54f340fd1af027))
 - Show mini player only on close-to-tray, not on focus loss ([144b2a7](https://github.com/dgarana/fmusic/commit/144b2a79fdf5cfac05b9d881a85d8353827afe81))
+- Sync Sonos volume with player UI when casting starts (#29) ([bb403f7](https://github.com/dgarana/fmusic/commit/bb403f7e21f45b10e14589c0b7d33cf48c4cc558))
+- Prevent multiple app instances using single instance lock (#30) ([464f006](https://github.com/dgarana/fmusic/commit/464f00609272f424c327c7d373636d4e3c44fd2c))
 
 ### Documentation
 
@@ -60,7 +62,8 @@ _Generated from repository tags and commit history._
 - Release v0.8.0 ([b6f6d4e](https://github.com/dgarana/fmusic/commit/b6f6d4e3a964d27ffa67cd957fc3c6787a4cb8ad))
 - Release v0.9.0 ([97bf8f8](https://github.com/dgarana/fmusic/commit/97bf8f820701052e2ecc0a75ec0d1563784e0c3b))
 - Release v0.10.0 ([0fab4ec](https://github.com/dgarana/fmusic/commit/0fab4ece09b0081d58da6c2c506b03e3d6b27b35))
-- Release v0.10.1 ([0eeb249](https://github.com/dgarana/fmusic/commit/0eeb2495f2ea58437326270656d5c1f33d17f8ae))
+- Release v0.10.1 ([d1f426c](https://github.com/dgarana/fmusic/commit/d1f426c06d1bde8ae922f745131c56e2620211ff))
+- Release v0.11.0 ([e85d350](https://github.com/dgarana/fmusic/commit/e85d350e7f63223f87bcf0436e8ab1adb18c3181))
 
 ### Other
 
@@ -88,6 +91,24 @@ Fix theme ([694e1e6](https://github.com/dgarana/fmusic/commit/694e1e6373b68dbc4d
 - Merge pull request #8 from dgarana/remote_player_controller
 
 feat: Add remote media player ([344ed6c](https://github.com/dgarana/fmusic/commit/344ed6ce6deea9d161849b9882e46350490ff15b))
+- Feature/issue 17 local import portable library (#31)
+
+* feat: support importing local audio files and portable library with relative paths
+
+Fixes #17.
+- Transitioned library to use relative file paths for tracks within the download directory.
+- Added migration to convert existing absolute paths to relative ones.
+- Implemented local file and folder import with recursive directory scanning.
+- Improved path resolution to support libraries synced across different machines/OS.
+- Added UI entry points in LibraryPage for importing files and folders.
+
+* feat: Allow removing library entries if files no longer exists
+
+* feat: add library move support and cleanup missing tracks
+
+- Prompt to move music files when changing download directory in Settings.
+- Automatically cleanup database entries for missing files at startup.
+- Refined duplicate detection and added import summary reporting. ([c2ab22f](https://github.com/dgarana/fmusic/commit/c2ab22f8af0891cdf76edf85d8f6dff115c2e5ff))
 
 ### Refactor
 

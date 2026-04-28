@@ -473,6 +473,17 @@ input[type='range']:active::-webkit-slider-thumb { background: var(--accent); }
   padding: 0;
   margin: 0 -10px 14px;
   position: relative;
+  cursor: pointer;
+}
+
+.sidebar-update-link {
+  color: var(--accent);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  text-decoration: underline;
 }
 .sidebar .brand img {
   width: 100%;
@@ -2343,4 +2354,147 @@ body.theme-light .track-thumb-overlay {
     width: 100%;
     justify-content: flex-end;
   }
+}
+
+/* =======================================================================
+ * Utilities
+ * ======================================================================= */
+
+.flex { display: flex; }
+.flex-column { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
+.flex-1 { flex: 1; }
+.items-center { align-items: center; }
+.items-baseline { align-items: baseline; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.gap-2 { gap: 2px; }
+.gap-4 { gap: 4px; }
+.gap-6 { gap: 6px; }
+.gap-8 { gap: 8px; }
+.gap-10 { gap: 10px; }
+.gap-12 { gap: 12px; }
+.gap-14 { gap: 14px; }
+.gap-16 { gap: 16px; }
+
+.m-0 { margin: 0; }
+.mt-4 { margin-top: 4px; }
+.mt-6 { margin-top: 6px; }
+.mt-8 { margin-top: 8px; }
+.mt-10 { margin-top: 10px; }
+.mt-12 { margin-top: 12px; }
+.mt-14 { margin-top: 14px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mb-4 { margin-bottom: 4px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-12 { margin-bottom: 12px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-18 { margin-bottom: 18px; }
+.mb-20 { margin-bottom: 20px; }
+.ml-6 { margin-left: 6px; }
+.ml-8 { margin-left: 8px; }
+.ml-10 { margin-left: 10px; }
+
+.fs-10 { font-size: 10px; }
+.fs-11 { font-size: 11px; }
+.fs-12 { font-size: 12px; }
+.fs-13 { font-size: 13px; }
+.fs-16 { font-size: 16px; }
+.fs-18 { font-size: 18px; }
+
+.fw-500 { font-weight: 500; }
+.fw-600 { font-weight: 600; }
+.fw-700 { font-weight: 700; }
+
+.text-muted { color: var(--text-muted); }
+.text-faint { color: var(--text-faint); }
+.text-danger { color: var(--danger); }
+.text-success { color: var(--success); }
+.text-center { text-align: center; }
+
+.w-full { width: 100%; }
+.w-fit { width: fit-content; }
+.min-w-0 { min-width: 0; }
+.max-w-520 { max-width: 520px; }
+
+.font-mono { font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace; }
+.italic { font-style: italic; }
+.uppercase { text-transform: uppercase; }
+.ls-06 { letter-spacing: 0.6px; }
+.ls-12 { letter-spacing: 1.2px; }
+
+.hidden { visibility: hidden; }
+.visible { visibility: visible; }
+
+.grid { display: grid; }
+.not-italic { font-style: normal; }
+.aspect-16-9 { aspect-ratio: 16 / 9; }
+.w-100px { width: 100px; }
+.btn-xs { padding: 1px 8px !important; font-size: 12px !important; height: auto !important; }
+.btn-xxs { padding: 1px 6px !important; font-size: 11px !important; height: auto !important; }
+
+.p-8 { padding: 8px; }
+.p-10 { padding: 10px; }
+.p-12 { padding: 12px; }
+.p-14 { padding: 14px; }
+.p-16 { padding: 16px; }
+.p-20 { padding: 20px; }
+.p-24 { padding: 24px; }
+
+.px-8 { padding-left: 8px; padding-right: 8px; }
+.px-12 { padding-left: 12px; padding-right: 12px; }
+.px-16 { padding-left: 16px; padding-right: 16px; }
+
+.py-4 { padding-top: 4px; padding-bottom: 4px; }
+.py-8 { padding-top: 8px; padding-bottom: 8px; }
+.py-12 { padding-top: 12px; padding-bottom: 12px; }
+
+/* =======================================================================
+ * Editable Title
+ * ======================================================================= */
+
+.editable-title-container {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  min-width: 200px;
+}
+
+.editable-title-input {
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  padding: 2px 8px;
+  margin: -3px -9px;
+  width: 100%;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.1);
+}
+
+.editable-title-text {
+  cursor: text;
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  margin: -3px -9px;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editable-title-text:hover {
+  background: var(--bg-hover);
+}
+
+.editable-title-text.readonly {
+  cursor: default;
+}
+
+.editable-title-text.readonly:hover {
+  background: transparent;
 }

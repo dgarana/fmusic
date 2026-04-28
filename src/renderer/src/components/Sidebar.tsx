@@ -30,7 +30,6 @@ export function Sidebar() {
     <aside className="sidebar">
       <div
         className="brand"
-        style={{ cursor: 'pointer' }}
         onClick={() => void window.fmusic.openExternal(GITHUB_URL)}
         title={t('nav.openGithub', { defaultValue: 'View on GitHub' })}
       >
@@ -89,19 +88,9 @@ export function Sidebar() {
 }
 
 function UpdateBadge({ status, t }: { status: UpdateStatus; t: ReturnType<typeof useT> }) {
-  const linkStyle: React.CSSProperties = {
-    color: 'var(--accent)',
-    cursor: 'pointer',
-    background: 'none',
-    border: 'none',
-    padding: 0,
-    fontSize: 11,
-    textDecoration: 'underline'
-  };
-
   if (status.status === 'available') {
     return (
-      <button style={linkStyle} onClick={() => void window.fmusic.downloadUpdate()}>
+      <button className="sidebar-update-link" onClick={() => void window.fmusic.downloadUpdate()}>
         {t('updater.available', { version: status.version })}
       </button>
     );
@@ -109,7 +98,7 @@ function UpdateBadge({ status, t }: { status: UpdateStatus; t: ReturnType<typeof
 
   if (status.status === 'downloading') {
     return (
-      <span style={{ color: 'var(--text-muted)' }}>
+      <span className="text-muted">
         {t('updater.downloading', { percent: status.percent })}
       </span>
     );
@@ -118,7 +107,7 @@ function UpdateBadge({ status, t }: { status: UpdateStatus; t: ReturnType<typeof
   if (status.status === 'ready') {
     return (
       <button
-        style={{ ...linkStyle, fontWeight: 600 }}
+        className="sidebar-update-link fw-600"
         onClick={() => void window.fmusic.installUpdate()}
       >
         {t('updater.ready')}
@@ -128,9 +117,9 @@ function UpdateBadge({ status, t }: { status: UpdateStatus; t: ReturnType<typeof
 
   if (status.status === 'error') {
     return (
-      <span style={{ color: 'var(--text-muted)' }}>
+      <span className="text-muted">
         {t('updater.error')}{' '}
-        <button style={linkStyle} onClick={() => void window.fmusic.openExternal(RELEASES_URL)}>
+        <button className="sidebar-update-link" onClick={() => void window.fmusic.openExternal(RELEASES_URL)}>
           {t('updater.downloadManually')}
         </button>
       </span>

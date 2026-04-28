@@ -50,16 +50,15 @@ import {
 } from './library/playlists-repo.js';
 import { getSchemaHistory } from './library/db.js';
 import { discoverSonos, addSonosByIp, initSonosFromCache, sonosPlayTrack, sonosPause, sonosResume, sonosStop, sonosSetVolume, sonosSeek, sonosGetPosition } from './sonos.js';
-import { startAudioServer, getTrackHttpUrl } from './sonos-server.js';
-import { startMobileServer, stopMobileServer, generateTrackMobileUrl } from './mobile-server.js';
+import { getTrackHttpUrl } from './sonos-server.js';
+import { generateTrackMobileUrl } from './mobile-server.js';
 import {
   broadcastRemoteControllerData,
   broadcastRemoteControllerSettings,
   getRemoteControllerInfo,
-  regenerateRemoteControllerToken,
-  startRemoteControllerServer,
-  stopRemoteControllerServer
+  regenerateRemoteControllerToken
 } from './remote-controller-server.js';
+import { startUnifiedServer, stopUnifiedServer } from './server-manager.js';
 import { refreshTrayLanguage } from './tray.js';
 import { checkForUpdates, downloadUpdate, quitAndInstall, getLastUpdaterStatus } from './app-updater.js';
 import { lookupTrackMetadata } from './musicbrainz.js';
@@ -115,28 +114,32 @@ export function registerIpc(): void {
       broadcastRemoteControllerSettings();
     }
 
-    // Handle mobile server lifecycle on setting changes
-    if (patch.mobileSyncEnabled !== undefined || patch.mobileSyncPort !== undefined) {
-      if (next.mobileSyncEnabled) {
-        // (Re)start server if enabled or port changed
-        if (prev.mobileSyncEnabled) stopMobileServer();
-        void startMobileServer(next.mobileSyncPort).catch(console.error);
-      } else if (prev.mobileSyncEnabled) {
-        // Stop if it was enabled and now is disabled
-        stopMobileServer();
+    function updateServerLifecycle() {
+      const s = getSettings();
+      if (s.mobileSyncEnabled || s.remoteControllerEnabled || s.sonosEnabled) {
+        void startUnifiedServer().catch(console.error);
+      } else {
+        stopUnifiedServer();
       }
     }
 
+    // Handle unified server lifecycle on setting changes
     if (
+      patch.mobileSyncEnabled !== undefined ||
       patch.remoteControllerEnabled !== undefined ||
-      patch.remoteControllerPort !== undefined
+      patch.sonosEnabled !== undefined ||
+      patch.localServerPort !== undefined
     ) {
-      if (next.remoteControllerEnabled) {
-        if (prev.remoteControllerEnabled) stopRemoteControllerServer();
-        void startRemoteControllerServer(next.remoteControllerPort).catch(console.error);
-      } else if (prev.remoteControllerEnabled) {
-        stopRemoteControllerServer();
+      if (patch.sonosEnabled !== undefined) {
+        console.log(`[settings] Sonos integration ${patch.sonosEnabled ? 'enabled' : 'disabled'}`);
       }
+      if (patch.mobileSyncEnabled !== undefined) {
+        console.log(`[settings] Mobile sync ${patch.mobileSyncEnabled ? 'enabled' : 'disabled'}`);
+      }
+      if (patch.remoteControllerEnabled !== undefined) {
+        console.log(`[settings] Remote controller ${patch.remoteControllerEnabled ? 'enabled' : 'disabled'}`);
+      }
+      updateServerLifecycle();
     }
 
     // Notify every renderer (main window, mini player, …) so they can keep
@@ -306,16 +309,23 @@ export function registerIpc(): void {
   ipcMain.handle(Channels.SchemaHistory, () => getSchemaHistory());
 
   // ----- Sonos -----
+  async function ensureSonosEnabled() {
+    if (!getSettings().sonosEnabled) {
+      throw new Error('Sonos integration is disabled.');
+    }
+    await startUnifiedServer();
+  }
+
   ipcMain.handle(Channels.SonosDiscover, async () => {
-    await startAudioServer();
+    await ensureSonosEnabled();
     return discoverSonos();
   });
   ipcMain.handle(Channels.SonosAddByIp, async (_evt, host: string) => {
-    await startAudioServer();
+    await ensureSonosEnabled();
     return addSonosByIp(host);
   });
   ipcMain.handle(Channels.SonosInitFromCache, async () => {
-    await startAudioServer();
+    await ensureSonosEnabled();
     return initSonosFromCache();
   });
   ipcMain.handle(
@@ -329,21 +339,35 @@ export function registerIpc(): void {
       if (!filePath) {
         throw new Error(`Track ${trackId} is missing on disk.`);
       }
-      await startAudioServer();
+      await ensureSonosEnabled();
       const url = getTrackHttpUrl(trackId, filePath);
       await sonosPlayTrack(host, url, title, artist);
     }
   );
-  ipcMain.handle(Channels.SonosPause, (_evt, host: string) => sonosPause(host));
-  ipcMain.handle(Channels.SonosResume, (_evt, host: string) => sonosResume(host));
-  ipcMain.handle(Channels.SonosStop, (_evt, host: string) => sonosStop(host));
-  ipcMain.handle(Channels.SonosVolume, (_evt, host: string, volume: number) =>
-    sonosSetVolume(host, volume)
-  );
-  ipcMain.handle(Channels.SonosSeek, (_evt, host: string, seconds: number) =>
-    sonosSeek(host, seconds)
-  );
-  ipcMain.handle(Channels.SonosPosition, (_evt, host: string) => sonosGetPosition(host));
+  ipcMain.handle(Channels.SonosPause, async (_evt, host: string) => {
+    await ensureSonosEnabled();
+    return sonosPause(host);
+  });
+  ipcMain.handle(Channels.SonosResume, async (_evt, host: string) => {
+    await ensureSonosEnabled();
+    return sonosResume(host);
+  });
+  ipcMain.handle(Channels.SonosStop, async (_evt, host: string) => {
+    await ensureSonosEnabled();
+    return sonosStop(host);
+  });
+  ipcMain.handle(Channels.SonosVolume, async (_evt, host: string, volume: number) => {
+    await ensureSonosEnabled();
+    return sonosSetVolume(host, volume);
+  });
+  ipcMain.handle(Channels.SonosSeek, async (_evt, host: string, seconds: number) => {
+    await ensureSonosEnabled();
+    return sonosSeek(host, seconds);
+  });
+  ipcMain.handle(Channels.SonosPosition, async (_evt, host: string) => {
+    await ensureSonosEnabled();
+    return sonosGetPosition(host);
+  });
 
   // ----- Mobile Sync -----
   ipcMain.handle(Channels.MobileSyncGetUrl, (_evt, trackId: number) => {

@@ -122,7 +122,7 @@ export function MiniPlayerPage() {
           <button
             onClick={() => send('prev')}
             disabled={!state.hasPrev}
-            style={{ visibility: state.hasPrev ? 'visible' : 'hidden' }}
+            className={state.hasPrev ? 'visible' : 'hidden'}
             title={t('miniPlayer.previous')}
           >
             <PrevIcon size={16} />
@@ -156,7 +156,7 @@ export function MiniPlayerPage() {
           <button
             onClick={() => send('next')}
             disabled={!state.hasNext}
-            style={{ visibility: state.hasNext ? 'visible' : 'hidden' }}
+            className={state.hasNext ? 'visible' : 'hidden'}
             title={t('miniPlayer.next')}
           >
             <NextIcon size={16} />

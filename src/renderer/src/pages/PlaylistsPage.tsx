@@ -1,15 +1,15 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { QRCodeSVG } from 'qrcode.react';
 import { useLibraryStore } from '../store/library';
 import { usePlayerStore } from '../store/player';
 import { useSonosStore } from '../store/sonos';
-import { useSettingsStore } from '../store/settings';
 import { formatDuration } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
 import type { Playlist, Track } from '../../../shared/types';
+import { MobileSyncCard } from '../components/MobileSyncCard';
 import { SmartPlaylistComposer } from '../components/SmartPlaylistComposer';
 import { TrackTitleCell } from '../components/TrackTitleCell';
+import { useMobileSync } from '../hooks/useMobileSync';
 import {
   MusicIcon,
   PlayIcon,
@@ -55,8 +55,18 @@ export function PlaylistsPage() {
     await refreshPlaylists();
   }
 
+  async function handleRename(id: number, nextName: string) {
+    try {
+      await window.fmusic.renamePlaylist(id, nextName);
+      await refreshPlaylists();
+    } catch (err) {
+      alert(getRenamePlaylistErrorMessage(err, nextName, t));
+      throw err;
+    }
+  }
+
   if (activePlaylist) {
-    return <PlaylistDetail playlist={activePlaylist} />;
+    return <PlaylistDetail playlist={activePlaylist} onRename={handleRename} />;
   }
 
   return (
@@ -100,9 +110,14 @@ export function PlaylistsPage() {
             const isBuiltin = Boolean(p.slug);
             const isSmart = p.kind === 'smart';
             return (
-              <div key={p.id} className="result-card" style={{ padding: 16 }}>
-                <div className="title" style={{ fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>{displayName}</span>
+              <div key={p.id} className="result-card p-16">
+                <div className="title flex items-center gap-8 fs-16">
+                  <EditableTitle
+                    initialValue={displayName}
+                    onSave={(nextName) => handleRename(p.id, nextName)}
+                    readonly={isBuiltin}
+                    placeholder={t('playlists.renamePrompt')}
+                  />
                   {isSmart && (
                     <span className="smart-playlist-badge" title={t('playlists.smart.badge')}>
                       <SparklesIcon size={12} />
@@ -111,24 +126,21 @@ export function PlaylistsPage() {
                   )}
                 </div>
                 <div className="channel">{t('playlists.tracks', { count: p.trackCount })}</div>
-                <div className="actions" style={{ marginTop: 10 }}>
+                <div className="actions mt-10">
                   <a href={`#/playlists/${p.id}`}>
                     <button>{t('playlists.open')}</button>
                   </a>
                   {!isBuiltin && (
-                    <>
-                      <RenamePlaylistControl playlist={p} refreshPlaylists={refreshPlaylists} />
-                      <button
-                        className="danger"
-                        onClick={async () => {
-                          if (!confirm(t('playlists.deleteConfirm', { name: displayName }))) return;
-                          await window.fmusic.deletePlaylist(p.id);
-                          await refreshPlaylists();
-                        }}
-                      >
-                        {t('playlists.delete')}
-                      </button>
-                    </>
+                    <button
+                      className="danger"
+                      onClick={async () => {
+                        if (!confirm(t('playlists.deleteConfirm', { name: displayName }))) return;
+                        await window.fmusic.deletePlaylist(p.id);
+                        await refreshPlaylists();
+                      }}
+                    >
+                      {t('playlists.delete')}
+                    </button>
                   )}
                 </div>
               </div>
@@ -140,7 +152,101 @@ export function PlaylistsPage() {
   );
 }
 
-function PlaylistDetail({ playlist }: { playlist: Playlist }) {
+function EditableTitle({
+  initialValue,
+  onSave,
+  readonly,
+  placeholder
+}: {
+  initialValue: string;
+  onSave: (value: string) => Promise<void>;
+  readonly?: boolean;
+  placeholder?: string;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [value, setValue] = useState(initialValue);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+
+  useEffect(() => {
+    if (isEditing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [isEditing]);
+
+  async function handleSave() {
+    if (readonly || saving) return;
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setValue(initialValue);
+      setIsEditing(false);
+      return;
+    }
+    if (trimmed === initialValue) {
+      setIsEditing(false);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await onSave(trimmed);
+      setIsEditing(false);
+    } catch (err) {
+      setValue(initialValue);
+      setIsEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (isEditing && !readonly) {
+    return (
+      <div className="editable-title-container">
+        <input
+          ref={inputRef}
+          className="editable-title-input"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={() => void handleSave()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void handleSave();
+            if (e.key === 'Escape') {
+              setValue(initialValue);
+              setIsEditing(false);
+            }
+          }}
+          disabled={saving}
+          placeholder={placeholder}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="editable-title-container">
+      <span
+        className={`editable-title-text${readonly ? ' readonly' : ''}`}
+        onClick={() => !readonly && setIsEditing(true)}
+        title={readonly ? undefined : placeholder}
+      >
+        {initialValue}
+      </span>
+    </div>
+  );
+}
+
+function PlaylistDetail({
+  playlist,
+  onRename
+}: {
+  playlist: Playlist;
+  onRename: (id: number, nextName: string) => Promise<void>;
+}) {
   const t = useT();
   const navigate = useNavigate();
   const { id } = playlist;
@@ -153,14 +259,18 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [adding, setAdding] = useState(false);
   const [editingSmartPlaylist, setEditingSmartPlaylist] = useState(false);
-  const [mobileSyncTrackId, setMobileSyncTrackId] = useState<number | null>(null);
-  const [mobileSyncUrl, setMobileSyncUrl] = useState<string | null>(null);
+  const {
+    mobileSyncEnabled,
+    mobileSyncTrackId,
+    mobileSyncUrl,
+    toggleMobileSync,
+    closeMobileSync
+  } = useMobileSync();
   const playTrack = usePlayerStore((s) => s.playTrack);
   const currentTrack = usePlayerStore((s) => s.current);
   const localIsPlaying = usePlayerStore((s) => s.isPlaying);
   const sonosActiveHost = useSonosStore((s) => s.activeHost);
   const sonosIsPlaying = useSonosStore((s) => s.isPlaying);
-  const { settings } = useSettingsStore();
   // When casting, the true playback state lives in the Sonos store.
   const isPlayingGlobal = sonosActiveHost !== null ? sonosIsPlaying : localIsPlaying;
   const refreshPlaylists = useLibraryStore((s) => s.refreshPlaylists);
@@ -208,29 +318,6 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
     await refreshPlaylists();
   }
 
-  async function toggleMobileSync(trackId: number) {
-    if (mobileSyncTrackId === trackId) {
-      setMobileSyncTrackId(null);
-      setMobileSyncUrl(null);
-      return;
-    }
-
-    if (!settings?.mobileSyncEnabled) {
-      alert(t('library.mobileSyncDisabled'));
-      return;
-    }
-
-    setMobileSyncTrackId(trackId);
-    setMobileSyncUrl(null);
-    try {
-      const url = await window.fmusic.getMobileSyncUrl(trackId);
-      setMobileSyncUrl(url);
-    } catch (err) {
-      alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
-      setMobileSyncTrackId(null);
-    }
-  }
-
   async function moveUp(index: number) {
     if (index === 0) return;
     const ordered = [...tracks];
@@ -261,18 +348,21 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-        <h1 style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-          <MusicIcon size={22} /> {name}
+      <div className="flex items-center gap-12 mb-18">
+        <h1 className="m-0 flex items-center gap-10">
+          <MusicIcon size={22} />
+          <EditableTitle
+            initialValue={name}
+            onSave={(nextName) => onRename(id, nextName)}
+            readonly={Boolean(playlist.slug)}
+            placeholder={t('playlists.renamePrompt')}
+          />
         </h1>
         {isSmartPlaylist && (
           <span className="smart-playlist-badge" title={t('playlists.smart.badge')}>
             <SparklesIcon size={12} />
             <span>{t('playlists.smart.badge')}</span>
           </span>
-        )}
-        {!playlist.slug && (
-          <RenamePlaylistControl playlist={playlist} refreshPlaylists={refreshPlaylists} />
         )}
         {!isSmartPlaylist && (
           <button className="primary" onClick={() => void openPicker()}>
@@ -287,7 +377,7 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
       </div>
 
       {isSmartPlaylist && (
-        <div className="smart-playlist-footnote" style={{ marginBottom: 18 }}>
+        <div className="smart-playlist-footnote mb-18">
           {t('playlists.smart.dynamicNotice')}
         </div>
       )}
@@ -308,7 +398,7 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
       )}
 
       {playlist.sourceUrl && (
-        <div className="editor-file-location" style={{ marginBottom: 16 }}>
+        <div className="editor-file-location mb-16">
           <span className="editor-file-location-label">{t('editor.sourceUrl')}</span>
           <code>{playlist.sourceUrl}</code>
           <button
@@ -342,7 +432,7 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
             <button onClick={() => setPickerOpen(false)}>{t('playlists.pickerCancel')}</button>
           </div>
           {candidates.length === 0 ? (
-            <div className="empty" style={{ padding: 12 }}>
+            <div className="empty p-12">
               {allTracks.length === 0 ? t('playlists.libraryEmpty') : t('playlists.allAlreadyIn')}
             </div>
           ) : (
@@ -354,9 +444,9 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
                     checked={selected.has(t.id)}
                     onChange={() => toggle(t.id)}
                   />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600 }}>{t.title}</div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="fw-600">{t.title}</div>
+                    <div className="text-muted fs-12">
                       {t.artist ?? '-'} &middot; {formatDuration(t.durationSec)}
                     </div>
                   </div>
@@ -421,7 +511,7 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
                         >
                           <EditIcon size={14} />
                         </button>
-                        {settings?.mobileSyncEnabled && (
+                        {mobileSyncEnabled && (
                           <button
                             className="icon-btn sm"
                             onClick={() => void toggleMobileSync(tr.id)}
@@ -455,44 +545,12 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
                   {mobileSyncTrackId === tr.id && (
                     <tr className="track-editor-row">
                       <td colSpan={5}>
-                        <div className="mobile-sync-card">
-                          <div className="mobile-sync-header">
-                            <h3>{t('library.mobileSyncTitle')}</h3>
-                            {mobileSyncUrl && (
-                              <p>{t('library.mobileSyncInstructions', { title: tr.title })}</p>
-                            )}
-                          </div>
-
-                          {mobileSyncUrl ? (
-                            <>
-                              <div className="mobile-sync-qr-wrapper">
-                                <QRCodeSVG
-                                  value={mobileSyncUrl}
-                                  size={220}
-                                  level="H"
-                                  includeMargin={false}
-                                  imageSettings={{
-                                    src: 'fmusic-media://artwork/' + tr.id,
-                                    height: 40,
-                                    width: 40,
-                                    excavate: true
-                                  }}
-                                />
-                              </div>
-                              <div className="mobile-sync-url">{mobileSyncUrl}</div>
-                            </>
-                          ) : (
-                            <div className="empty" style={{ fontStyle: 'normal' }}>
-                              {t('common.loading')}
-                            </div>
-                          )}
-
-                          <div className="track-editor-actions" style={{ marginTop: 24 }}>
-                            <button onClick={() => setMobileSyncTrackId(null)}>
-                              {t('common.cancel')}
-                            </button>
-                          </div>
-                        </div>
+                        <MobileSyncCard
+                          trackId={tr.id}
+                          trackTitle={tr.title}
+                          mobileSyncUrl={mobileSyncUrl}
+                          onClose={closeMobileSync}
+                        />
                       </td>
                     </tr>
                   )}
@@ -502,95 +560,6 @@ function PlaylistDetail({ playlist }: { playlist: Playlist }) {
           </tbody>
         </table>
       )}
-    </div>
-  );
-}
-
-function RenamePlaylistControl({
-  playlist,
-  refreshPlaylists
-}: {
-  playlist: Pick<Playlist, 'id' | 'name' | 'slug'>;
-  refreshPlaylists: () => Promise<void>;
-}) {
-  const t = useT();
-  const [isEditing, setIsEditing] = useState(false);
-  const [draftName, setDraftName] = useState(playlist.name);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!isEditing) {
-      setDraftName(playlist.name);
-    }
-  }, [playlist.name, isEditing]);
-
-  if (playlist.slug) return null;
-
-  async function submitRename() {
-    const trimmedName = draftName.trim();
-    if (!trimmedName) {
-      alert(t('playlists.renameEmpty'));
-      return;
-    }
-
-    if (trimmedName === playlist.name) {
-      setIsEditing(false);
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await window.fmusic.renamePlaylist(playlist.id, trimmedName);
-      await refreshPlaylists();
-      setIsEditing(false);
-    } catch (error) {
-      alert(getRenamePlaylistErrorMessage(error, trimmedName, t));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (!isEditing) {
-    return (
-      <button
-        onClick={() => {
-          setDraftName(playlist.name);
-          setIsEditing(true);
-        }}
-      >
-        {t('playlists.rename')}
-      </button>
-    );
-  }
-
-  return (
-    <div className="inline-rename">
-      <input
-        value={draftName}
-        onChange={(e) => setDraftName(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') void submitRename();
-          if (e.key === 'Escape') {
-            setDraftName(playlist.name);
-            setIsEditing(false);
-          }
-        }}
-        placeholder={t('playlists.renamePrompt')}
-        aria-label={t('playlists.renamePrompt')}
-        autoFocus
-      />
-      <button className="primary" onClick={() => void submitRename()} disabled={saving}>
-        {saving ? t('playlists.renameSaving') : t('playlists.renameSave')}
-      </button>
-      <button
-        onClick={() => {
-          setDraftName(playlist.name);
-          setIsEditing(false);
-        }}
-        disabled={saving}
-      >
-        {t('common.cancel')}
-      </button>
     </div>
   );
 }

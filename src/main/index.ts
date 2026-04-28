@@ -9,18 +9,16 @@ import { getDb, closeDb } from './library/db.js';
 import { ensureBuiltinPlaylists } from './library/playlists-repo.js';
 import { getTrack, getTrackEmbeddedArtwork, resolveTrackFilePath, warmTrackArtworkCache } from './library/tracks-repo.js';
 import { stopActiveSonos } from './sonos.js';
-import { stopAudioServer } from './sonos-server.js';
-import { startMobileServer, stopMobileServer } from './mobile-server.js';
 import {
-  setRemoteControllerCommandHandler,
-  startRemoteControllerServer,
-  stopRemoteControllerServer,
-  updateRemoteControllerSnapshot
+  updateRemoteControllerSnapshot,
+  setRemoteControllerCommandHandler
 } from './remote-controller-server.js';
+import { startUnifiedServer, stopUnifiedServer } from './server-manager.js';
 import { createTray, destroyTray, updateTray, type TrayPlayerState } from './tray.js';
 import { createMiniPlayer, showMiniPlayer, hideMiniPlayer, getMiniPlayer } from './miniplayer.js';
 import { initUpdater } from './app-updater.js';
 import { runScreenshotCapture, screenshotMode, seedScreenshotDemoData } from './screenshot-mode.js';
+import { parseRange } from './network.js';
 
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
@@ -56,18 +54,6 @@ function mimeForExt(ext: string): string {
   }
 }
 
-function parseRange(
-  rangeHeader: string,
-  total: number
-): { start: number; end: number } | null {
-  const match = rangeHeader.match(/bytes=(\d+)-(\d*)/);
-  if (!match) return null;
-  const start = parseInt(match[1], 10);
-  const end = match[2] ? parseInt(match[2], 10) : total - 1;
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-  if (start < 0 || end < start || start >= total) return null;
-  return { start, end: Math.min(end, total - 1) };
-}
 
 function registerMediaProtocol(): void {
   protocol.handle(MEDIA_SCHEME, async (request) => {
@@ -270,13 +256,10 @@ app.whenReady().then(() => {
       seedScreenshotDemoData(app.getPath('userData'));
     }
 
-    // Start mobile sync server if enabled
-    const settings = getSettings();
-    if (settings.mobileSyncEnabled) {
-      void startMobileServer(settings.mobileSyncPort).catch(console.error);
-    }
-    if (settings.remoteControllerEnabled) {
-      void startRemoteControllerServer(settings.remoteControllerPort).catch(console.error);
+    // Start unified local server if any capability is enabled
+    const s = getSettings();
+    if (s.mobileSyncEnabled || s.remoteControllerEnabled || s.sonosEnabled) {
+      void startUnifiedServer().catch(console.error);
     }
   } catch (err) {
     console.error('[FMusic] Failed to initialize library database:', err);
@@ -407,8 +390,6 @@ app.on('before-quit', () => {
   isQuitting = true;
   destroyTray();
   void stopActiveSonos();
-  stopAudioServer();
-  stopMobileServer();
-  stopRemoteControllerServer();
+  stopUnifiedServer();
   closeDb();
 });

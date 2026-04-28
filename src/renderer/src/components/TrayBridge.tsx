@@ -22,11 +22,11 @@ export function TrayBridge() {
   const prev = usePlayerStore((s) => s.prev);
   const togglePlay = usePlayerStore((s) => s.togglePlay);
   const playTrack = usePlayerStore((s) => s.playTrack);
-  const enqueue = usePlayerStore((s) => s.enqueue);
   const seek = usePlayerStore((s) => s.seek);
   const volume = usePlayerStore((s) => s.volume);
   const setVolume = usePlayerStore((s) => s.setVolume);
   const downloads = useDownloadsStore((s) => s.jobs);
+  const settingsLoaded = useSettingsStore((s) => s.settings !== null);
   const sonosEnabled = useSettingsStore((s) => s.settings?.sonosEnabled ?? true);
 
   const sonosActiveHost = useSonosStore((s) => s.activeHost);
@@ -40,6 +40,7 @@ export function TrayBridge() {
   const sonosError = useSonosStore((s) => s.error);
   const sonosInitFromCache = useSonosStore((s) => s.initFromCache);
   const sonosDiscover = useSonosStore((s) => s.discover);
+  const sonosAddByIp = useSonosStore((s) => s.addByIp);
   const sonosStartCasting = useSonosStore((s) => s.startCasting);
   const sonosStop = useSonosStore((s) => s.stop);
   const sonosStopAll = useSonosStore((s) => s.stopAll);
@@ -123,8 +124,8 @@ export function TrayBridge() {
   ]);
 
   useEffect(() => {
-    if (sonosEnabled) void sonosInitFromCache();
-  }, [sonosEnabled, sonosInitFromCache]);
+    if (settingsLoaded && sonosEnabled) void sonosInitFromCache();
+  }, [settingsLoaded, sonosEnabled, sonosInitFromCache]);
 
   // Commands from the tray or mini player. Route them to Sonos when
   // casting so pause/next work on the speaker; otherwise they hit the
@@ -189,16 +190,7 @@ export function TrayBridge() {
       } else if (cmd.type === 'sonos-discover') {
         void sonosDiscover();
       } else if (cmd.type === 'sonos-add-by-ip') {
-        void window.fmusic.sonosAddByIp(cmd.host).then((device) => {
-          useSonosStore.setState((s) => ({
-            devices: s.devices.some((d) => d.host === device.host)
-              ? s.devices
-              : [...s.devices, device],
-            error: null
-          }));
-        }).catch((err) => {
-          useSonosStore.setState({ error: err instanceof Error ? err.message : String(err) });
-        });
+        void sonosAddByIp(cmd.host);
       } else if (cmd.type === 'sonos-cast') {
         if (!current || !sonosEnabled) return;
         usePlayerStore.getState().pause();
@@ -233,11 +225,11 @@ export function TrayBridge() {
     prev,
     sonosTogglePlay,
     playTrack,
-    enqueue,
     current,
     position,
     sonosEnabled,
     sonosDiscover,
+    sonosAddByIp,
     sonosStartCasting,
     sonosActiveHost,
     sonosStop,

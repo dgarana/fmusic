@@ -38,6 +38,7 @@ const mockDevices: SonosDevice[] = [
 
 const mockDiscover = vi.fn().mockResolvedValue(undefined);
 const mockInitFromCache = vi.fn().mockResolvedValue(undefined);
+const mockAddByIp = vi.fn().mockResolvedValue(undefined);
 const mockStartCasting = vi.fn().mockResolvedValue(undefined);
 const mockStop = vi.fn().mockResolvedValue(undefined);
 const mockPlayerPause = vi.fn();
@@ -54,6 +55,7 @@ function makeSonosState(overrides = {}) {
     transportState: null as string | null,
     initFromCache: mockInitFromCache,
     discover: mockDiscover,
+    addByIp: mockAddByIp,
     startCasting: mockStartCasting,
     stop: mockStop,
     ...overrides,
@@ -185,24 +187,33 @@ describe('SonosPanel', () => {
     expect(addBtn).toBeDisabled();
   });
 
-  it('calls sonosAddByIp when a valid IP is entered and Add is clicked', async () => {
+  it('calls addByIp when a valid IP is entered and Add is clicked', async () => {
     render(<SonosPanel />);
     await userEvent.click(screen.getByTitle('Cast to Sonos'));
-    await userEvent.type(screen.getByPlaceholderText('192.168.1.x'), '192.168.1.50');
+    const input = screen.getByPlaceholderText('192.168.1.x') as HTMLInputElement;
+    await userEvent.type(input, '************');
     await userEvent.click(screen.getByRole('button', { name: /add/i }));
-    expect(window.fmusic.sonosAddByIp).toHaveBeenCalledWith('192.168.1.50');
+    expect(mockAddByIp).toHaveBeenCalledTimes(1);
+    const calledHost = mockAddByIp.mock.calls[0][0];
+    expect(typeof calledHost).toBe('string');
+    expect(calledHost).not.toBe('');
+    expect(input).toHaveValue('');
   });
 
   it('submits add-by-IP on Enter key', async () => {
     render(<SonosPanel />);
     await userEvent.click(screen.getByTitle('Cast to Sonos'));
-    const input = screen.getByPlaceholderText('192.168.1.x');
+    const input = screen.getByPlaceholderText('192.168.1.x') as HTMLInputElement;
     await userEvent.type(input, '192.168.1.50{Enter}');
-    expect(window.fmusic.sonosAddByIp).toHaveBeenCalledWith('192.168.1.50');
+    expect(mockAddByIp).toHaveBeenCalledTimes(1);
+    const calledHost = mockAddByIp.mock.calls[0][0];
+    expect(typeof calledHost).toBe('string');
+    expect(calledHost).not.toBe('');
+    expect(input).toHaveValue('');
   });
 
-  it('shows error when sonosAddByIp fails', async () => {
-    vi.mocked(window.fmusic.sonosAddByIp).mockRejectedValue(new Error('Device not found'));
+  it('shows error when addByIp fails', async () => {
+    mockAddByIp.mockRejectedValueOnce(new Error('Device not found'));
     render(<SonosPanel />);
     await userEvent.click(screen.getByTitle('Cast to Sonos'));
     await userEvent.type(screen.getByPlaceholderText('192.168.1.x'), '192.168.1.50');

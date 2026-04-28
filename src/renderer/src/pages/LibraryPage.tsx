@@ -1,14 +1,14 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { QRCodeSVG } from 'qrcode.react';
 import { useLibraryStore } from '../store/library';
 import { usePlayerStore } from '../store/player';
 import { useSonosStore } from '../store/sonos';
-import { useSettingsStore } from '../store/settings';
 import { formatDuration } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
 import type { Playlist, Track, TrackSortKey } from '../../../shared/types';
+import { MobileSyncCard } from '../components/MobileSyncCard';
 import { TrackTitleCell } from '../components/TrackTitleCell';
+import { useMobileSync } from '../hooks/useMobileSync';
 import {
   PlayIcon,
   EditIcon,
@@ -37,11 +37,15 @@ export function LibraryPage() {
   // When casting, the true playback state lives in the Sonos store (the
   // local Howl is always paused/unloaded while the speaker plays).
   const isPlayingGlobal = sonosActiveHost !== null ? sonosIsPlaying : localIsPlaying;
-  const { settings } = useSettingsStore();
 
   const [addingTrackId, setAddingTrackId] = useState<number | null>(null);
-  const [mobileSyncTrackId, setMobileSyncTrackId] = useState<number | null>(null);
-  const [mobileSyncUrl, setMobileSyncUrl] = useState<string | null>(null);
+  const {
+    mobileSyncEnabled,
+    mobileSyncTrackId,
+    mobileSyncUrl,
+    toggleMobileSync,
+    closeMobileSync
+  } = useMobileSync(() => setAddingTrackId(null));
   const playlists = useLibraryStore((s) => s.playlists);
   const refreshPlaylists = useLibraryStore((s) => s.refreshPlaylists);
   const refreshTracks = useLibraryStore((s) => s.refreshTracks);
@@ -92,32 +96,8 @@ export function LibraryPage() {
   }
 
   function togglePlaylistPicker(trackId: number) {
-    setMobileSyncTrackId(null);
+    closeMobileSync();
     setAddingTrackId((current) => (current === trackId ? null : trackId));
-  }
-
-  async function toggleMobileSync(trackId: number) {
-    if (mobileSyncTrackId === trackId) {
-      setMobileSyncTrackId(null);
-      setMobileSyncUrl(null);
-      return;
-    }
-
-    if (!settings?.mobileSyncEnabled) {
-      alert(t('library.mobileSyncDisabled'));
-      return;
-    }
-
-    setAddingTrackId(null);
-    setMobileSyncTrackId(trackId);
-    setMobileSyncUrl(null);
-    try {
-      const url = await window.fmusic.getMobileSyncUrl(trackId);
-      setMobileSyncUrl(url);
-    } catch (err) {
-      alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
-      setMobileSyncTrackId(null);
-    }
   }
 
   return (
@@ -192,9 +172,9 @@ export function LibraryPage() {
                     <td className="cell-narrow">{formatDuration(tr.durationSec)}</td>
                     <td>
                       {trackPlaylistIds.length === 0 ? (
-                        <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>
+                        <span className="text-muted fs-12">—</span>
                       ) : (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                        <div className="flex flex-wrap gap-4">
                           {trackPlaylistIds.map((id) => {
                             const playlist = playlistsById.get(id);
                             if (!playlist) return null;
@@ -242,7 +222,7 @@ export function LibraryPage() {
                         >
                           <PlusIcon size={14} />
                         </button>
-                        {settings?.mobileSyncEnabled && (
+                        {mobileSyncEnabled && (
                           <button
                             className="icon-btn sm"
                             onClick={() => void toggleMobileSync(tr.id)}
@@ -259,7 +239,7 @@ export function LibraryPage() {
                               if (id) void handleAddToPlaylist(tr, id);
                             }}
                             defaultValue=""
-                            style={{ marginLeft: 6 }}
+                            className="ml-6"
                           >
                             <option value="" disabled>
                               {t('library.choosePlaylist')}
@@ -284,44 +264,12 @@ export function LibraryPage() {
                   {mobileSyncTrackId === tr.id && (
                     <tr key={`${tr.id}-mobile-sync`} className="track-editor-row">
                       <td colSpan={6}>
-                        <div className="mobile-sync-card">
-                          <div className="mobile-sync-header">
-                            <h3>{t('library.mobileSyncTitle')}</h3>
-                            {mobileSyncUrl && (
-                              <p>{t('library.mobileSyncInstructions', { title: tr.title })}</p>
-                            )}
-                          </div>
-
-                          {mobileSyncUrl ? (
-                            <>
-                              <div className="mobile-sync-qr-wrapper">
-                                <QRCodeSVG
-                                  value={mobileSyncUrl}
-                                  size={220}
-                                  level="H"
-                                  includeMargin={false}
-                                  imageSettings={{
-                                    src: 'fmusic-media://artwork/' + tr.id,
-                                    height: 40,
-                                    width: 40,
-                                    excavate: true
-                                  }}
-                                />
-                              </div>
-                              <div className="mobile-sync-url">{mobileSyncUrl}</div>
-                            </>
-                          ) : (
-                            <div className="empty" style={{ fontStyle: 'normal' }}>
-                              {t('common.loading')}
-                            </div>
-                          )}
-
-                          <div className="track-editor-actions" style={{ marginTop: 24 }}>
-                            <button onClick={() => setMobileSyncTrackId(null)}>
-                              {t('common.cancel')}
-                            </button>
-                          </div>
-                        </div>
+                        <MobileSyncCard
+                          trackId={tr.id}
+                          trackTitle={tr.title}
+                          mobileSyncUrl={mobileSyncUrl}
+                          onClose={closeMobileSync}
+                        />
                       </td>
                     </tr>
                   )}

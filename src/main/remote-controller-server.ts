@@ -1,6 +1,5 @@
 import crypto from 'node:crypto';
-import http from 'node:http';
-import os from 'node:os';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Duplex } from 'node:stream';
 import {
   findDownloadedYoutubeIds,
@@ -20,8 +19,11 @@ import {
 import { getDownloadManager } from './download-manager.js';
 import { searchYouTube } from './ytdlp.js';
 import { getSettings } from './settings.js';
+import { getLocalIp, getServicePort } from './network.js';
 import enBundle from '../shared/i18n/en.json';
 import esBundle from '../shared/i18n/es.json';
+import { toErrorMessage } from '../shared/errors.js';
+import { extractYoutubeId } from '../shared/youtube.js';
 import type {
   DownloadRequest,
   Locale,
@@ -34,8 +36,6 @@ import type {
   TrackQuery
 } from '../shared/types.js';
 
-let server: http.Server | null = null;
-let serverPort = 0;
 let token = crypto.randomBytes(24).toString('hex');
 let lastSnapshot: RemotePlayerSnapshot | null = null;
 let commandHandler: ((command: RemoteControllerCommand) => void) | null = null;
@@ -65,43 +65,10 @@ interface RemoteDataSnapshot {
   playlists: Playlist[];
 }
 
-function extractYoutubeId(input: string): string | null {
-  if (!input) return null;
-  const trimmed = input.trim();
-  try {
-    const url = new URL(trimmed);
-    if (url.hostname.includes('youtu.be')) {
-      const id = url.pathname.replace(/^\//, '').split('/')[0];
-      return id || null;
-    }
-    if (url.hostname.includes('youtube.com')) {
-      const v = url.searchParams.get('v');
-      if (v) return v;
-      const parts = url.pathname.split('/').filter(Boolean);
-      const marker = parts.findIndex((p) => p === 'embed' || p === 'shorts' || p === 'v');
-      if (marker >= 0 && parts[marker + 1]) return parts[marker + 1];
-    }
-  } catch {
-    // fall through to regex
-  }
-  const match = trimmed.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{6,})/);
-  return match ? match[1] : null;
-}
-
-function getLocalIp(): string {
-  const interfaces = os.networkInterfaces();
-  for (const iface of Object.values(interfaces)) {
-    if (!iface) continue;
-    for (const addr of iface) {
-      if (addr.family === 'IPv4' && !addr.internal) return addr.address;
-    }
-  }
-  return '127.0.0.1';
-}
-
 function remoteUrl(): string | null {
-  if (!server) return null;
-  return `http://${getLocalIp()}:${serverPort}/remote?token=${token}`;
+  const port = getServicePort('remote-controller');
+  if (!port) return null;
+  return `http://${getLocalIp()}:${port}/remote?token=${token}`;
 }
 
 function sendJson(socket: Duplex, payload: unknown): void {
@@ -135,7 +102,7 @@ function remoteDataSnapshot(): RemoteDataSnapshot {
 }
 
 function broadcastData(): void {
-  if (server) broadcast({ type: 'data', data: remoteDataSnapshot() });
+  broadcast({ type: 'data', data: remoteDataSnapshot() });
 }
 
 export function broadcastRemoteControllerData(): void {
@@ -150,13 +117,8 @@ function remoteSettingsPayload(): { language: Locale } {
   return { language: currentLocale() };
 }
 
-/**
- * Push the current remote-facing settings (language, ...) to every connected
- * client. Called from the main IPC layer when the user changes the language
- * so the mobile remote UI updates in real time without reloading the page.
- */
 export function broadcastRemoteControllerSettings(): void {
-  if (server) broadcast({ type: 'settings', data: remoteSettingsPayload() });
+  broadcast({ type: 'settings', data: remoteSettingsPayload() });
 }
 
 function readFrame(buffer: Buffer): string | null {
@@ -267,7 +229,7 @@ function normalizeIncoming(value: unknown): RemoteIncoming | null {
     Array.isArray(record.orderedTrackIds)
   ) {
     return {
-      type: 'playlist:reorder',
+      type: record.type,
       playlistId: record.playlistId,
       orderedTrackIds: numberArray(record.orderedTrackIds) ?? [],
       requestId
@@ -372,20 +334,12 @@ async function handleAction(socket: Duplex, action: RemoteAction & { requestId?:
   }
 }
 
-function serveRemotePage(res: http.ServerResponse): void {
+function serveRemotePage(res: ServerResponse): void {
   res.writeHead(200, {
     'Content-Type': 'text/html; charset=utf-8',
     'Cache-Control': 'no-store'
   });
-  // Embed both translation bundles + the currently active locale so the
-  // mobile remote uses the same literals as the desktop app. The bundles are
-  // serialized as JSON (no </script> sequences are possible inside) to avoid
-  // interpolation footguns. Locale updates arrive later via the `settings`
-  // WebSocket message, so the page never needs to reload.
   const locale = currentLocale();
-  // Escape `<` so a stray `</script>` sequence inside any translation value
-  // cannot break out of the inline <script> block (defense-in-depth; the
-  // bundles are authored in-repo so this is belt-and-suspenders).
   const bundlesJson = JSON.stringify({ en: enBundle, es: esBundle }).replace(/</g, '\\u003c');
   res.end(`<!doctype html>
 <html lang="${locale}">
@@ -400,7 +354,7 @@ function serveRemotePage(res: http.ServerResponse): void {
     main { min-height: 100vh; display: grid; grid-template-rows: auto auto auto 1fr; gap: 10px; padding: 12px; }
     header { display: flex; justify-content: space-between; align-items: center; color: #9aa3b5; font-size: 13px; }
     nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 3px; border: 1px solid #272c36; border-radius: 12px; background: #171b22; }
-    nav button { width: auto; height: 34px; border: 0; border-radius: 9px; font-size: 12px; background: transparent; color: #9aa3b5; }
+    nav button { width: auto; height: 34px; border: 0; border-radius: 999px; font-size: 12px; background: transparent; color: #9aa3b5; }
     nav button.active { background: #242a35; color: #f5f7fb; }
     .view { display: none; min-width: 0; }
     .view.active { display: block; }
@@ -469,14 +423,12 @@ function serveRemotePage(res: http.ServerResponse): void {
     .sonos-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
     .sonos-actions button { width: auto; height: 30px; min-width: 62px; border-radius: 8px; font-size: 11px; padding: 0 9px; }
     .sonos-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; margin-bottom: 8px; }
-    .sonos-add button { width: auto; height: 36px; min-width: 52px; border-radius: 9px; font-size: 12px; }
+    .sonos-add button { width: auto; height: 36px; min-width: 52px; border-radius: 999px; font-size: 12px; }
     .sonos-device { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; align-items: center; padding: 7px 0; border-top: 1px solid #252a34; }
     .sonos-device:first-of-type { border-top: 0; }
     .sonos-device button { width: auto; min-width: 48px; height: 30px; border-radius: 8px; font-size: 11px; padding: 0 8px; }
     .badge { color: #3ddc97; font-size: 11px; }
     .hidden { display: none !important; }
-    /* Currently playing row: green tinted border + accent title, with a */
-    /* CSS-only equalizer overlay mirroring the one used on desktop. */
     .row.now-playing { border-color: #3ddc97; background: rgba(61, 220, 151, 0.08); }
     .row.now-playing .library-title strong { color: #3ddc97; }
     .thumb { position: relative; }
@@ -488,8 +440,6 @@ function serveRemotePage(res: http.ServerResponse): void {
     .now-playing-equalizer span:nth-child(4) { animation-delay: .54s; }
     .now-playing-equalizer.paused span { animation-play-state: paused; }
     @keyframes remote-eq { 0%, 100% { height: 25%; } 50% { height: 95%; } }
-    /* BETA marker in the header + inline notice below it. The feature is */
-    /* still stabilizing so we surface this prominently on mobile. */
     .beta-badge { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: #3ddc97; color: #08110d; font-size: 10px; font-weight: 700; letter-spacing: .04em; vertical-align: middle; }
     .beta-notice { margin: -4px 0 2px; padding: 8px 10px; border: 1px solid rgba(61, 220, 151, .35); border-radius: 10px; background: rgba(61, 220, 151, .08); color: #cfd5df; font-size: 11px; line-height: 1.35; }
   </style>
@@ -538,9 +488,6 @@ function serveRemotePage(res: http.ServerResponse): void {
   </section>
 </main>
 <script>
-// Inlined bundles + current locale. The desktop app pushes a 'settings'
-// WebSocket message whenever the user changes the language so the mobile
-// remote switches in real time without reconnecting.
 window.__REMOTE_I18N__ = ${bundlesJson};
 window.__REMOTE_LOCALE__ = ${JSON.stringify(locale)};
 let locale = window.__REMOTE_LOCALE__ || 'en';
@@ -641,9 +588,6 @@ function render(state) {
   renderSonos(state.sonos);
   updateHighlight();
 }
-// Sync the 'now-playing' class + equalizer overlay across every rendered
-// track row (library and playlist detail) so the user can tell at a glance
-// which song is active — mirroring the desktop Library/Playlist behaviour.
 function updateHighlight() {
   const currentId = current?.trackId ?? null;
   const isPlaying = !!current?.isPlaying;
@@ -751,10 +695,6 @@ async function handleDownloadGo() {
   }
 }
 applyI18n();
-// Keep the current status key on the element so that re-running applyI18n()
-// (triggered by a 'settings' message after a language change) picks the
-// translated value for the active status instead of resetting it back to
-// the 'Connecting' placeholder baked into the initial HTML.
 function setStatus(key) {
   const conn = el('conn');
   conn.setAttribute('data-i18n', key);
@@ -767,9 +707,6 @@ ws.onmessage = (event) => {
   if (msg.type === 'state') render(msg.state);
   else if (msg.type === 'data') renderData(msg.data);
   else if (msg.type === 'settings') {
-    // The desktop app pushes this whenever the user changes the language.
-    // Re-apply every static label and re-render dynamic views so playlists,
-    // downloads and the player reflect the new locale immediately.
     const nextLocale = msg.data?.language;
     if (nextLocale && bundles[nextLocale]) {
       locale = nextLocale;
@@ -837,8 +774,6 @@ document.body.addEventListener('click', async (event) => {
     } catch (err) {
       target.removeAttribute('data-download-url');
       target.setAttribute('disabled', '');
-      // The server still returns the English "Already in library." error so
-      // we can branch on it. The user-facing label uses the translated key.
       target.textContent = err.message === 'Already in library.' ? t('download.inLibrary') : t('remote.download.failed');
       el('downloadMessage').textContent = err.message || String(err);
     }
@@ -923,142 +858,124 @@ export function setRemoteControllerCommandHandler(
   commandHandler = handler;
 }
 
-export function startRemoteControllerServer(port: number): Promise<number> {
-  return new Promise((resolve, reject) => {
-    if (server) {
-      resolve(serverPort);
-      return;
-    }
-    server = http.createServer(async (req, res) => {
-      const url = new URL(req.url || '/', `http://${req.headers.host}`);
-      if (!isAuthorized(url)) {
-        res.writeHead(403);
-        res.end('Forbidden');
-        return;
-      }
-      if (url.pathname === '/' || url.pathname === '/remote') {
-        serveRemotePage(res);
-        return;
-      }
-      const artworkMatch = url.pathname.match(/^\/artwork\/(\d+)$/);
-      if (artworkMatch) {
-        const track = getTrack(Number(artworkMatch[1]));
-        const dataUrl = track ? await getTrackEmbeddedArtworkDataUrl(track) : null;
-        if (!dataUrl) {
-          res.writeHead(404);
-          res.end('Not found');
-          return;
-        }
-        const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-        if (!match) {
-          res.writeHead(404);
-          res.end('Not found');
-          return;
-        }
-        res.writeHead(200, {
-          'Content-Type': match[1],
-          'Cache-Control': 'no-store'
-        });
-        res.end(Buffer.from(match[2], 'base64'));
-        return;
-      }
+export async function handleRemoteRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const url = new URL(req.url || '/', `http://${req.headers.host}`);
+  if (!isAuthorized(url)) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
+  }
+  if (url.pathname === '/' || url.pathname === '/remote') {
+    serveRemotePage(res);
+    return;
+  }
+  const artworkMatch = url.pathname.match(/^\/artwork\/(\d+)$/);
+  if (artworkMatch) {
+    const track = getTrack(Number(artworkMatch[1]));
+    const dataUrl = track ? await getTrackEmbeddedArtworkDataUrl(track) : null;
+    if (!dataUrl) {
       res.writeHead(404);
       res.end('Not found');
+      return;
+    }
+    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) {
+      res.writeHead(404);
+      res.end('Not found');
+      return;
+    }
+    res.writeHead(200, {
+      'Content-Type': match[1],
+      'Cache-Control': 'no-store'
     });
-
-    server.on('upgrade', (req, socket) => {
-      const url = new URL(req.url || '/', `http://${req.headers.host}`);
-      if (url.pathname !== '/remote-ws' || !isAuthorized(url)) {
-        socket.destroy();
-        return;
-      }
-      const key = req.headers['sec-websocket-key'];
-      if (typeof key !== 'string') {
-        socket.destroy();
-        return;
-      }
-      const accept = crypto
-        .createHash('sha1')
-        .update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')
-        .digest('base64');
-      socket.write(
-        'HTTP/1.1 101 Switching Protocols\r\n' +
-          'Upgrade: websocket\r\n' +
-          'Connection: Upgrade\r\n' +
-          `Sec-WebSocket-Accept: ${accept}\r\n\r\n`
-      );
-      clients.add(socket);
-      sendJson(socket, { type: 'settings', data: remoteSettingsPayload() });
-      if (lastSnapshot) sendJson(socket, { type: 'state', state: lastSnapshot });
-      sendJson(socket, { type: 'data', data: remoteDataSnapshot() });
-      socket.on('data', (buffer) => {
-        const text = readFrame(buffer);
-        if (!text) return;
-        void (async () => {
-          let message: RemoteIncoming | null = null;
-          try {
-            message = normalizeIncoming(JSON.parse(text));
-            if (!message) return;
-            if (message.type === 'request-state') {
-              sendJson(socket, { type: 'settings', data: remoteSettingsPayload() });
-              if (lastSnapshot) sendJson(socket, { type: 'state', state: lastSnapshot });
-              sendJson(socket, { type: 'data', data: remoteDataSnapshot() });
-              return;
-            }
-            if (
-              message.type === 'toggle-play' ||
-              message.type === 'prev' ||
-              message.type === 'next' ||
-              message.type === 'seek' ||
-              message.type === 'volume' ||
-              message.type === 'play-track' ||
-              message.type === 'play-next-track' ||
-              message.type === 'sonos-discover' ||
-              message.type === 'sonos-add-by-ip' ||
-              message.type === 'sonos-cast' ||
-              message.type === 'sonos-stop' ||
-              message.type === 'sonos-stop-all'
-            ) {
-              const { requestId: _requestId, ...command } = message;
-              commandHandler?.(command as RemoteControllerCommand);
-              sendResult(socket, message.requestId, true);
-              return;
-            }
-            await handleAction(socket, message);
-          } catch (err) {
-            sendError(
-              socket,
-              message?.requestId,
-              err instanceof Error ? err.message : String(err)
-            );
-          }
-        })();
-      });
-      socket.on('close', () => clients.delete(socket));
-      socket.on('error', () => clients.delete(socket));
-    });
-
-    server.listen(port, '0.0.0.0', () => {
-      serverPort = (server!.address() as { port: number }).port;
-      console.log(`[remote-controller] Listening on port ${serverPort}`);
-      resolve(serverPort);
-    });
-    server.on('error', reject);
-  });
+    res.end(Buffer.from(match[2], 'base64'));
+    return;
+  }
+  res.writeHead(404);
+  res.end('Not found');
 }
 
-export function stopRemoteControllerServer(): void {
+export function handleRemoteUpgrade(req: IncomingMessage, socket: Duplex, _head: Buffer): void {
+  const url = new URL(req.url || '/', `http://${req.headers.host}`);
+  if (url.pathname !== '/remote-ws' || !isAuthorized(url)) {
+    socket.destroy();
+    return;
+  }
+  const key = req.headers['sec-websocket-key'];
+  if (typeof key !== 'string') {
+    socket.destroy();
+    return;
+  }
+  const accept = crypto
+    .createHash('sha1')
+    .update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')
+    .digest('base64');
+  socket.write(
+    'HTTP/1.1 101 Switching Protocols\r\n' +
+      'Upgrade: websocket\r\n' +
+      'Connection: Upgrade\r\n' +
+      `Sec-WebSocket-Accept: ${accept}\r\n\r\n`
+  );
+  clients.add(socket);
+  sendJson(socket, { type: 'settings', data: remoteSettingsPayload() });
+  if (lastSnapshot) sendJson(socket, { type: 'state', state: lastSnapshot });
+  sendJson(socket, { type: 'data', data: remoteDataSnapshot() });
+  socket.on('data', (buffer) => {
+    const text = readFrame(buffer);
+    if (!text) return;
+    void (async () => {
+      let message: RemoteIncoming | null = null;
+      try {
+        message = normalizeIncoming(JSON.parse(text));
+        if (!message) return;
+        if (message.type === 'request-state') {
+          sendJson(socket, { type: 'settings', data: remoteSettingsPayload() });
+          if (lastSnapshot) sendJson(socket, { type: 'state', state: lastSnapshot });
+          sendJson(socket, { type: 'data', data: remoteDataSnapshot() });
+          return;
+        }
+        if (
+          message.type === 'toggle-play' ||
+          message.type === 'prev' ||
+          message.type === 'next' ||
+          message.type === 'seek' ||
+          message.type === 'volume' ||
+          message.type === 'play-track' ||
+          message.type === 'play-next-track' ||
+          message.type === 'sonos-discover' ||
+          message.type === 'sonos-add-by-ip' ||
+          message.type === 'sonos-cast' ||
+          message.type === 'sonos-stop' ||
+          message.type === 'sonos-stop-all'
+        ) {
+          const { requestId: _requestId, ...command } = message;
+          commandHandler?.(command as RemoteControllerCommand);
+          sendResult(socket, message.requestId, true);
+          return;
+        }
+        await handleAction(socket, message);
+      } catch (err) {
+        sendError(
+          socket,
+          message?.requestId,
+          toErrorMessage(err)
+        );
+      }
+    })();
+  });
+  socket.on('close', () => clients.delete(socket));
+  socket.on('error', () => clients.delete(socket));
+}
+
+export function cleanupRemoteClients(): void {
   for (const client of clients) client.destroy();
   clients.clear();
-  server?.close();
-  server = null;
-  serverPort = 0;
   lastSnapshot = null;
 }
 
 export function updateRemoteControllerSnapshot(snapshot: RemotePlayerSnapshot): void {
   lastSnapshot = snapshot;
-  if (server) broadcast({ type: 'state', state: snapshot });
+  broadcast({ type: 'state', state: snapshot });
 }
 
 export function regenerateRemoteControllerToken(): RemoteControllerInfo {
@@ -1069,10 +986,15 @@ export function regenerateRemoteControllerToken(): RemoteControllerInfo {
 }
 
 export function getRemoteControllerInfo(): RemoteControllerInfo {
+  const enabled = isRemoteEnabled();
   return {
-    enabled: server !== null,
-    running: server !== null,
+    enabled,
+    running: enabled,
     url: remoteUrl(),
-    token: server ? token : null
+    token: enabled ? token : null
   };
+}
+
+export function isRemoteEnabled(): boolean {
+  return getSettings().remoteControllerEnabled;
 }

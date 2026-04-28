@@ -14,9 +14,9 @@ import {
 } from './library/playlists-repo.js';
 import { insertTrack } from './library/tracks-repo.js';
 import {
-  getRemoteControllerInfo,
-  startRemoteControllerServer
+  getRemoteControllerInfo
 } from './remote-controller-server.js';
+import { startUnifiedServer } from './server-manager.js';
 
 export const screenshotMode = process.env.FMUSIC_SCREENSHOT_MODE === '1';
 const screenshotOutputDir = process.env.FMUSIC_SCREENSHOT_OUTPUT_DIR ?? '';
@@ -358,9 +358,10 @@ async function captureRemoteControllerMobile(win: BrowserWindow): Promise<void> 
   await wait(1000);
 
   try {
-    await startRemoteControllerServer(0);
+    updateSettings({ remoteControllerEnabled: true });
+    await startUnifiedServer();
   } catch (err) {
-    console.warn('[screenshot] Could not start remote controller server:', err);
+    console.warn('[screenshot] Could not start unified server for remote controller:', err);
     return;
   }
   const info = getRemoteControllerInfo();

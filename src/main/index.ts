@@ -248,8 +248,21 @@ function configureSecurity(): void {
   });
 }
 
-app.whenReady().then(() => {
-  try {
+const isSingleInstance = app.requestSingleInstanceLock();
+
+if (!isSingleInstance) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      if (!mainWindow.isVisible()) mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+
+  app.whenReady().then(() => {
+    try {
     getDb();
     ensureBuiltinPlaylists();
     if (screenshotMode) {
@@ -393,3 +406,4 @@ app.on('before-quit', () => {
   stopUnifiedServer();
   closeDb();
 });
+}

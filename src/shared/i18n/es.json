@@ -72,6 +72,7 @@
     "importFiles": "Importar archivos",
     "importFolder": "Importar carpeta",
     "importing": "Importando...",
+    "importSummary": "{importedCount} canciones nuevas añadidas. {skippedCount} ya estaban presentes.",
     "searchPlaceholder": "Buscar por título, artista, álbum o género...",
 
     "allGenres": "Todos los géneros",

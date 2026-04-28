@@ -124,8 +124,16 @@ export function insertTrack(track: NewTrack): Track {
   return getTrack(Number(result.lastInsertRowid))!;
 }
 
-export async function importLocalTracks(filePaths: string[]): Promise<Track[]> {
-  const imported: Track[] = [];
+export interface ImportSummary {
+  importedCount: number;
+  skippedCount: number;
+  failedCount: number;
+}
+
+export async function importLocalTracks(filePaths: string[]): Promise<ImportSummary> {
+  let importedCount = 0;
+  let skippedCount = 0;
+  let failedCount = 0;
   const downloadDir = getSettings().downloadDir;
 
   const allFiles: string[] = [];
@@ -145,14 +153,34 @@ export async function importLocalTracks(filePaths: string[]): Promise<Track[]> {
       const ext = path.extname(sourcePath).toLowerCase();
       if (!['.mp3', '.m4a', '.opus', '.ogg', '.flac', '.wav'].includes(ext)) continue;
 
+      // Check if this path (relative or absolute) is already in the DB
+      const relative = toRelativePath(sourcePath);
+      const existing = getDb()
+        .prepare('SELECT id FROM tracks WHERE file_path = ?')
+        .get(relative);
+      if (existing) {
+        skippedCount++;
+        continue;
+      }
+
       // 1. Copy to library folder if not already there
       let targetPath = sourcePath;
       if (!path.normalize(sourcePath).toLowerCase().startsWith(path.normalize(downloadDir).toLowerCase())) {
         const destPath = path.join(downloadDir, path.basename(sourcePath));
+        
+        // Double check if the destination path is already in the DB
+        const destRelative = toRelativePath(destPath);
+        const existingDest = getDb()
+          .prepare('SELECT id FROM tracks WHERE file_path = ?')
+          .get(destRelative);
+        if (existingDest) {
+          skippedCount++;
+          continue;
+        }
+
         if (fs.existsSync(destPath)) {
-          // TODO: handle duplicates better? for now just skip or rename.
-          // Let's skip if identical or rename if different.
-          // For simplicity, let's just use a timestamp if it exists.
+          // If file exists on disk but not in DB, it might be a collision or a manual copy.
+          // For now, let's just use a timestamp to avoid overwriting.
           const parsed = path.parse(destPath);
           targetPath = path.join(downloadDir, `${parsed.name}-${Date.now()}${parsed.ext}`);
         } else {
@@ -165,7 +193,7 @@ export async function importLocalTracks(filePaths: string[]): Promise<Track[]> {
       const metadata = await parseFile(targetPath);
       const { common, format } = metadata;
 
-      const track = insertTrack({
+      insertTrack({
         youtubeId: null,
         title: common.title || path.basename(sourcePath, ext),
         artist: common.artist || null,
@@ -173,16 +201,17 @@ export async function importLocalTracks(filePaths: string[]): Promise<Track[]> {
         genre: common.genre?.[0] || null,
         durationSec: format.duration ? Math.round(format.duration) : null,
         filePath: targetPath,
-        thumbnailPath: null, // Artwork will be cached on first load via ensureTrackArtworkCacheSync
+        thumbnailPath: null,
         sourceUrl: null
       });
 
-      imported.push(track);
+      importedCount++;
     } catch (err) {
       console.error(`[tracks] Failed to import ${sourcePath}:`, err);
+      failedCount++;
     }
   }
-  return imported;
+  return { importedCount, skippedCount, failedCount };
 }
 
 export function getTrack(id: number): Track | null {
@@ -728,4 +757,34 @@ export function findDownloadedYoutubeIds(youtubeIds: string[]): string[] {
     )
     .all(...youtubeIds) as Array<{ youtube_id: string }>;
   return rows.map((r) => r.youtube_id);
+}
+
+export function cleanupMissingTracks(): void {
+  const db = getDb();
+  const tracks = db.prepare('SELECT id, file_path, youtube_id FROM tracks').all() as Array<{
+    id: number;
+    file_path: string;
+    youtube_id: string | null;
+  }>;
+
+  const deleteStmt = db.prepare('DELETE FROM tracks WHERE id = ?');
+  let removed = 0;
+
+  db.transaction(() => {
+    for (const t of tracks) {
+      const absolutePath = toAbsolutePath(t.file_path);
+      if (!fs.existsSync(absolutePath)) {
+        // Try one last-ditch recovery if it has a youtubeId (handles some encoding/NFC edge cases)
+        const recovered = resolveTrackFilePath({ id: t.id, filePath: t.file_path, youtubeId: t.youtube_id } as any);
+        if (!recovered) {
+          deleteStmt.run(t.id);
+          removed++;
+        }
+      }
+    }
+  })();
+
+  if (removed > 0) {
+    console.log(`[tracks] Cleaned up ${removed} missing tracks from the library.`);
+  }
 }

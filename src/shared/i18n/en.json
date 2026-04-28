@@ -72,6 +72,7 @@
     "importFiles": "Import files",
     "importFolder": "Import folder",
     "importing": "Importing...",
+    "importSummary": "{importedCount} new songs added. {skippedCount} were already present.",
     "searchPlaceholder": "Search by title, artist, album or genre...",
     "allGenres": "All genres",
     "empty": "Your library is empty. Download your first song from the Download tab.",

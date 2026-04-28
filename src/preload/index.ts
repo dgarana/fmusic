@@ -5,6 +5,7 @@ import type {
   DependencyStatus,
   DownloadJob,
   DownloadRequest,
+  ImportSummary,
   Playlist,
   SmartPlaylistDefinition,
   RemoteControllerCommand,
@@ -110,7 +111,7 @@ const api = {
   renameTrackFile: (id: number, basename: string) =>
     invoke<Track | null>(Channels.TracksRename, id, basename),
   importLocalTracks: (filePaths: string[]) =>
-    invoke<Track[]>(Channels.TracksImportLocal, filePaths),
+    invoke<ImportSummary>(Channels.TracksImportLocal, filePaths),
   getTrack: (id: number) => invoke<Track | null>(Channels.TracksGet, id),
   downloadedYoutubeIds: (ids: string[]) =>
     invoke<string[]>(Channels.TracksDownloadedIds, ids),

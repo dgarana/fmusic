@@ -102,9 +102,15 @@ export function LibraryPage() {
     if (paths.length === 0) return;
     setImporting(true);
     try {
-      await window.fmusic.importLocalTracks(paths);
+      const summary = await window.fmusic.importLocalTracks(paths);
       await refreshTracks();
       await useLibraryStore.getState().refreshGenres();
+      alert(
+        t('library.importSummary', {
+          importedCount: summary.importedCount,
+          skippedCount: summary.skippedCount
+        })
+      );
     } finally {
       setImporting(false);
     }
@@ -115,9 +121,15 @@ export function LibraryPage() {
     if (!dir) return;
     setImporting(true);
     try {
-      await window.fmusic.importLocalTracks([dir]);
+      const summary = await window.fmusic.importLocalTracks([dir]);
       await refreshTracks();
       await useLibraryStore.getState().refreshGenres();
+      alert(
+        t('library.importSummary', {
+          importedCount: summary.importedCount,
+          skippedCount: summary.skippedCount
+        })
+      );
     } finally {
       setImporting(false);
     }

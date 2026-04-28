@@ -1,7 +1,7 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.10.0
+## v0.10.1
 
 ### Bug Fixes
 
@@ -59,7 +59,8 @@ _Generated from repository tags and commit history._
 - Release v0.7.0 ([d4e60cd](https://github.com/dgarana/fmusic/commit/d4e60cd9a7ddef5c844ca1068d8df0a65a5d428c))
 - Release v0.8.0 ([b6f6d4e](https://github.com/dgarana/fmusic/commit/b6f6d4e3a964d27ffa67cd957fc3c6787a4cb8ad))
 - Release v0.9.0 ([97bf8f8](https://github.com/dgarana/fmusic/commit/97bf8f820701052e2ecc0a75ec0d1563784e0c3b))
-- Release v0.10.0 ([2ba8b15](https://github.com/dgarana/fmusic/commit/2ba8b15d9e03d1a286d86e2eb4c544c2f4d951a9))
+- Release v0.10.0 ([0fab4ec](https://github.com/dgarana/fmusic/commit/0fab4ece09b0081d58da6c2c506b03e3d6b27b35))
+- Release v0.10.1 ([0eeb249](https://github.com/dgarana/fmusic/commit/0eeb2495f2ea58437326270656d5c1f33d17f8ae))
 
 ### Other
 
@@ -87,6 +88,10 @@ Fix theme ([694e1e6](https://github.com/dgarana/fmusic/commit/694e1e6373b68dbc4d
 - Merge pull request #8 from dgarana/remote_player_controller
 
 feat: Add remote media player ([344ed6c](https://github.com/dgarana/fmusic/commit/344ed6ce6deea9d161849b9882e46350490ff15b))
+
+### Refactor
+
+- Simplify codebase, fix Sonos volume sync, and unify local servers (#27) ([4ee755f](https://github.com/dgarana/fmusic/commit/4ee755f7633dea1d44939811bcc88ca8c5b89195))
 
 ### Testing
 

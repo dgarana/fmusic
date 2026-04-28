@@ -49,6 +49,7 @@ const api = {
   openPath: (p: string) => invoke<void>(Channels.OpenPath, p),
   pickDirectory: () => invoke<string | null>(Channels.PickDirectory),
   pickFiles: () => invoke<string[]>(Channels.PickFiles),
+  moveLibrary: (oldDir: string, newDir: string) => invoke<void>(Channels.MoveLibrary, oldDir, newDir),
 
   // Dependencies
   depsStatus: () => invoke<DependencyStatus>(Channels.DepsStatus),

@@ -245,6 +245,8 @@
       "folder": "Carpeta de descarga",
       "change": "Cambiar",
       "open": "Abrir",
+      "moveLibraryConfirm": "¿Quieres mover tu biblioteca de música actual a la nueva ubicación? Si eliges 'No', los archivos se quedarán en la carpeta antigua y podrían dejar de estar disponibles en FMusic.",
+      "movingLibrary": "Moviendo biblioteca de música...",
       "format": "Formato por defecto",
       "quality": "Calidad por defecto"
     },

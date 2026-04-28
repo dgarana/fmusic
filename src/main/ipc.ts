@@ -34,7 +34,8 @@ import {
   getTrackEmbeddedArtworkDataUrl,
   editTrack,
   renameTrackFile,
-  importLocalTracks
+  importLocalTracks,
+  moveLibrary
 } from './library/tracks-repo.js';
 import {
   addTrackToPlaylist,
@@ -106,6 +107,9 @@ export function registerIpc(): void {
     });
     if (result.canceled) return [];
     return result.filePaths;
+  });
+  ipcMain.handle(Channels.MoveLibrary, async (_evt, oldDir: string, newDir: string) => {
+    return moveLibrary(oldDir, newDir);
   });
 
   // ----- Dependencies -----

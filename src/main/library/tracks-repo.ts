@@ -759,9 +759,13 @@ export function findDownloadedYoutubeIds(youtubeIds: string[]): string[] {
   return rows.map((r) => r.youtube_id);
 }
 
-export function cleanupMissingTracks(): void {
+export async function syncLibraryWithDisk(): Promise<void> {
   const db = getDb();
-  const tracks = db.prepare('SELECT id, file_path, youtube_id FROM tracks').all() as Array<{
+  const downloadDir = getSettings().downloadDir;
+  if (!fs.existsSync(downloadDir)) return;
+
+  // 1. Cleanup missing tracks
+  const dbTracks = db.prepare('SELECT id, file_path, youtube_id FROM tracks').all() as Array<{
     id: number;
     file_path: string;
     youtube_id: string | null;
@@ -770,21 +774,68 @@ export function cleanupMissingTracks(): void {
   const deleteStmt = db.prepare('DELETE FROM tracks WHERE id = ?');
   let removed = 0;
 
-  db.transaction(() => {
-    for (const t of tracks) {
-      const absolutePath = toAbsolutePath(t.file_path);
-      if (!fs.existsSync(absolutePath)) {
-        // Try one last-ditch recovery if it has a youtubeId (handles some encoding/NFC edge cases)
-        const recovered = resolveTrackFilePath({ id: t.id, filePath: t.file_path, youtubeId: t.youtube_id } as any);
-        if (!recovered) {
-          deleteStmt.run(t.id);
-          removed++;
+  for (const t of dbTracks) {
+    const absolutePath = toAbsolutePath(t.file_path);
+    if (!fs.existsSync(absolutePath)) {
+      // Try one last-ditch recovery if it has a youtubeId (handles some encoding/NFC edge cases)
+      const recovered = resolveTrackFilePath({ id: t.id, filePath: t.file_path, youtubeId: t.youtube_id } as any);
+      if (!recovered) {
+        deleteStmt.run(t.id);
+        removed++;
+      }
+    }
+  }
+
+  if (removed > 0) {
+    console.log(`[sync] Removed ${removed} missing tracks from the library.`);
+  }
+
+  // 2. Discover and import new files
+  const dbFilePaths = new Set(dbTracks.map((t) => toRelativePath(toAbsolutePath(t.file_path))));
+  const newFiles: string[] = [];
+
+  const collect = (p: string) => {
+    if (!fs.existsSync(p)) return;
+    const stat = fs.statSync(p);
+    if (stat.isDirectory()) {
+      fs.readdirSync(p).forEach((f) => collect(path.join(p, f)));
+    } else if (stat.isFile()) {
+      const ext = path.extname(p).toLowerCase();
+      if (['.mp3', '.m4a', '.opus', '.ogg', '.flac', '.wav'].includes(ext)) {
+        const rel = toRelativePath(p);
+        if (!dbFilePaths.has(rel)) {
+          newFiles.push(p);
         }
       }
     }
-  })();
+  };
 
-  if (removed > 0) {
-    console.log(`[tracks] Cleaned up ${removed} missing tracks from the library.`);
+  collect(downloadDir);
+
+  if (newFiles.length > 0) {
+    console.log(`[sync] Found ${newFiles.length} new files in DownloadDir, importing...`);
+    const summary = await importLocalTracks(newFiles);
+    console.log(`[sync] Imported ${summary.importedCount} new tracks.`);
+  }
+}
+
+export async function moveLibrary(oldDir: string, newDir: string): Promise<void> {
+  if (!fs.existsSync(oldDir)) return;
+  if (!fs.existsSync(newDir)) {
+    fs.mkdirSync(newDir, { recursive: true });
+  }
+
+  const entries = fs.readdirSync(oldDir);
+  for (const entry of entries) {
+    const src = path.join(oldDir, entry);
+    const dest = path.join(newDir, entry);
+    
+    // We use cpSync + rmSync to handle cross-partition moves safely
+    try {
+      fs.cpSync(src, dest, { recursive: true, preserveTimestamps: true });
+      fs.rmSync(src, { recursive: true, force: true });
+    } catch (err) {
+      console.error(`[tracks] Failed to move ${src} to ${dest}:`, err);
+    }
   }
 }

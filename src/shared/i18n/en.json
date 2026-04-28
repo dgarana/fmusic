@@ -244,6 +244,8 @@
       "folder": "Download folder",
       "change": "Change",
       "open": "Open",
+      "moveLibraryConfirm": "Do you want to move your existing music library to the new location? If you choose 'No', the files will stay in the old folder and might become unavailable in FMusic.",
+      "movingLibrary": "Moving music library...",
       "format": "Default format",
       "quality": "Default quality"
     },

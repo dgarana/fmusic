@@ -7,6 +7,7 @@ export const Channels = {
   OpenPath: 'app:open-path',
   PickDirectory: 'app:pick-directory',
   PickFiles: 'app:pick-files',
+  MoveLibrary: 'app:move-library',
 
   // Dependencies
   DepsStatus: 'deps:status',

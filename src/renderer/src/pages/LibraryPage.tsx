@@ -39,6 +39,8 @@ export function LibraryPage() {
   const isPlayingGlobal = sonosActiveHost !== null ? sonosIsPlaying : localIsPlaying;
 
   const [addingTrackId, setAddingTrackId] = useState<number | null>(null);
+  const [importing, setImporting] = useState(false);
+
   const {
     mobileSyncEnabled,
     mobileSyncTrackId,
@@ -95,6 +97,32 @@ export function LibraryPage() {
     await refreshPlaylists();
   }
 
+  async function handleImportFiles() {
+    const paths = await window.fmusic.pickFiles();
+    if (paths.length === 0) return;
+    setImporting(true);
+    try {
+      await window.fmusic.importLocalTracks(paths);
+      await refreshTracks();
+      await useLibraryStore.getState().refreshGenres();
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  async function handleImportFolder() {
+    const dir = await window.fmusic.pickDirectory();
+    if (!dir) return;
+    setImporting(true);
+    try {
+      await window.fmusic.importLocalTracks([dir]);
+      await refreshTracks();
+      await useLibraryStore.getState().refreshGenres();
+    } finally {
+      setImporting(false);
+    }
+  }
+
   function togglePlaylistPicker(trackId: number) {
     closeMobileSync();
     setAddingTrackId((current) => (current === trackId ? null : trackId));
@@ -102,7 +130,27 @@ export function LibraryPage() {
 
   return (
     <div>
-      <h1>{t('library.title')}</h1>
+      <div className="flex justify-between items-center mb-16">
+        <h1>{t('library.title')}</h1>
+        <div className="flex gap-8">
+          <button
+            className="btn primary sm flex items-center gap-6"
+            onClick={handleImportFiles}
+            disabled={importing}
+          >
+            <PlusIcon size={14} />
+            {importing ? t('library.importing') : t('library.importFiles')}
+          </button>
+          <button
+            className="btn sm flex items-center gap-6"
+            onClick={handleImportFolder}
+            disabled={importing}
+          >
+            <PlusIcon size={14} />
+            {importing ? t('library.importing') : t('library.importFolder')}
+          </button>
+        </div>
+      </div>
       <div className="library-toolbar">
         <div className="input-with-icon">
           <SearchIcon size={16} />

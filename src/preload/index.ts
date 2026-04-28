@@ -47,6 +47,7 @@ const api = {
     on<UpdateStatus>(Channels.UpdaterStatus, handler),
   openPath: (p: string) => invoke<void>(Channels.OpenPath, p),
   pickDirectory: () => invoke<string | null>(Channels.PickDirectory),
+  pickFiles: () => invoke<string[]>(Channels.PickFiles),
 
   // Dependencies
   depsStatus: () => invoke<DependencyStatus>(Channels.DepsStatus),
@@ -108,6 +109,8 @@ const api = {
     invoke<Track | null>(Channels.TracksEdit, id, options),
   renameTrackFile: (id: number, basename: string) =>
     invoke<Track | null>(Channels.TracksRename, id, basename),
+  importLocalTracks: (filePaths: string[]) =>
+    invoke<Track[]>(Channels.TracksImportLocal, filePaths),
   getTrack: (id: number) => invoke<Track | null>(Channels.TracksGet, id),
   downloadedYoutubeIds: (ids: string[]) =>
     invoke<string[]>(Channels.TracksDownloadedIds, ids),

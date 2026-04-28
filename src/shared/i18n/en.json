@@ -68,6 +68,10 @@
   },
   "library": {
     "title": "Library",
+    "import": "Import",
+    "importFiles": "Import files",
+    "importFolder": "Import folder",
+    "importing": "Importing...",
     "searchPlaceholder": "Search by title, artist, album or genre...",
     "allGenres": "All genres",
     "empty": "Your library is empty. Download your first song from the Download tab.",

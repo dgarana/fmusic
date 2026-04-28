@@ -6,6 +6,7 @@ export const Channels = {
   OpenExternal: 'app:open-external',
   OpenPath: 'app:open-path',
   PickDirectory: 'app:pick-directory',
+  PickFiles: 'app:pick-files',
 
   // Dependencies
   DepsStatus: 'deps:status',
@@ -44,6 +45,7 @@ export const Channels = {
   TracksEdit: 'tracks:edit',
   TracksRename: 'tracks:rename',
   TracksGet: 'tracks:get',
+  TracksImportLocal: 'tracks:import-local',
 
   // Library - playlists
   PlaylistsList: 'playlists:list',

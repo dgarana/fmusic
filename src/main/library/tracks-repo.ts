@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import NodeID3 from 'node-id3';
 import { parseFile } from 'music-metadata';
 import { app } from 'electron';
+import Database from 'better-sqlite3';
 import type {
   Track,
   TrackEditOptions,
@@ -14,6 +15,8 @@ import type {
 import { getDb } from './db.js';
 import { ffmpegPath } from '../paths.js';
 import { compileSmartPlaylistDefinition } from './smart-playlists.js';
+
+import { getSettings } from '../settings.js';
 
 interface TrackRow {
   id: number;
@@ -31,6 +34,53 @@ interface TrackRow {
   source_url: string | null;
 }
 
+/**
+ * Normalizes a path to be relative to the download directory if it's inside it.
+ * Otherwise returns the original absolute path.
+ */
+function toRelativePath(absolutePath: string): string {
+  const downloadDir = getSettings().downloadDir;
+  const normalizedBase = path.normalize(downloadDir).toLowerCase();
+  const normalizedFile = path.normalize(absolutePath).toLowerCase();
+
+  if (normalizedFile.startsWith(normalizedBase)) {
+    const rel = path.relative(downloadDir, absolutePath);
+    // Use forward slashes in the database for cross-platform compatibility
+    return rel.split(path.sep).join('/');
+  }
+  return absolutePath;
+}
+
+/**
+ * Resolves a stored path (which might be relative or absolute) to an absolute
+ * path on the current machine.
+ */
+function toAbsolutePath(storedPath: string): string {
+  if (path.isAbsolute(storedPath)) {
+    return storedPath;
+  }
+  // path.join handles the forward slashes from the DB correctly on all platforms
+  return path.join(getSettings().downloadDir, storedPath);
+}
+
+export function migrateToRelativePaths(db?: Database.Database): void {
+  const targetDb = db ?? getDb();
+  const tracks = targetDb.prepare('SELECT id, file_path FROM tracks').all() as Array<{
+    id: number;
+    file_path: string;
+  }>;
+
+  const update = targetDb.prepare('UPDATE tracks SET file_path = ? WHERE id = ?');
+  targetDb.transaction(() => {
+    for (const t of tracks) {
+      const rel = toRelativePath(t.file_path);
+      if (rel !== t.file_path) {
+        update.run(rel, t.id);
+      }
+    }
+  })();
+}
+
 function rowToTrack(row: TrackRow): Track {
   return {
     id: row.id,
@@ -40,7 +90,7 @@ function rowToTrack(row: TrackRow): Track {
     album: row.album,
     genre: row.genre,
     durationSec: row.duration_sec,
-    filePath: row.file_path,
+    filePath: toAbsolutePath(row.file_path),
     thumbnailPath: row.thumbnail_path,
     downloadedAt: row.downloaded_at,
     playCount: row.play_count,
@@ -63,14 +113,76 @@ export interface NewTrack {
 
 export function insertTrack(track: NewTrack): Track {
   const db = getDb();
+  const relativePath = toRelativePath(track.filePath);
   const result = db
     .prepare(
       `INSERT INTO tracks
        (youtube_id, title, artist, album, genre, duration_sec, file_path, thumbnail_path, source_url)
        VALUES (@youtubeId, @title, @artist, @album, @genre, @durationSec, @filePath, @thumbnailPath, @sourceUrl)`
     )
-    .run(track);
+    .run({ ...track, filePath: relativePath });
   return getTrack(Number(result.lastInsertRowid))!;
+}
+
+export async function importLocalTracks(filePaths: string[]): Promise<Track[]> {
+  const imported: Track[] = [];
+  const downloadDir = getSettings().downloadDir;
+
+  const allFiles: string[] = [];
+  const collect = (p: string) => {
+    if (!fs.existsSync(p)) return;
+    const stat = fs.statSync(p);
+    if (stat.isDirectory()) {
+      fs.readdirSync(p).forEach((f) => collect(path.join(p, f)));
+    } else if (stat.isFile()) {
+      allFiles.push(p);
+    }
+  };
+  filePaths.forEach(collect);
+
+  for (const sourcePath of allFiles) {
+    try {
+      const ext = path.extname(sourcePath).toLowerCase();
+      if (!['.mp3', '.m4a', '.opus', '.ogg', '.flac', '.wav'].includes(ext)) continue;
+
+      // 1. Copy to library folder if not already there
+      let targetPath = sourcePath;
+      if (!path.normalize(sourcePath).toLowerCase().startsWith(path.normalize(downloadDir).toLowerCase())) {
+        const destPath = path.join(downloadDir, path.basename(sourcePath));
+        if (fs.existsSync(destPath)) {
+          // TODO: handle duplicates better? for now just skip or rename.
+          // Let's skip if identical or rename if different.
+          // For simplicity, let's just use a timestamp if it exists.
+          const parsed = path.parse(destPath);
+          targetPath = path.join(downloadDir, `${parsed.name}-${Date.now()}${parsed.ext}`);
+        } else {
+          targetPath = destPath;
+        }
+        fs.copyFileSync(sourcePath, targetPath);
+      }
+
+      // 2. Read metadata
+      const metadata = await parseFile(targetPath);
+      const { common, format } = metadata;
+
+      const track = insertTrack({
+        youtubeId: null,
+        title: common.title || path.basename(sourcePath, ext),
+        artist: common.artist || null,
+        album: common.album || null,
+        genre: common.genre?.[0] || null,
+        durationSec: format.duration ? Math.round(format.duration) : null,
+        filePath: targetPath,
+        thumbnailPath: null, // Artwork will be cached on first load via ensureTrackArtworkCacheSync
+        sourceUrl: null
+      });
+
+      imported.push(track);
+    } catch (err) {
+      console.error(`[tracks] Failed to import ${sourcePath}:`, err);
+    }
+  }
+  return imported;
 }
 
 export function getTrack(id: number): Track | null {
@@ -405,7 +517,8 @@ export function findByYoutubeId(youtubeId: string): Track | null {
 }
 
 function updateFilePath(id: number, nextPath: string): void {
-  getDb().prepare('UPDATE tracks SET file_path = ? WHERE id = ?').run(nextPath, id);
+  const relative = toRelativePath(nextPath);
+  getDb().prepare('UPDATE tracks SET file_path = ? WHERE id = ?').run(relative, id);
 }
 
 function updateThumbnailPath(id: number, nextPath: string | null): void {

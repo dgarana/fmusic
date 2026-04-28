@@ -33,7 +33,8 @@ import {
   getTrack,
   getTrackEmbeddedArtworkDataUrl,
   editTrack,
-  renameTrackFile
+  renameTrackFile,
+  importLocalTracks
 } from './library/tracks-repo.js';
 import {
   addTrackToPlaylist,
@@ -94,6 +95,17 @@ export function registerIpc(): void {
     });
     if (result.canceled || result.filePaths.length === 0) return null;
     return result.filePaths[0];
+  });
+  ipcMain.handle(Channels.PickFiles, async () => {
+    const win = BrowserWindow.getFocusedWindow();
+    const result = await dialog.showOpenDialog(win ?? undefined!, {
+      properties: ['openFile', 'multiSelections'],
+      filters: [
+        { name: 'Audio Files', extensions: ['mp3', 'm4a', 'opus', 'ogg', 'flac', 'wav'] }
+      ]
+    });
+    if (result.canceled) return [];
+    return result.filePaths;
   });
 
   // ----- Dependencies -----
@@ -236,6 +248,9 @@ export function registerIpc(): void {
   ipcMain.handle(Channels.TracksGet, (_evt, id: number) => getTrack(id));
   ipcMain.handle(Channels.TracksDownloadedIds, (_evt, ids: string[]) =>
     findDownloadedYoutubeIds(ids)
+  );
+  ipcMain.handle(Channels.TracksImportLocal, (_evt, filePaths: string[]) =>
+    importLocalTracks(filePaths)
   );
 
   // ----- Playlists -----

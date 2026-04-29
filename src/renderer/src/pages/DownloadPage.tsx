@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { DownloadJob, SearchResult } from '../../../shared/types';
 import { useDownloadsStore } from '../store/downloads';
@@ -24,6 +25,12 @@ interface Preview {
   error: string | null;
 }
 
+interface PlaylistPreview {
+  url: string;
+  title: string;
+  entries: SearchResult[];
+}
+
 const ACTIVE_STATUSES: ReadonlyArray<DownloadJob['status']> = [
   'queued',
   'fetching-metadata',
@@ -35,6 +42,128 @@ function jobYoutubeId(job: DownloadJob): string | null {
   return job.youtubeId ?? extractYoutubeId(job.request.url);
 }
 
+type TFn = ReturnType<typeof useT>;
+
+function downloadProgressLabel(job: DownloadJob): string {
+  if (job.status !== 'downloading') return '';
+  return `${Math.round(job.progress * 100)}% · ${job.speedHuman ?? ''} · ETA ${formatDuration(job.etaSeconds ?? null)}`;
+}
+
+function DownloadProgress({ job }: { job: DownloadJob }) {
+  return (
+    <div className="download-output-progress">
+      <div className="flex justify-between items-center fs-12 text-muted mb-4">
+        <span className={`status-pill ${job.status}`}>{job.status}</span>
+        <span>{Math.round(job.progress * 100)}%</span>
+      </div>
+      <div className="progress-bar">
+        <div style={{ width: `${Math.min(100, Math.max(0, job.progress * 100))}%` }} />
+      </div>
+      {job.status === 'downloading' && (job.speedHuman || job.etaSeconds) && (
+        <div className="fs-11 text-muted mt-4">
+          {job.speedHuman ?? ''}
+          {job.etaSeconds != null && ` · ETA ${formatDuration(job.etaSeconds)}`}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DownloadFailure({
+  job,
+  t,
+  onSettings
+}: {
+  job: DownloadJob;
+  t: TFn;
+  onSettings: () => void;
+}) {
+  if (job.status !== 'failed') return null;
+  return (
+    <div className="text-danger fs-12 mt-6">
+      {t('download.errorPrefix')} {job.error ?? t('download.failed')}
+      {isSslError(job.error ?? '') && (
+        <div className="mt-4 text-muted">
+          <button className="btn-xxs" onClick={onSettings}>
+            {t('download.enableIgnoreSsl')}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DownloadOutputCard({
+  title,
+  meta,
+  thumbnail,
+  children,
+  actions
+}: {
+  title: string;
+  meta: string | null;
+  thumbnail: string | null | undefined;
+  children?: ReactNode;
+  actions: ReactNode;
+}) {
+  return (
+    <div className="download-output-card">
+      {thumbnail ? <img src={thumbnail} alt="" /> : <div className="aspect-16-9" />}
+      <div className="body">
+        <div className="title">{title}</div>
+        {meta && <div className="channel">{meta}</div>}
+        {children}
+        <div className="actions">{actions}</div>
+      </div>
+    </div>
+  );
+}
+
+function DownloadJobCard({
+  job,
+  t,
+  onSettings,
+  onCancel,
+  onDismiss
+}: {
+  job: DownloadJob;
+  t: TFn;
+  onSettings: () => void;
+  onCancel: (jobId: string) => void;
+  onDismiss: (jobId: string) => void;
+}) {
+  const active = ACTIVE_STATUSES.includes(job.status);
+  const meta = active ? downloadProgressLabel(job) : job.request.url;
+  return (
+    <DownloadOutputCard
+      title={job.title ?? job.request.url}
+      meta={meta}
+      thumbnail={job.thumbnail}
+      actions={
+        <>
+          {active ? (
+            <button className="danger" onClick={() => onCancel(job.id)}>
+              {t('download.cancelJob')}
+            </button>
+          ) : (
+            <button className="icon-btn" onClick={() => onDismiss(job.id)} title={t('download.dismissJob')}>
+              <CloseIcon size={14} />
+            </button>
+          )}
+        </>
+      }
+    >
+      {active && <DownloadProgress job={job} />}
+      {!active && (
+        <div className="mt-6">
+          <span className={`status-pill ${job.status}`}>{job.status}</span>
+        </div>
+      )}
+      <DownloadFailure job={job} t={t} onSettings={onSettings} />
+    </DownloadOutputCard>
+  );
+}
+
 export function DownloadPage() {
   const t = useT();
   const navigate = useNavigate();
@@ -43,6 +172,7 @@ export function DownloadPage() {
   const [searching, setSearching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
+  const [playlistPreview, setPlaylistPreview] = useState<PlaylistPreview | null>(null);
   const jobs = useDownloadsStore((s) => s.jobs);
   const dismissJob = useDownloadsStore((s) => s.dismiss);
   const refreshPlaylists = useLibraryStore((s) => s.refreshPlaylists);
@@ -113,12 +243,14 @@ export function DownloadPage() {
       // will download all of its items". Users who only want the single
       // video can paste a URL without the `&list=` parameter.
       if (playlistId) {
-        await enqueuePlaylist(trimmed);
+        await loadPlaylistPreview(trimmed);
         return;
       }
+      setPlaylistPreview(null);
       await enqueue(trimmed, videoId);
       return;
     }
+    setPlaylistPreview(null);
     setSearching(true);
     try {
       const items = await window.fmusic.search(trimmed, PAGE_SIZE);
@@ -130,24 +262,37 @@ export function DownloadPage() {
     }
   }
 
-  async function enqueuePlaylist(url: string) {
+  async function loadPlaylistPreview(url: string) {
     setSearching(true);
     setInfo(t('download.fetchingPlaylist'));
+    setPlaylistPreview(null);
     try {
       const { title: rawTitle, entries } = await window.fmusic.fetchYoutubePlaylist(url);
       if (entries.length === 0) {
         setInfo(t('download.playlistEmpty'));
+        setResults([], PAGE_SIZE);
         return;
       }
 
       const playlistTitle = rawTitle?.trim() || t('download.playlistDefaultName');
+      setPlaylistPreview({ url, title: playlistTitle, entries });
+      setResults(entries, entries.length);
+      setInfo(t('download.playlistReady', { title: playlistTitle, count: entries.length }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setInfo(null);
+    } finally {
+      setSearching(false);
+    }
+  }
 
-      // Create the local playlist up front so we can attach each download
-      // to it via `playlistId`. DownloadManager handles the add-to-playlist
-      // step automatically once the track lands in the library.
+  async function enqueuePlaylist(preview: PlaylistPreview) {
+    setSearching(true);
+    setError(null);
+    try {
       let localPlaylist: { id: number };
       try {
-        localPlaylist = await window.fmusic.createPlaylist(playlistTitle, url);
+        localPlaylist = await window.fmusic.createPlaylist(preview.title, preview.url);
         await refreshPlaylists();
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
@@ -155,6 +300,7 @@ export function DownloadPage() {
       }
 
       const batchId = `pl-${localPlaylist.id}-${Date.now()}`;
+      const entries = preview.entries;
       const entryIds = entries.map((e) => e.id);
       const alreadyIn = new Set(await window.fmusic.downloadedYoutubeIds(entryIds));
 
@@ -189,7 +335,7 @@ export function DownloadPage() {
             url: entry.url,
             playlistId: localPlaylist.id,
             batchId,
-            batchTitle: playlistTitle
+            batchTitle: preview.title
           });
           enqueued++;
         } catch {
@@ -203,7 +349,7 @@ export function DownloadPage() {
           total: entries.length,
           enqueued,
           skipped,
-          playlist: playlistTitle
+          playlist: preview.title
         })
       );
     } catch (err) {
@@ -341,6 +487,27 @@ export function DownloadPage() {
         </div>
       )}
       {info && <div className="text-muted mb-12">{info}</div>}
+      {playlistPreview && (
+        <div className="download-playlist-preview mb-16">
+          <div>
+            <div className="fw-600">{playlistPreview.title}</div>
+            <div className="text-muted fs-12">
+              {t('download.playlistReady', {
+                title: playlistPreview.title,
+                count: playlistPreview.entries.length
+              })}
+            </div>
+          </div>
+          <button
+            className="primary flex items-center gap-6"
+            onClick={() => void enqueuePlaylist(playlistPreview)}
+            disabled={searching}
+          >
+            <DownloadIcon size={14} />
+            {t('download.downloadPlaylist')}
+          </button>
+        </div>
+      )}
 
       {batches.map((batch) => {
         const activeCount = batch.jobs.filter((j) => ACTIVE_STATUSES.includes(j.status)).length;
@@ -369,39 +536,16 @@ export function DownloadPage() {
                 )}
               </div>
             </div>
-            <div className="jobs">
+            <div className="download-output-grid">
               {batch.jobs.map((job) => (
-                <div className="job" key={job.id}>
-                  <div>
-                    <div className="title">{job.title ?? job.request.url}</div>
-                    <div className="meta">
-                      {job.status === 'downloading'
-                        ? `${Math.round(job.progress * 100)}% · ${job.speedHuman ?? ''} · ETA ${formatDuration(job.etaSeconds ?? null)}`
-                        : job.error ?? ''}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-8">
-                    <span className={`status-pill ${job.status}`}>{job.status}</span>
-                    {ACTIVE_STATUSES.includes(job.status) ? (
-                      <button onClick={() => void window.fmusic.cancelDownload(job.id)}>
-                        {t('download.cancelJob')}
-                      </button>
-                    ) : (
-                      <button
-                        className="icon-btn"
-                        onClick={() => dismissJob(job.id)}
-                        title={t('download.dismissJob')}
-                      >
-                        <CloseIcon size={14} />
-                      </button>
-                    )}
-                  </div>
-                  <div className="progress-bar">
-                    <div
-                      style={{ width: `${Math.min(100, Math.max(0, job.progress * 100))}%` }}
-                    />
-                  </div>
-                </div>
+                <DownloadJobCard
+                  key={job.id}
+                  job={job}
+                  t={t}
+                  onSettings={() => navigate('/settings')}
+                  onCancel={(jobId) => void window.fmusic.cancelDownload(jobId)}
+                  onDismiss={dismissJob}
+                />
               ))}
             </div>
           </section>
@@ -411,37 +555,16 @@ export function DownloadPage() {
       {unbatchedOrphanJobs.length > 0 && (
         <>
           <h2>{t('download.otherDownloads')}</h2>
-          <div className="jobs">
+          <div className="download-output-grid">
             {unbatchedOrphanJobs.map((job) => (
-              <div className="job" key={job.id}>
-                <div>
-                  <div className="title">{job.title ?? job.request.url}</div>
-                  <div className="meta">
-                    {job.status === 'downloading'
-                      ? `${Math.round(job.progress * 100)}% · ${job.speedHuman ?? ''} · ETA ${formatDuration(job.etaSeconds ?? null)}`
-                      : job.error ?? ''}
-                  </div>
-                </div>
-                <div className="flex items-center gap-8">
-                  <span className={`status-pill ${job.status}`}>{job.status}</span>
-                  {ACTIVE_STATUSES.includes(job.status) ? (
-                    <button onClick={() => void window.fmusic.cancelDownload(job.id)}>
-                      {t('download.cancelJob')}
-                    </button>
-                  ) : (
-                    <button
-                      className="icon-btn"
-                      onClick={() => dismissJob(job.id)}
-                      title={t('download.dismissJob')}
-                    >
-                      <CloseIcon size={14} />
-                    </button>
-                  )}
-                </div>
-                <div className="progress-bar">
-                  <div style={{ width: `${Math.min(100, Math.max(0, job.progress * 100))}%` }} />
-                </div>
-              </div>
+              <DownloadJobCard
+                key={job.id}
+                job={job}
+                t={t}
+                onSettings={() => navigate('/settings')}
+                onCancel={(jobId) => void window.fmusic.cancelDownload(jobId)}
+                onDismiss={dismissJob}
+              />
             ))}
           </div>
         </>
@@ -457,88 +580,13 @@ export function DownloadPage() {
               const active = job && ACTIVE_STATUSES.includes(job.status);
               const isPreviewing = preview?.result.id === r.id;
               return (
-                <div key={r.id} className="result-card">
-                  {r.thumbnail ? (
-                    <img src={r.thumbnail} alt="" />
-                  ) : (
-                    <div className="aspect-16-9" />
-                  )}
-                  <div className="body">
-                    <div className="title">{r.title}</div>
-                    <div className="channel">
-                      {r.channel} &middot; {formatDuration(r.durationSec)}
-                    </div>
-
-                    {isPreviewing && (
-                      <div className="mt-8">
-                        {preview!.loading && (
-                          <div className="text-muted fs-12">
-                            {t('download.fetchingStream')}
-                          </div>
-                        )}
-                        {preview!.error && (
-                          <div className="text-danger fs-12">
-                            {preview!.error}
-                            <div>
-                              <button
-                                onClick={() => void window.fmusic.openExternal(r.url)}
-                                className="mt-6"
-                              >
-                                {t('download.openInBrowser')}
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        {preview!.streamUrl && (
-                          <audio
-                            controls
-                            autoPlay
-                            src={preview!.streamUrl}
-                            className="w-full"
-                          />
-                        )}
-                      </div>
-                    )}
-
-                    {active && (
-                      <div className="mt-6">
-                        <div className="flex justify-between items-center fs-12 text-muted mb-4">
-                          <span className={`status-pill ${job!.status}`}>{job!.status}</span>
-                          <span>{Math.round(job!.progress * 100)}%</span>
-                        </div>
-                        <div className="progress-bar">
-                          <div
-                            style={{
-                              width: `${Math.min(100, Math.max(0, job!.progress * 100))}%`
-                            }}
-                          />
-                        </div>
-                        {job!.status === 'downloading' && (job!.speedHuman || job!.etaSeconds) && (
-                          <div className="fs-11 text-muted mt-4">
-                            {job!.speedHuman ?? ''}
-                            {job!.etaSeconds != null && ` · ETA ${formatDuration(job!.etaSeconds)}`}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {job?.status === 'failed' && (
-                      <div className="text-danger fs-12 mt-6">
-                        {t('download.errorPrefix')} {job.error ?? t('download.failed')}
-                        {isSslError(job.error ?? '') && (
-                          <div className="mt-4 text-muted">
-                            <button
-                              className="btn-xxs"
-                              onClick={() => navigate('/settings')}
-                            >
-                              {t('download.enableIgnoreSsl')}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="actions">
+                <DownloadOutputCard
+                  key={r.id}
+                  title={r.title}
+                  meta={`${r.channel} · ${formatDuration(r.durationSec)}`}
+                  thumbnail={r.thumbnail}
+                  actions={
+                    <>
                       {isPreviewing ? (
                         <button onClick={() => setPreview(null)}>{t('download.closePreview')}</button>
                       ) : (
@@ -564,13 +612,48 @@ export function DownloadPage() {
                           {t('download.download')}
                         </button>
                       )}
+                    </>
+                  }
+                >
+                  {isPreviewing && (
+                    <div className="mt-8">
+                      {preview!.loading && (
+                        <div className="text-muted fs-12">
+                          {t('download.fetchingStream')}
+                        </div>
+                      )}
+                      {preview!.error && (
+                        <div className="text-danger fs-12">
+                          {preview!.error}
+                          <div>
+                            <button
+                              onClick={() => void window.fmusic.openExternal(r.url)}
+                              className="mt-6"
+                            >
+                              {t('download.openInBrowser')}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {preview!.streamUrl && (
+                        <audio controls autoPlay src={preview!.streamUrl} className="w-full" />
+                      )}
                     </div>
-                  </div>
-                </div>
+                  )}
+
+                  {active && <DownloadProgress job={job!} />}
+                  {job?.status === 'failed' && (
+                    <DownloadFailure
+                      job={job}
+                      t={t}
+                      onSettings={() => navigate('/settings')}
+                    />
+                  )}
+                </DownloadOutputCard>
               );
             })}
           </div>
-          {results.length >= resultLimit && (
+          {!playlistPreview && results.length >= resultLimit && (
             <div className="text-center mt-16">
               <button onClick={() => void loadMore()} disabled={loadingMore}>
                 {loadingMore ? t('download.loading') : t('download.loadMore')}

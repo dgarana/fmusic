@@ -130,6 +130,10 @@ export function registerIpc(): void {
       broadcastRemoteControllerSettings();
     }
 
+    if (Object.prototype.hasOwnProperty.call(patch, 'concurrency')) {
+      getDownloadManager().refreshConcurrency();
+    }
+
     async function updateServerLifecycle() {
       const s = getSettings();
       if (s.mobileSyncEnabled || s.remoteControllerEnabled || s.sonosEnabled) {

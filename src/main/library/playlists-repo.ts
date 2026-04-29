@@ -62,9 +62,38 @@ export function getPlaylist(id: number): Playlist | null {
 }
 
 export function createPlaylist(name: string, sourceUrl: string | null = null): Playlist {
-  const res = getDb()
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    throw new Error('Playlist name cannot be empty.');
+  }
+
+  const db = getDb();
+  if (sourceUrl) {
+    const existing = db
+      .prepare(
+        `SELECT id, source_url
+         FROM playlists
+         WHERE slug IS NULL
+           AND kind = 'manual'
+           AND (source_url = ? OR name = ?)
+         ORDER BY CASE WHEN source_url = ? THEN 0 ELSE 1 END
+         LIMIT 1`
+      )
+      .get(sourceUrl, trimmedName, sourceUrl) as
+        | { id: number; source_url: string | null }
+        | undefined;
+
+    if (existing) {
+      if (!existing.source_url) {
+        db.prepare('UPDATE playlists SET source_url = ? WHERE id = ?').run(sourceUrl, existing.id);
+      }
+      return getPlaylist(existing.id)!;
+    }
+  }
+
+  const res = db
     .prepare('INSERT INTO playlists(name, source_url) VALUES (?, ?)')
-    .run(name, sourceUrl);
+    .run(trimmedName, sourceUrl);
   return getPlaylist(Number(res.lastInsertRowid))!;
 }
 

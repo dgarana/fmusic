@@ -59,6 +59,8 @@
     "loading": "Cargando...",
     "fetchingPlaylist": "Obteniendo entradas de la playlist...",
     "playlistEmpty": "La playlist está vacía o no se pudo leer.",
+    "playlistReady": "\"{title}\" cargada con {count} elementos. Revísalos antes de descargar.",
+    "downloadPlaylist": "Descargar playlist",
     "playlistEnqueued": "Playlist \"{playlist}\": {total} vídeos · {enqueued} añadidos · {skipped} omitidos (ya están en la biblioteca o en cola).",
     "playlistDefaultName": "Playlist de YouTube",
     "playlistBatchTitle": "Playlist: {title}",
@@ -83,7 +85,7 @@
       "album": "Álbum",
       "genre": "Género",
       "duration": "Duración",
-      "downloaded": "Descargada",
+      "downloaded": "Añadida",
       "playlists": "Playlists"
     },
     "deleteConfirm": "¿Eliminar \"{title}\" de la biblioteca?",
@@ -248,7 +250,9 @@
       "moveLibraryConfirm": "¿Quieres mover tu biblioteca de música actual a la nueva ubicación? Si eliges 'No', los archivos se quedarán en la carpeta antigua y podrían dejar de estar disponibles en FMusic.",
       "movingLibrary": "Moviendo biblioteca de música...",
       "format": "Formato por defecto",
-      "quality": "Calidad por defecto"
+      "quality": "Calidad por defecto",
+      "concurrency": "Descargas simultáneas",
+      "concurrencyDescription": "Cuántas canciones puede descargar y procesar FMusic a la vez. Los valores altos van más rápido, pero usan más CPU y red."
     },
     "system": {
       "language": "Idioma",

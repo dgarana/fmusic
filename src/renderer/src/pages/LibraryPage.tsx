@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useLibraryStore } from '../store/library';
 import { usePlayerStore } from '../store/player';
 import { useSonosStore } from '../store/sonos';
-import { formatDuration } from '../util';
+import { formatAddedDate, formatDuration } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
 import type { Playlist, Track, TrackSortKey } from '../../../shared/types';
 import { MobileSyncCard } from '../components/MobileSyncCard';
@@ -26,7 +26,8 @@ export function LibraryPage() {
     { key: 'title', label: t('library.columns.title') },
     { key: 'artist', label: t('library.columns.artist') },
     { key: 'album', label: t('library.columns.album') },
-    { key: 'durationSec', label: t('library.columns.duration') }
+    { key: 'durationSec', label: t('library.columns.duration') },
+    { key: 'downloadedAt', label: t('library.columns.downloaded') }
   ];
   const { tracks, genres, query, setQuery } = useLibraryStore();
   const playTrack = usePlayerStore((s) => s.playTrack);
@@ -198,6 +199,7 @@ export function LibraryPage() {
             <col className="col-artist" />
             <col className="col-album" />
             <col className="col-duration" />
+            <col className="col-added" />
             <col className="col-playlists" />
             <col className="col-actions" />
           </colgroup>
@@ -230,6 +232,7 @@ export function LibraryPage() {
                     <td className="cell-ellipsis" title={tr.artist ?? undefined}>{tr.artist ?? '-'}</td>
                     <td className="cell-ellipsis" title={tr.album ?? undefined}>{tr.album ?? '-'}</td>
                     <td className="cell-narrow">{formatDuration(tr.durationSec)}</td>
+                    <td className="cell-narrow" title={tr.downloadedAt}>{formatAddedDate(tr.downloadedAt)}</td>
                     <td>
                       {trackPlaylistIds.length === 0 ? (
                         <span className="text-muted fs-12">—</span>

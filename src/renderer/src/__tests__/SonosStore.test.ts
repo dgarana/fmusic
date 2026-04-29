@@ -103,4 +103,29 @@ describe('useSonosStore', () => {
 
     expect(window.fmusic.sonosSetVolume).toHaveBeenCalledWith('192.168.1.50', 0.75);
   });
+
+  it('turns discovery "no players" errors into an actionable message', async () => {
+    vi.mocked(window.fmusic.sonosDiscover).mockRejectedValueOnce(
+      new Error("Error invoking remote method 'sonos:discover': Error: No players found")
+    );
+
+    await useSonosStore.getState().discover();
+
+    expect(useSonosStore.getState().error).toBe(
+      'No Sonos speakers found. Make sure they are powered on, on the same Wi-Fi network, and not blocked by VPN or firewall settings.'
+    );
+  });
+
+  it('turns add-by-IP network errors into an actionable message', async () => {
+    vi.mocked(window.fmusic.sonosAddByIp).mockRejectedValueOnce(
+      new Error("Error invoking remote method 'sonos:add-by-ip': Error: connect ETIMEDOUT 192.168.1.50:1400")
+    );
+
+    await expect(useSonosStore.getState().addByIp('192.168.1.50')).rejects.toThrow(
+      'Could not reach the Sonos speaker at 192.168.1.50. Check that it is online and on the same network.'
+    );
+    expect(useSonosStore.getState().error).toBe(
+      'Could not reach the Sonos speaker at 192.168.1.50. Check that it is online and on the same network.'
+    );
+  });
 });

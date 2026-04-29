@@ -1327,7 +1327,12 @@ body.theme-light .track-thumb-overlay {
 .sonos-error {
   color: var(--danger);
   font-size: 12px;
+  line-height: 1.4;
   margin-bottom: 8px;
+  padding: 8px 9px;
+  border: 1px solid var(--danger-soft);
+  border-radius: var(--radius-md);
+  background: var(--danger-soft);
 }
 .sonos-devices { display: flex; flex-direction: column; gap: 6px; }
 .sonos-device-row {
@@ -1385,8 +1390,17 @@ body.theme-light .track-thumb-overlay {
   margin-bottom: 6px;
 }
 .sonos-addip-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 6px;
+}
+.sonos-addip-row input {
+  min-width: 0;
+}
+.sonos-addip-row button {
+  min-width: 0;
+  max-width: 86px;
+  padding-inline: 14px;
 }
 
 /* =======================================================================

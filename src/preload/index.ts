@@ -6,6 +6,7 @@ import type {
   DownloadJob,
   DownloadRequest,
   ImportSummary,
+  McpServerInfo,
   Playlist,
   SmartPlaylistDefinition,
   RemoteControllerCommand,
@@ -230,6 +231,8 @@ const api = {
     invoke<RemoteControllerInfo>(Channels.RemoteControllerInfo),
   regenerateRemoteControllerToken: () =>
     invoke<RemoteControllerInfo>(Channels.RemoteControllerRegenerate),
+  getMcpServerInfo: () =>
+    invoke<McpServerInfo>(Channels.McpServerInfo),
   sendRemoteState: (state: RemotePlayerSnapshot) => ipcRenderer.send('remote:state-from-main', state),
   onRemoteCommand: (handler: (cmd: RemoteControllerCommand) => void) =>
     on<RemoteControllerCommand>('remote:command', handler),

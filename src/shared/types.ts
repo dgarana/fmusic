@@ -207,6 +207,10 @@ export interface AppSettings {
   mobileSyncEnabled: boolean;
   /** Enable local remote controller web UI. Default: false. */
   remoteControllerEnabled: boolean;
+  /** Enable local MCP server for AI control. Default: false. */
+  mcpServerEnabled: boolean;
+  /** Port for the localhost MCP server. 0 for random available port. Default: 0. */
+  mcpServerPort: number;
   /** Port for the local unified server (Sonos, Mobile Sync, Remote). 0 for random available port. Default: 0. */
   localServerPort: number;
 }
@@ -230,6 +234,12 @@ export interface RemoteControllerInfo {
   running: boolean;
   url: string | null;
   token: string | null;
+}
+
+export interface McpServerInfo {
+  enabled: boolean;
+  running: boolean;
+  url: string | null;
 }
 
 export interface RemotePlayerSnapshot {

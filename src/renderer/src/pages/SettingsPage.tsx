@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import type { DependencyStatus, Locale, RemoteControllerInfo } from '../../../shared/types';
+import type { DependencyStatus, Locale, McpServerInfo, RemoteControllerInfo } from '../../../shared/types';
 import { useSettingsStore } from '../store/settings';
 import { useT } from '../i18n';
 import { supportedLocales } from '../../../shared/i18n';
@@ -29,6 +29,7 @@ export function SettingsPage() {
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [remoteInfo, setRemoteInfo] = useState<RemoteControllerInfo | null>(null);
+  const [mcpInfo, setMcpInfo] = useState<McpServerInfo | null>(null);
   const [moving, setMoving] = useState(false);
 
   useEffect(() => {
@@ -65,6 +66,28 @@ export function SettingsPage() {
       window.clearTimeout(id);
     };
   }, [settings?.remoteControllerEnabled, settings?.localServerPort]);
+
+  useEffect(() => {
+    if (!settings?.mcpServerEnabled) {
+      setMcpInfo(null);
+      return;
+    }
+    setMcpInfo(null);
+    let cancelled = false;
+    const refresh = () => {
+      window.fmusic.getMcpServerInfo().then((info) => {
+        if (!cancelled) setMcpInfo(info);
+      }).catch(() => {
+        if (!cancelled) setMcpInfo(null);
+      });
+    };
+    refresh();
+    const id = window.setInterval(refresh, 1_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [settings?.mcpServerEnabled, settings?.mcpServerPort]);
 
   async function pickFolder() {
     const newPath = await window.fmusic.pickDirectory();
@@ -322,6 +345,51 @@ export function SettingsPage() {
                   {t('settings.network.remoteControllerStarting')}
                 </div>
               )}
+            </div>
+          )}
+          <ToggleSetting
+            label={t('settings.network.mcpServer')}
+            description={t('settings.network.mcpServerDescription')}
+            checked={settings.mcpServerEnabled ?? false}
+            onChange={(v) => void update({ mcpServerEnabled: v })}
+          />
+          {settings.mcpServerEnabled && (
+            <div className="remote-controller-settings">
+              <div className="remote-controller-beta" role="note">
+                <span className="remote-controller-beta-badge">
+                  {t('remote.status.betaBadge')}
+                </span>
+                <div>
+                  <div className="fw-600">
+                    {t('settings.network.mcpServerBetaTitle')}
+                  </div>
+                  <div className="text-muted fs-12">
+                    {t('settings.network.mcpServerBetaDescription')}
+                  </div>
+                </div>
+              </div>
+              <label className="grid gap-4">
+                <span className="fw-500">{t('settings.network.mcpServerPort')}</span>
+                <span className="text-muted fs-12">
+                  {t('settings.network.mcpServerPortDescription')}
+                </span>
+                <input
+                  type="number"
+                  min="1"
+                  max="65535"
+                  value={settings.mcpServerPort || ''}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    if (v >= 1 && v <= 65535) void update({ mcpServerPort: v });
+                  }}
+                  className="w-100px mt-4"
+                />
+              </label>
+              <div className="text-muted fs-12">
+                {mcpInfo?.url
+                  ? t('settings.network.mcpServerUrl', { url: mcpInfo.url })
+                  : t('settings.network.mcpServerStarting')}
+              </div>
             </div>
           )}
         </div>

@@ -879,6 +879,12 @@ export function setRemoteControllerCommandHandler(
   commandHandler = handler;
 }
 
+export function dispatchRemoteControllerCommand(command: RemoteControllerCommand): boolean {
+  if (!commandHandler) return false;
+  commandHandler(command);
+  return true;
+}
+
 export async function handleRemoteRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = new URL(req.url || '/', `http://${req.headers.host}`);
   if (!isAuthorized(url)) {
@@ -997,6 +1003,10 @@ export function cleanupRemoteClients(): void {
 export function updateRemoteControllerSnapshot(snapshot: RemotePlayerSnapshot): void {
   lastSnapshot = snapshot;
   broadcast({ type: 'state', state: snapshot });
+}
+
+export function getRemoteControllerSnapshot(): RemotePlayerSnapshot | null {
+  return lastSnapshot;
 }
 
 export function regenerateRemoteControllerToken(): RemoteControllerInfo {

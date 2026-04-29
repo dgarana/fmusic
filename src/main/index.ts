@@ -13,6 +13,7 @@ import {
   updateRemoteControllerSnapshot,
   setRemoteControllerCommandHandler
 } from './remote-controller-server.js';
+import { startMcpServer, stopMcpServer } from './mcp-server.js';
 import { startUnifiedServer, stopUnifiedServer } from './server-manager.js';
 import { createTray, destroyTray, updateTray, type TrayPlayerState } from './tray.js';
 import { createMiniPlayer, showMiniPlayer, hideMiniPlayer, getMiniPlayer } from './miniplayer.js';
@@ -276,6 +277,9 @@ if (!isSingleInstance) {
     if (s.mobileSyncEnabled || s.remoteControllerEnabled || s.sonosEnabled) {
       void startUnifiedServer().catch(console.error);
     }
+    if (s.mcpServerEnabled) {
+      void startMcpServer().catch(console.error);
+    }
   } catch (err) {
     console.error('[FMusic] Failed to initialize library database:', err);
   }
@@ -406,6 +410,7 @@ app.on('before-quit', () => {
   destroyTray();
   void stopActiveSonos();
   stopUnifiedServer();
+  stopMcpServer();
   closeDb();
 });
 }

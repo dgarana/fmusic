@@ -96,6 +96,9 @@ export const Channels = {
   RemoteControllerInfo: 'remote-controller:info',
   RemoteControllerRegenerate: 'remote-controller:regenerate',
 
+  // MCP
+  McpServerInfo: 'mcp:info',
+
   // Window Controls
   WindowMaximizeChange: 'window:maximize-change', // event, main -> renderer
   WindowIsMaximized: 'window:is-maximized'

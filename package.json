@@ -20,6 +20,7 @@
     "dist:win": "electron-vite build && electron-builder --win",
     "dist:mac": "electron-vite build && electron-builder --mac",
     "dist:linux": "electron-vite build && electron-builder --linux",
+    "mcp:stdio": "node scripts/fmusic-mcp-stdio-bridge.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },

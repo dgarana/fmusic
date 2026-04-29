@@ -65,6 +65,18 @@ import {
   getRemoteControllerInfo,
   regenerateRemoteControllerToken
 } from './remote-controller-server.js';
+import { getMcpServerInfo, startMcpServer, stopMcpServer } from './mcp-server.js';
+
+let mcpPortDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleMcpRestart() {
+  if (mcpPortDebounceTimer) clearTimeout(mcpPortDebounceTimer);
+  mcpPortDebounceTimer = setTimeout(() => {
+    mcpPortDebounceTimer = null;
+    stopMcpServer();
+    startMcpServer().catch(console.error);
+  }, 10_000);
+}
 import { startUnifiedServer, stopUnifiedServer } from './server-manager.js';
 import { refreshTrayLanguage } from './tray.js';
 import { checkForUpdates, downloadUpdate, quitAndInstall, getLastUpdaterStatus } from './app-updater.js';
@@ -152,6 +164,8 @@ export function registerIpc(): void {
     if (
       patch.mobileSyncEnabled !== undefined ||
       patch.remoteControllerEnabled !== undefined ||
+      patch.mcpServerEnabled !== undefined ||
+      patch.mcpServerPort !== undefined ||
       patch.sonosEnabled !== undefined ||
       patch.localServerPort !== undefined
     ) {
@@ -167,6 +181,16 @@ export function registerIpc(): void {
       }
       if (patch.remoteControllerEnabled !== undefined) {
         console.log(`[settings] Remote controller ${patch.remoteControllerEnabled ? 'enabled' : 'disabled'}`);
+      }
+      if (patch.mcpServerEnabled !== undefined) {
+        console.log(`[settings] MCP server ${next.mcpServerEnabled ? 'enabled' : 'disabled'}`);
+        if (mcpPortDebounceTimer) { clearTimeout(mcpPortDebounceTimer); mcpPortDebounceTimer = null; }
+        stopMcpServer();
+        if (next.mcpServerEnabled) {
+          await startMcpServer().catch(console.error);
+        }
+      } else if (patch.mcpServerPort !== undefined && next.mcpServerEnabled) {
+        scheduleMcpRestart();
       }
       await updateServerLifecycle();
     }
@@ -446,6 +470,9 @@ export function registerIpc(): void {
   // ----- Remote Controller -----
   ipcMain.handle(Channels.RemoteControllerInfo, () => getRemoteControllerInfo());
   ipcMain.handle(Channels.RemoteControllerRegenerate, () => regenerateRemoteControllerToken());
+
+  // ----- MCP -----
+  ipcMain.handle(Channels.McpServerInfo, () => getMcpServerInfo());
 
   // ----- Window Controls -----
   ipcMain.on('window:minimize', () => {

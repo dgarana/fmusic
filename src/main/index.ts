@@ -248,7 +248,7 @@ function configureSecurity(): void {
   });
 }
 
-const isSingleInstance = app.requestSingleInstanceLock();
+const isSingleInstance = screenshotMode || app.requestSingleInstanceLock();
 
 if (!isSingleInstance) {
   app.quit();
@@ -265,11 +265,12 @@ if (!isSingleInstance) {
     try {
     getDb();
     ensureBuiltinPlaylists();
-    void syncLibraryWithDisk().catch(console.error);
     if (screenshotMode) {
       seedScreenshotDemoData(app.getPath('userData'));
+    } else {
+      void syncLibraryWithDisk().catch(console.error);
     }
-
+    
     // Start unified local server if any capability is enabled
     const s = getSettings();
     if (s.mobileSyncEnabled || s.remoteControllerEnabled || s.sonosEnabled) {

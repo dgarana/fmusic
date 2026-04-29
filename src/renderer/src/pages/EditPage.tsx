@@ -4,7 +4,7 @@ import { useLibraryStore } from '../store/library';
 import { usePlayerStore } from '../store/player';
 import { formatDuration } from '../util';
 import { useT } from '../i18n';
-import type { Track, TrackMetadataSuggestions } from '../../../shared/types';
+import type { Track, TrackBookmark, TrackMetadataSuggestions } from '../../../shared/types';
 import {
   ArrowLeftIcon,
   PlayIcon,
@@ -14,7 +14,10 @@ import {
   VolumeIcon,
   PinIcon,
   RefreshIcon,
-  MusicIcon
+  MusicIcon,
+  BookmarkIcon,
+  PlusIcon,
+  CloseIcon
 } from '../components/icons';
 
 interface MetadataDraft {
@@ -36,6 +39,18 @@ interface Feedback {
   kind: 'info' | 'error' | 'success';
   message: string;
 }
+
+const DEFAULT_BOOKMARK_COLOR = '#f59e0b';
+const BOOKMARK_COLORS = [
+  '#f59e0b',
+  '#ef4444',
+  '#ec4899',
+  '#8b5cf6',
+  '#3b82f6',
+  '#14b8a6',
+  '#22c55e',
+  '#eab308'
+];
 
 function metadataFromTrack(track: Track): MetadataDraft {
   return {
@@ -89,8 +104,13 @@ export function EditPage() {
     genres: []
   });
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [bookmarks, setBookmarks] = useState<TrackBookmark[]>([]);
+  const [bookmarkLabel, setBookmarkLabel] = useState('');
+  const [bookmarkColor, setBookmarkColor] = useState(DEFAULT_BOOKMARK_COLOR);
+  const [bookmarkDrafts, setBookmarkDrafts] = useState<Record<number, string>>({});
   const [lookingUp, setLookingUp] = useState(false);
   const [savingMetadata, setSavingMetadata] = useState(false);
+  const [savingBookmark, setSavingBookmark] = useState(false);
   const [processingAudio, setProcessingAudio] = useState(false);
 
   const playTrack = usePlayerStore((s) => s.playTrack);
@@ -123,11 +143,25 @@ export function EditPage() {
         setFilenameDraft(basename);
       })
       .catch(() => navigate('/library'));
+    void window.fmusic.listTrackBookmarks(trackId).then((items) => {
+      if (cancelled) return;
+      setBookmarks(items);
+      setBookmarkDrafts(Object.fromEntries(items.map((b) => [b.id, b.label ?? ''])));
+    });
     void window.fmusic.trackMetadataSuggestions().then((suggestions) => {
       if (!cancelled) setMetadataSuggestions(suggestions);
     });
+    const offBookmarksChanged = window.fmusic.onTrackBookmarksChanged((payload) => {
+      if (payload.trackId !== trackId) return;
+      void window.fmusic.listTrackBookmarks(trackId).then((items) => {
+        if (cancelled) return;
+        setBookmarks(items);
+        setBookmarkDrafts(Object.fromEntries(items.map((b) => [b.id, b.label ?? ''])));
+      });
+    });
     return () => {
       cancelled = true;
+      offBookmarksChanged();
     };
   }, [id, navigate]);
 
@@ -247,6 +281,49 @@ export function EditPage() {
     } finally {
       setProcessingAudio(false);
     }
+  }
+
+  async function refreshBookmarks() {
+    const items = await window.fmusic.listTrackBookmarks(track!.id);
+    setBookmarks(items);
+    setBookmarkDrafts(Object.fromEntries(items.map((b) => [b.id, b.label ?? ''])));
+  }
+
+  async function handleAddBookmark() {
+    setSavingBookmark(true);
+    try {
+      const positionSec = isCurrentTrack ? playerPosition : 0;
+      await window.fmusic.createTrackBookmark(track!.id, positionSec, bookmarkLabel, bookmarkColor);
+      setBookmarkLabel('');
+      await refreshBookmarks();
+    } finally {
+      setSavingBookmark(false);
+    }
+  }
+
+  async function handleRenameBookmark(bookmark: TrackBookmark) {
+    const nextLabel = bookmarkDrafts[bookmark.id] ?? '';
+    if (nextLabel.trim() === (bookmark.label ?? '')) return;
+    await window.fmusic.updateTrackBookmark(bookmark.id, { label: nextLabel });
+    await refreshBookmarks();
+  }
+
+  async function handleBookmarkColor(bookmark: TrackBookmark, color: string) {
+    if (color === bookmark.color) return;
+    await window.fmusic.updateTrackBookmark(bookmark.id, { color });
+    await refreshBookmarks();
+  }
+
+  async function handleDeleteBookmark(id: number) {
+    await window.fmusic.deleteTrackBookmark(id);
+    await refreshBookmarks();
+  }
+
+  async function handleJumpToBookmark(positionSec: number) {
+    if (!isCurrentTrack) {
+      await playTrack(track!, [track!]);
+    }
+    seek(positionSec);
   }
 
   return (
@@ -454,6 +531,22 @@ export function EditPage() {
                 style={{ left: `${(playerPosition / duration) * 100}%` }}
               />
             )}
+            {bookmarks.map((bookmark) => (
+              <button
+                key={bookmark.id}
+                type="button"
+                className="trim-bookmark-marker"
+                style={{
+                  left: `${Math.min(Math.max(bookmark.positionSec / duration, 0), 1) * 100}%`,
+                  ['--bookmark-color' as string]: bookmark.color
+                }}
+                title={bookmark.label || formatDuration(bookmark.positionSec)}
+                data-bookmark-tooltip={bookmark.label || formatDuration(bookmark.positionSec)}
+                onClick={() => void handleJumpToBookmark(bookmark.positionSec)}
+              >
+                <BookmarkIcon size={10} />
+              </button>
+            ))}
           </div>
           <input
             type="range"
@@ -614,6 +707,93 @@ export function EditPage() {
             {processingAudio ? t('library.editAudioProcessing') : t('library.editAudioExport')}
           </button>
         </div>
+      </section>
+
+      <section className="editor-section">
+        <header className="editor-section-header">
+          <h2>{t('editor.sections.bookmarks')}</h2>
+          <div className="editor-bookmark-add">
+            <input
+              value={bookmarkLabel}
+              onChange={(e) => setBookmarkLabel(e.target.value)}
+              placeholder={t('editor.bookmarks.labelPlaceholder')}
+            />
+            <input
+              className="editor-bookmark-new-color"
+              type="color"
+              value={bookmarkColor}
+              onChange={(e) => setBookmarkColor(e.target.value)}
+              title={t('editor.bookmarks.color')}
+              aria-label={t('editor.bookmarks.color')}
+            />
+            <button
+              className="icon-btn"
+              onClick={() => void handleAddBookmark()}
+              disabled={savingBookmark || !isCurrentTrack}
+              title={t('editor.bookmarks.addCurrent')}
+            >
+              <PlusIcon size={16} />
+            </button>
+          </div>
+        </header>
+        <p className="editor-section-description">{t('editor.bookmarks.description')}</p>
+
+        {bookmarks.length === 0 ? (
+          <div className="editor-bookmarks-empty">{t('editor.bookmarks.empty')}</div>
+        ) : (
+          <div className="editor-bookmark-list">
+            {bookmarks.map((bookmark) => (
+              <div className="editor-bookmark-row" key={bookmark.id}>
+                <button
+                  className="editor-bookmark-time"
+                  onClick={() => void handleJumpToBookmark(bookmark.positionSec)}
+                >
+                  {formatDuration(bookmark.positionSec)}
+                </button>
+                <input
+                  value={bookmarkDrafts[bookmark.id] ?? ''}
+                  placeholder={t('editor.bookmarks.untitled')}
+                  onChange={(e) =>
+                    setBookmarkDrafts((drafts) => ({
+                      ...drafts,
+                      [bookmark.id]: e.target.value
+                    }))
+                  }
+                  onBlur={() => void handleRenameBookmark(bookmark)}
+                />
+                <div className="editor-bookmark-colors" aria-label={t('editor.bookmarks.color')}>
+                  {BOOKMARK_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      className={`editor-bookmark-color${
+                        bookmark.color === color ? ' selected' : ''
+                      }`}
+                      style={{ ['--bookmark-color' as string]: color }}
+                      title={color}
+                      aria-label={color}
+                      onClick={() => void handleBookmarkColor(bookmark, color)}
+                    />
+                  ))}
+                  <input
+                    type="color"
+                    value={bookmark.color}
+                    onChange={(e) => void handleBookmarkColor(bookmark, e.target.value)}
+                    title={t('editor.bookmarks.customColor')}
+                    aria-label={t('editor.bookmarks.customColor')}
+                  />
+                </div>
+                <button
+                  className="icon-btn"
+                  onClick={() => void handleDeleteBookmark(bookmark.id)}
+                  title={t('editor.bookmarks.delete')}
+                >
+                  <CloseIcon size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <datalist id="editor-artists">

@@ -13,6 +13,8 @@ import m005 from './005_source_urls.sql?raw';
 import m006 from './006_smart_playlists.sql?raw';
 import m007 from './007_portable_paths.sql?raw';
 import m008 from './008_null_unknown_album.sql?raw';
+import m009 from './009_track_bookmarks.sql?raw';
+import m010 from './010_track_bookmark_colors.sql?raw';
 
 export interface MigrationDefinition {
   version: number;
@@ -28,5 +30,7 @@ export const migrations: MigrationDefinition[] = [
   { version: 5, name: '005_source_urls', sql: m005 },
   { version: 6, name: '006_smart_playlists', sql: m006 },
   { version: 7, name: '007_portable_paths', sql: m007 },
-  { version: 8, name: '008_null_unknown_album', sql: m008 }
+  { version: 8, name: '008_null_unknown_album', sql: m008 },
+  { version: 9, name: '009_track_bookmarks', sql: m009 },
+  { version: 10, name: '010_track_bookmark_colors', sql: m010 }
 ];

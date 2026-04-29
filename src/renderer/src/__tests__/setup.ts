@@ -27,6 +27,19 @@ const fmusicMock = {
   onRemoteSeek: vi.fn().mockReturnValue(() => {}),
   onRemoteVolume: vi.fn().mockReturnValue(() => {}),
   getTrack: vi.fn().mockResolvedValue(null),
+  listTrackBookmarks: vi.fn().mockResolvedValue([]),
+  createTrackBookmark: vi.fn().mockResolvedValue({
+    id: 1,
+    trackId: 1,
+    label: null,
+    positionSec: 0,
+    color: '#f59e0b',
+    createdAt: '2026-01-01 00:00:00',
+    updatedAt: '2026-01-01 00:00:00'
+  }),
+  updateTrackBookmark: vi.fn().mockResolvedValue(null),
+  deleteTrackBookmark: vi.fn().mockResolvedValue(true),
+  onTrackBookmarksChanged: vi.fn().mockReturnValue(() => {}),
   getRemoteControllerInfo: vi.fn().mockResolvedValue({
     enabled: false,
     running: false,

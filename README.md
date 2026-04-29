@@ -58,11 +58,15 @@ required on the user's machine.
 - 🔊 **Volume adjustment**: normalize or boost audio volume (0% to 200%).
 - 💾 **Export modes**: choose between **overwriting** the original track or **exporting as a new track** in your library.
 - 🎧 **Built-in preview**: listen to the track and see the playback position on the trim bar while editing.
+- 🔖 **Track bookmarks / cue points**: save exact timestamps, name them, color-code them, jump back to them instantly and manage them from their own Bookmarks section.
 
 ![Edit Audio](docs/screenshots/edit.png)
 
 ### Player
 - 🎧 Integrated **playback** with queue, progress bar with **working seek** (dragging the bar jumps to the exact position without restarting the track), transport controls and volume (Howler.js).
+- 🔖 **Bookmark markers** appear on the player scrubber as colored cue ticks; hover to see the label and click to seek to that point.
+- ➕ **Quick bookmark creation** from the player at the current playback position.
+- ✏️ **Open in editor** button beside the current track to jump straight into metadata, audio tools and bookmark management.
 - ⏮⏭ Previous / next buttons are hidden when there is no adjacent track, without shifting the play button.
 - 🎵 Rich local metadata: cover art, artist, album, genre, year.
 
@@ -88,6 +92,7 @@ required on the user's machine.
 ### Remote controller (BETA)
 - 📱 **Control FMusic from any phone** on the same Wi-Fi: the desktop app exposes a small web UI with player, library, downloads and playlists tabs.
 - 🔑 **Scan the QR** in Settings → Network → Remote controller to open the web UI already authenticated (single-use token per session, regenerable).
+- 🔖 **Remote bookmark jumps**: current-track bookmarks are shown as ordered colored chips with labels and timestamps, and tapping one seeks directly to that cue point.
 - ▶️ **Now-playing awareness**: the current track is highlighted with a green border and an animated equalizer overlay on both the Library and Playlist views, mirroring the desktop behaviour.
 - 🌍 **Same translations as the desktop**: the controller speaks whichever language is active in the app and switches on the fly (no reload) when the user changes it in Settings.
 - ⚠️ Marked as **BETA** both in the settings pane and inside the mobile UI while we stabilize it.
@@ -182,7 +187,10 @@ databases. `004_playlist_slug.sql` adds a stable `slug` column so built-in
 playlists (like Favorites) keep a language-independent identifier while
 their display name is translated on the fly. Additionally,
 `ensureBuiltinPlaylists()` guarantees the Favorites row on every startup
-(matched by slug, not by name). `006_smart_playlists.sql` adds dynamic playlists backed by a saved filter definition.
+(matched by slug, not by name). `006_smart_playlists.sql` adds dynamic
+playlists backed by a saved filter definition. `009_track_bookmarks.sql`
+and `010_track_bookmark_colors.sql` add per-track cue points with labels,
+timestamps and user-selectable colors.
 
 Track metadata edits are not implemented as migrations: they update the
 existing `tracks` row in place. When the track resolves to an `.mp3`
@@ -249,8 +257,8 @@ FMusic/
          ├─ i18n.ts                    # useT() hook + playlistDisplayName helper
          ├─ components/
          │  ├─ Sidebar.tsx
-         │  ├─ PlayerBar.tsx           # player with seek, favorites, Sonos
-         │  ├─ TrayBridge.tsx          # syncs state to tray and mini player
+         │  ├─ PlayerBar.tsx           # player with seek, bookmarks, favorites, Sonos
+         │  ├─ TrayBridge.tsx          # syncs state to tray, mini player and remote controller
          │  ├─ SonosPanel.tsx          # Sonos devices panel
          │  ├─ NowPlayingIndicator.tsx # animated equalizer overlay for the active track
          │  ├─ TrackTitleCell.tsx      # library/playlist cell with now-playing highlight
@@ -259,7 +267,7 @@ FMusic/
          ├─ pages/
          │  ├─ DownloadPage.tsx
          │  ├─ LibraryPage.tsx         # library table + inline metadata editor
-         │  ├─ EditPage.tsx            # audio manipulation workbench (trim, fade, volume)
+         │  ├─ EditPage.tsx            # metadata, bookmarks and audio workbench (trim, fade, volume)
          │  ├─ PlaylistsPage.tsx
          │  ├─ SettingsPage.tsx
          │  └─ MiniPlayerPage.tsx      # UI for the floating mini player

@@ -7,6 +7,7 @@ import { app } from 'electron';
 import Database from 'better-sqlite3';
 import type {
   Track,
+  TrackBookmark,
   TrackEditOptions,
   TrackMetadataSuggestions,
   TrackQuery,
@@ -32,6 +33,16 @@ interface TrackRow {
   play_count: number;
   last_played_at: string | null;
   source_url: string | null;
+}
+
+interface TrackBookmarkRow {
+  id: number;
+  track_id: number;
+  label: string | null;
+  position_sec: number;
+  color: string;
+  created_at: string;
+  updated_at: string;
 }
 
 /**
@@ -96,6 +107,18 @@ function rowToTrack(row: TrackRow): Track {
     playCount: row.play_count,
     lastPlayedAt: row.last_played_at,
     sourceUrl: row.source_url
+  };
+}
+
+function rowToTrackBookmark(row: TrackBookmarkRow): TrackBookmark {
+  return {
+    id: row.id,
+    trackId: row.track_id,
+    label: row.label,
+    positionSec: row.position_sec,
+    color: row.color,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
   };
 }
 
@@ -400,6 +423,100 @@ export function updateTrackSourceUrl(id: number, sourceUrl: string): void {
 
 export function deleteTrack(id: number): boolean {
   const res = getDb().prepare('DELETE FROM tracks WHERE id = ?').run(id);
+  return res.changes > 0;
+}
+
+function normalizeBookmarkLabel(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+function normalizeBookmarkPosition(seconds: number): number {
+  return Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
+}
+
+function normalizeBookmarkColor(value: string | null | undefined): string {
+  const trimmed = value?.trim();
+  return trimmed && /^#[0-9a-f]{6}$/i.test(trimmed) ? trimmed : '#f59e0b';
+}
+
+export function listTrackBookmarks(trackId: number): TrackBookmark[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT *
+       FROM track_bookmarks
+       WHERE track_id = @trackId
+       ORDER BY position_sec ASC, id ASC`
+    )
+    .all({ trackId }) as TrackBookmarkRow[];
+  return rows.map(rowToTrackBookmark);
+}
+
+export function getTrackBookmark(id: number): TrackBookmark | null {
+  const row = getDb()
+    .prepare('SELECT * FROM track_bookmarks WHERE id = ?')
+    .get(id) as TrackBookmarkRow | undefined;
+  return row ? rowToTrackBookmark(row) : null;
+}
+
+export function createTrackBookmark(
+  trackId: number,
+  positionSec: number,
+  label?: string | null,
+  color?: string | null
+): TrackBookmark {
+  const result = getDb()
+    .prepare(
+      `INSERT INTO track_bookmarks (track_id, position_sec, label, color)
+       VALUES (@trackId, @positionSec, @label, @color)`
+    )
+    .run({
+      trackId,
+      positionSec: normalizeBookmarkPosition(positionSec),
+      label: normalizeBookmarkLabel(label),
+      color: normalizeBookmarkColor(color)
+    });
+  const created = getDb()
+    .prepare('SELECT * FROM track_bookmarks WHERE id = ?')
+    .get(result.lastInsertRowid) as TrackBookmarkRow;
+  return rowToTrackBookmark(created);
+}
+
+export function updateTrackBookmark(
+  id: number,
+  patch: Partial<Pick<TrackBookmark, 'label' | 'positionSec' | 'color'>>
+): TrackBookmark | null {
+  const current = getDb()
+    .prepare('SELECT * FROM track_bookmarks WHERE id = ?')
+    .get(id) as TrackBookmarkRow | undefined;
+  if (!current) return null;
+  const nextLabel = Object.prototype.hasOwnProperty.call(patch, 'label')
+    ? normalizeBookmarkLabel(patch.label)
+    : current.label;
+  const nextPosition = Object.prototype.hasOwnProperty.call(patch, 'positionSec')
+    ? normalizeBookmarkPosition(patch.positionSec ?? current.position_sec)
+    : current.position_sec;
+  const nextColor = Object.prototype.hasOwnProperty.call(patch, 'color')
+    ? normalizeBookmarkColor(patch.color)
+    : current.color;
+  getDb()
+    .prepare(
+      `UPDATE track_bookmarks
+       SET label = @label,
+           position_sec = @positionSec,
+           color = @color,
+           updated_at = datetime('now')
+       WHERE id = @id`
+    )
+    .run({ id, label: nextLabel, positionSec: nextPosition, color: nextColor });
+  const updated = getDb()
+    .prepare('SELECT * FROM track_bookmarks WHERE id = ?')
+    .get(id) as TrackBookmarkRow;
+  return rowToTrackBookmark(updated);
+}
+
+export function deleteTrackBookmark(id: number): boolean {
+  const res = getDb().prepare('DELETE FROM track_bookmarks WHERE id = ?').run(id);
   return res.changes > 0;
 }
 

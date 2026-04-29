@@ -12,7 +12,7 @@ fs.mkdirSync(outputDir, { recursive: true });
 fs.rmSync(userDataDir, { recursive: true, force: true });
 fs.mkdirSync(userDataDir, { recursive: true });
 
-const child = spawn(electronPath, ['.', '--no-sandbox'], {
+const child = spawn(electronPath, ['--no-sandbox', `--user-data-dir=${userDataDir}`, '.'], {
   cwd: rootDir,
   stdio: 'inherit',
   env: {
@@ -23,6 +23,10 @@ const child = spawn(electronPath, ['.', '--no-sandbox'], {
   }
 });
 
-child.on('exit', (code) => {
+child.on('exit', (code, signal) => {
+  if (signal) {
+    console.error(`Electron screenshot capture exited with signal ${signal}`);
+    process.exit(1);
+  }
   process.exit(code ?? 0);
 });

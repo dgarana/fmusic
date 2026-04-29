@@ -30,6 +30,9 @@
     "play": "Play",
     "pause": "Pause",
     "volume": "Volume",
+    "openEditor": "Open editor",
+    "addBookmark": "Add bookmark",
+    "seekToBookmark": "Jump to bookmark at {time}",
     "addToFavorites": "Add to {name}",
     "removeFromFavorites": "Remove from {name}"
   },
@@ -211,7 +214,8 @@
       "preview": "Preview",
       "metadata": "Metadata",
       "file": "File",
-      "audio": "Audio"
+      "audio": "Audio",
+      "bookmarks": "Bookmarks"
     },
     "metadataDescription": "Edit the track's title, artist, album and genre. These changes are written back into the file's ID3 tags.",
     "lookupMetadata": "Look up on MusicBrainz",
@@ -227,6 +231,17 @@
     "fileLocation": "Location",
     "renameFailed": "Could not rename the file: {detail}",
     "audioDescription": "Trim the audio, add fades or change the volume. Overwrite the original file or export a new track.",
+    "bookmarks": {
+      "title": "Bookmarks",
+      "description": "Save cue points for this track, then jump back to them from the editor or player.",
+      "addCurrent": "Add bookmark at current position",
+      "labelPlaceholder": "Label (optional)",
+      "empty": "No bookmarks saved for this track yet.",
+      "untitled": "Untitled bookmark",
+      "color": "Bookmark color",
+      "customColor": "Custom bookmark color",
+      "delete": "Delete bookmark"
+    },
     "untitledFallback": "Untitled",
     "sourceUrl": "Source URL",
     "sourceUrlDescription": "Original URL this track was downloaded from.",

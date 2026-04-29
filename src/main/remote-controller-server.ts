@@ -368,6 +368,12 @@ function serveRemotePage(res: ServerResponse): void {
     .artist { margin-top: 6px; color: #a9b1c1; font-size: 14px; min-height: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .scrub { margin-top: 14px; display: grid; grid-template-columns: 42px 1fr 42px; gap: 8px; align-items: center; color: #9aa3b5; font-variant-numeric: tabular-nums; font-size: 11px; }
     input[type="range"] { width: 100%; accent-color: #3ddc97; }
+    .bookmark-strip { min-height: 34px; display: flex; gap: 7px; align-items: center; overflow-x: auto; padding: 8px 0 0 50px; scrollbar-width: none; }
+    .bookmark-strip::-webkit-scrollbar { display: none; }
+    .bookmark-chip { width: auto; max-width: 190px; height: 26px; min-width: 0; padding: 0 9px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--bookmark-color, #3ddc97) 65%, #303642); background: color-mix(in srgb, var(--bookmark-color, #3ddc97) 13%, #151920); color: #f5f7fb; font-size: 11px; display: inline-flex; align-items: center; gap: 6px; }
+    .bookmark-chip::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--bookmark-color, #3ddc97); box-shadow: 0 0 8px color-mix(in srgb, var(--bookmark-color, #3ddc97) 55%, transparent); flex: 0 0 auto; }
+    .bookmark-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bookmark-chip time { color: #9aa3b5; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
     .buttons { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 14px; }
     button { border: 1px solid #303642; background: #191d25; color: #f5f7fb; border-radius: 999px; width: 46px; height: 46px; font-size: 18px; }
     button.primary { width: 58px; height: 58px; background: #3ddc97; border: 0; color: #08110d; font-size: 22px; }
@@ -463,6 +469,7 @@ function serveRemotePage(res: ServerResponse): void {
       </div>
     </div>
     <div class="scrub"><span id="pos">0:00</span><input id="seek" type="range" min="0" max="1" step="0.5" value="0" disabled /><span id="dur">0:00</span></div>
+    <div id="bookmarkStrip" class="bookmark-strip"></div>
     <div class="buttons">
       <button id="prev" data-i18n-aria="player.previous" data-i18n-title="player.previous" aria-label="Previous" title="Previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="play-icon" d="M19 20 9 12l10-8v16Z"/><path d="M5 19V5"/></svg></button>
       <button id="play" class="primary" data-i18n-aria="remote.player.toggle" data-i18n-title="remote.player.toggle" aria-label="Play or pause" title="Play or pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="play-icon" d="M8 5v14l11-7z"/></svg></button>
@@ -576,6 +583,17 @@ function render(state) {
   if (!scrubbing) el('seek').value = state.position || 0;
   el('pos').textContent = fmt(scrubbing ? el('seek').value : state.position);
   el('dur').textContent = fmt(state.duration);
+  const bookmarkStrip = el('bookmarkStrip');
+  const bookmarks = [...(state.bookmarks || [])].sort((a, b) => (a.positionSec || 0) - (b.positionSec || 0));
+  bookmarkStrip.innerHTML = bookmarks.length && state.duration
+    ? bookmarks.map((bookmark) => {
+        const time = fmt(bookmark.positionSec);
+        const label = bookmark.label || time;
+        const content = bookmark.label ? '<span>' + esc(bookmark.label) + '</span><time>' + esc(time) + '</time>' : '<time>' + esc(time) + '</time>';
+        const aria = t('player.seekToBookmark', { time: fmt(bookmark.positionSec) });
+        return '<button class="bookmark-chip" data-bookmark-seek="' + Number(bookmark.positionSec) + '" style="--bookmark-color:' + esc(bookmark.color || '#3ddc97') + '" aria-label="' + esc(aria) + '" title="' + esc(label) + '">' + content + '</button>';
+      }).join('')
+    : '';
   el('volume').value = state.volume ?? 0.9;
   const cover = el('cover');
   if (coverTrackId !== state.trackId) {
@@ -758,7 +776,10 @@ el('playlistCreate').onclick = async () => {
 document.body.addEventListener('click', async (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
-  if (target.dataset.play) {
+  const bookmarkButton = target.closest('[data-bookmark-seek]');
+  if (bookmarkButton instanceof HTMLElement) {
+    send({ type: 'seek', seconds: Number(bookmarkButton.dataset.bookmarkSeek) });
+  } else if (target.dataset.play) {
     send({ type: 'play-track', trackId: Number(target.dataset.play), queueTrackIds: data.tracks.map((t) => t.id) });
   } else if (target.dataset.playNext) {
     send({ type: 'play-next-track', trackId: Number(target.dataset.playNext), queueTrackIds: data.tracks.map((t) => t.id) });

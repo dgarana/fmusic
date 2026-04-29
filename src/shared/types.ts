@@ -81,6 +81,16 @@ export interface Track {
   sourceUrl: string | null;
 }
 
+export interface TrackBookmark {
+  id: number;
+  trackId: number;
+  label: string | null;
+  positionSec: number;
+  color: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface TrackMetadataSuggestions {
   artists: string[];
   albums: string[];
@@ -227,6 +237,7 @@ export interface RemotePlayerSnapshot {
   title: string | null;
   artist: string | null;
   album: string | null;
+  bookmarks: TrackBookmark[];
   isPlaying: boolean;
   hasPrev: boolean;
   hasNext: boolean;

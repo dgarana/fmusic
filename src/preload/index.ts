@@ -15,6 +15,7 @@ import type {
   SonosDevice,
   SonosPositionInfo,
   Track,
+  TrackBookmark,
   TrackEditOptions,
   TrackMetadataLookupResult,
   TrackMetadataSuggestions,
@@ -114,6 +115,22 @@ const api = {
   importLocalTracks: (filePaths: string[]) =>
     invoke<ImportSummary>(Channels.TracksImportLocal, filePaths),
   getTrack: (id: number) => invoke<Track | null>(Channels.TracksGet, id),
+  listTrackBookmarks: (trackId: number) =>
+    invoke<TrackBookmark[]>(Channels.TrackBookmarksList, trackId),
+  createTrackBookmark: (
+    trackId: number,
+    positionSec: number,
+    label?: string | null,
+    color?: string | null
+  ) => invoke<TrackBookmark>(Channels.TrackBookmarksCreate, trackId, positionSec, label, color),
+  updateTrackBookmark: (
+    id: number,
+    patch: Partial<Pick<TrackBookmark, 'label' | 'positionSec' | 'color'>>
+  ) => invoke<TrackBookmark | null>(Channels.TrackBookmarksUpdate, id, patch),
+  deleteTrackBookmark: (id: number) =>
+    invoke<boolean>(Channels.TrackBookmarksDelete, id),
+  onTrackBookmarksChanged: (handler: (payload: { trackId: number }) => void) =>
+    on<{ trackId: number }>(Channels.TrackBookmarksChanged, handler),
   downloadedYoutubeIds: (ids: string[]) =>
     invoke<string[]>(Channels.TracksDownloadedIds, ids),
   onTrackAdded: (handler: (track: Track) => void) => on<Track>(Channels.TracksAdded, handler),

@@ -47,6 +47,11 @@ export const Channels = {
   TracksRename: 'tracks:rename',
   TracksGet: 'tracks:get',
   TracksImportLocal: 'tracks:import-local',
+  TrackBookmarksList: 'track-bookmarks:list',
+  TrackBookmarksCreate: 'track-bookmarks:create',
+  TrackBookmarksUpdate: 'track-bookmarks:update',
+  TrackBookmarksDelete: 'track-bookmarks:delete',
+  TrackBookmarksChanged: 'track-bookmarks:changed', // event, main -> renderer
 
   // Library - playlists
   PlaylistsList: 'playlists:list',

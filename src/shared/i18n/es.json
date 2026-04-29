@@ -30,6 +30,9 @@
     "play": "Reproducir",
     "pause": "Pausar",
     "volume": "Volumen",
+    "openEditor": "Abrir editor",
+    "addBookmark": "Añadir marcador",
+    "seekToBookmark": "Saltar al marcador en {time}",
     "addToFavorites": "Añadir a {name}",
     "removeFromFavorites": "Quitar de {name}"
   },
@@ -212,7 +215,8 @@
       "preview": "Previsualización",
       "metadata": "Metadatos",
       "file": "Archivo",
-      "audio": "Audio"
+      "audio": "Audio",
+      "bookmarks": "Marcadores"
     },
     "metadataDescription": "Edita el título, artista, álbum y género. Los cambios se escriben también en las etiquetas ID3 del fichero.",
     "lookupMetadata": "Buscar en MusicBrainz",
@@ -228,6 +232,17 @@
     "fileLocation": "Ubicación",
     "renameFailed": "No se ha podido renombrar el fichero: {detail}",
     "audioDescription": "Recorta el audio, añade fundidos o cambia el volumen. Puedes sobreescribir el original o exportar una nueva pista.",
+    "bookmarks": {
+      "title": "Marcadores",
+      "description": "Guarda puntos concretos de esta canción y vuelve a ellos desde el editor o el reproductor.",
+      "addCurrent": "Añadir marcador en la posición actual",
+      "labelPlaceholder": "Etiqueta (opcional)",
+      "empty": "Aún no hay marcadores guardados para esta canción.",
+      "untitled": "Marcador sin título",
+      "color": "Color del marcador",
+      "customColor": "Color personalizado del marcador",
+      "delete": "Eliminar marcador"
+    },
     "untitledFallback": "Sin título",
     "sourceUrl": "URL de origen",
     "sourceUrlDescription": "URL original desde la que se descargó esta canción.",

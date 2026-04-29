@@ -6,6 +6,7 @@ import { useSettingsStore } from '../store/settings';
 import { SonosPanel } from './SonosPanel';
 import { formatDuration, offsetSeekPosition } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
+import type { TrackBookmark } from '../../../shared/types';
 import {
   PrevIcon,
   NextIcon,
@@ -15,7 +16,9 @@ import {
   PauseIcon,
   HeartIcon,
   HeartFilledIcon,
-  VolumeIcon
+  VolumeIcon,
+  BookmarkIcon,
+  EditIcon
 } from './icons';
 
 function coverUrl(trackId: number | null | undefined): string | null {
@@ -43,6 +46,8 @@ export function PlayerBar() {
 
   const sonos = useSonosStore();
   const isCasting = sonos.activeHost !== null;
+  const [bookmarks, setBookmarks] = useState<TrackBookmark[]>([]);
+  const [savingBookmark, setSavingBookmark] = useState(false);
 
   // If sonos is disabled while casting, stop it and revert to local playback
   useEffect(() => {
@@ -94,6 +99,49 @@ export function PlayerBar() {
     } else {
       seek(seconds);
     }
+  }
+
+  useEffect(() => {
+    if (!current) {
+      setBookmarks([]);
+      return;
+    }
+    let cancelled = false;
+    window.fmusic.listTrackBookmarks(current.id).then((items) => {
+      if (!cancelled) setBookmarks(items);
+    });
+    const offBookmarksChanged = window.fmusic.onTrackBookmarksChanged((payload) => {
+      if (payload.trackId !== current.id) return;
+      window.fmusic.listTrackBookmarks(current.id).then((items) => {
+        if (!cancelled) setBookmarks(items);
+      });
+    });
+    return () => {
+      cancelled = true;
+      offBookmarksChanged();
+    };
+  }, [current?.id]);
+
+  async function refreshBookmarks(trackId: number) {
+    const items = await window.fmusic.listTrackBookmarks(trackId);
+    setBookmarks(items);
+  }
+
+  async function handleCreateBookmark() {
+    if (!current) return;
+    setSavingBookmark(true);
+    try {
+      await window.fmusic.createTrackBookmark(current.id, displayPosition, null, '#f59e0b');
+      await refreshBookmarks(current.id);
+    } finally {
+      setSavingBookmark(false);
+    }
+  }
+
+  function handleBookmarkSeek(positionSec: number) {
+    setScrubbing(false);
+    setScrubValue(positionSec);
+    handleSeekTo(positionSec);
   }
 
   function handleQuickSeek(delta: number) {
@@ -175,7 +223,18 @@ export function PlayerBar() {
           <div className="artist">{current?.artist ?? ''}</div>
         </div>
         <button
-          className={`heart-btn${isFavorited ? ' is-favorited' : ''}`}
+          className="player-current-action"
+          onClick={() => {
+            if (current) window.location.hash = `/edit/${current.id}`;
+          }}
+          disabled={!current}
+          title={t('player.openEditor')}
+          aria-label={t('player.openEditor')}
+        >
+          <EditIcon size={17} />
+        </button>
+        <button
+          className={`player-current-action heart-btn${isFavorited ? ' is-favorited' : ''}`}
           onClick={() => void toggleFavorite()}
           disabled={!current || !favoritesPlaylist}
           title={
@@ -223,6 +282,15 @@ export function PlayerBar() {
             <SeekForwardIcon size={17} />
           </button>
           <button
+            className="icon-btn seek-jump-btn bookmark-add-btn"
+            onClick={() => void handleCreateBookmark()}
+            disabled={!current || savingBookmark}
+            title={t('player.addBookmark')}
+            aria-label={t('player.addBookmark')}
+          >
+            <BookmarkIcon size={16} />
+          </button>
+          <button
             className={`icon-btn ${hasNext ? 'visible' : 'hidden'}`}
             onClick={() => void handleNext()}
             title={t('player.next')}
@@ -232,20 +300,49 @@ export function PlayerBar() {
         </div>
         <div className="scrub">
           <span>{formatDuration(displayPosition)}</span>
-          <input
-            type="range"
-            min={0}
-            max={maxDuration}
-            step={0.5}
-            value={displayPosition}
-            onMouseDown={handleScrubStart}
-            onTouchStart={handleScrubStart}
-            onChange={handleScrubChange}
-            onMouseUp={handleScrubEnd}
-            onTouchEnd={handleScrubEnd}
-            disabled={!current}
-            style={{ ['--range-progress' as string]: `${scrubProgress}%` }}
-          />
+          <div className="player-scrub-stack">
+            <div className="player-bookmark-lane">
+              {current && maxDuration > 0 &&
+                bookmarks.map((bookmark) => (
+                  <button
+                    key={bookmark.id}
+                    type="button"
+                    className="player-bookmark-marker"
+                    style={{
+                      left: `${Math.min(Math.max(bookmark.positionSec / maxDuration, 0), 1) * 100}%`,
+                      ['--bookmark-color' as string]: bookmark.color
+                    }}
+                    title={bookmark.label || formatDuration(bookmark.positionSec)}
+                    data-bookmark-tooltip={bookmark.label || formatDuration(bookmark.positionSec)}
+                    aria-label={t('player.seekToBookmark', {
+                      time: formatDuration(bookmark.positionSec)
+                    })}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleBookmarkSeek(bookmark.positionSec);
+                    }}
+                  />
+                ))}
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={maxDuration}
+              step={0.5}
+              value={displayPosition}
+              onMouseDown={handleScrubStart}
+              onTouchStart={handleScrubStart}
+              onChange={handleScrubChange}
+              onMouseUp={handleScrubEnd}
+              onTouchEnd={handleScrubEnd}
+              disabled={!current}
+              style={{ ['--range-progress' as string]: `${scrubProgress}%` }}
+            />
+          </div>
           <span>{formatDuration(maxDuration)}</span>
         </div>
       </div>

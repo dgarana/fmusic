@@ -211,11 +211,12 @@ export function App() {
       },
       prepareSonosDemo: async () => {
         const tracks = await window.fmusic.listTracks();
-        const current = tracks[0] ?? null;
+        const current = tracks.find((track) => track.title === 'Night Drive') ?? tracks[0] ?? null;
+        const index = current ? tracks.findIndex((track) => track.id === current.id) : -1;
         usePlayerStore.setState({
           current,
           queue: current ? tracks : [],
-          index: current ? 0 : -1,
+          index,
           isPlaying: true,
           position: 87,
           duration: current?.durationSec ?? 0

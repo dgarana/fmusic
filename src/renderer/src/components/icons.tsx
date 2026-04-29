@@ -246,6 +246,14 @@ export function PinIcon(props: IconProps) {
   );
 }
 
+export function BookmarkIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M7 4.5A1.5 1.5 0 0 1 8.5 3h7A1.5 1.5 0 0 1 17 4.5V21l-5-3-5 3V4.5Z" />
+    </Base>
+  );
+}
+
 export function MusicIcon(props: IconProps) {
   return (
     <Base {...props}>

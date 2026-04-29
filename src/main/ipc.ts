@@ -35,7 +35,12 @@ import {
   editTrack,
   renameTrackFile,
   importLocalTracks,
-  moveLibrary
+  moveLibrary,
+  listTrackBookmarks,
+  getTrackBookmark,
+  createTrackBookmark,
+  updateTrackBookmark,
+  deleteTrackBookmark
 } from './library/tracks-repo.js';
 import {
   addTrackToPlaylist,
@@ -264,6 +269,35 @@ export function registerIpc(): void {
   ipcMain.handle(Channels.TracksImportLocal, (_evt, filePaths: string[]) =>
     importLocalTracks(filePaths)
   );
+  ipcMain.handle(Channels.TrackBookmarksList, (_evt, trackId: number) =>
+    listTrackBookmarks(trackId)
+  );
+  ipcMain.handle(
+    Channels.TrackBookmarksCreate,
+    (_evt, trackId: number, positionSec: number, label?: string | null, color?: string | null) => {
+      const bookmark = createTrackBookmark(trackId, positionSec, label, color);
+      broadcast(Channels.TrackBookmarksChanged, { trackId: bookmark.trackId });
+      return bookmark;
+    }
+  );
+  ipcMain.handle(
+    Channels.TrackBookmarksUpdate,
+    (_evt, id: number, patch: Parameters<typeof updateTrackBookmark>[1]) => {
+      const bookmark = updateTrackBookmark(id, patch);
+      if (bookmark) {
+        broadcast(Channels.TrackBookmarksChanged, { trackId: bookmark.trackId });
+      }
+      return bookmark;
+    }
+  );
+  ipcMain.handle(Channels.TrackBookmarksDelete, (_evt, id: number) => {
+    const bookmark = getTrackBookmark(id);
+    const deleted = deleteTrackBookmark(id);
+    if (deleted && bookmark) {
+      broadcast(Channels.TrackBookmarksChanged, { trackId: bookmark.trackId });
+    }
+    return deleted;
+  });
 
   // ----- Playlists -----
   ipcMain.handle(Channels.PlaylistsList, () => listPlaylists());

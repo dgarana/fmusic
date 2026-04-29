@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePlayerStore } from '../store/player';
 import { useSonosStore } from '../store/sonos';
 import { useDownloadsStore } from '../store/downloads';
 import { useSettingsStore } from '../store/settings';
-import type { RemoteControllerCommand } from '../../../shared/types';
+import type { RemoteControllerCommand, TrackBookmark } from '../../../shared/types';
 
 /**
  * Keeps the tray menu and the mini-player window in sync with the current
@@ -12,6 +12,7 @@ import type { RemoteControllerCommand } from '../../../shared/types';
  * mini-player back to the right sink.
  */
 export function TrayBridge() {
+  const [bookmarks, setBookmarks] = useState<TrackBookmark[]>([]);
   const current = usePlayerStore((s) => s.current);
   const localIsPlaying = usePlayerStore((s) => s.isPlaying);
   const playerPosition = usePlayerStore((s) => s.position);
@@ -55,6 +56,27 @@ export function TrayBridge() {
   const hasPrev = index > 0;
   const hasNext = index >= 0 && index < queueLength - 1;
 
+  useEffect(() => {
+    if (!current) {
+      setBookmarks([]);
+      return;
+    }
+    let cancelled = false;
+    void window.fmusic.listTrackBookmarks(current.id).then((items) => {
+      if (!cancelled) setBookmarks(items);
+    });
+    const offBookmarksChanged = window.fmusic.onTrackBookmarksChanged((payload) => {
+      if (payload.trackId !== current.id) return;
+      void window.fmusic.listTrackBookmarks(current.id).then((items) => {
+        if (!cancelled) setBookmarks(items);
+      });
+    });
+    return () => {
+      cancelled = true;
+      offBookmarksChanged();
+    };
+  }, [current?.id]);
+
   // Tray menu: updated only when the top-level fields change. We don't
   // include `position` here because the tray menu has no scrubbing, and
   // rebuilding it every 500ms is wasteful.
@@ -90,6 +112,7 @@ export function TrayBridge() {
       title: current?.title ?? null,
       artist: current?.artist ?? null,
       album: current?.album ?? null,
+      bookmarks,
       isPlaying,
       hasPrev,
       hasNext,
@@ -108,6 +131,7 @@ export function TrayBridge() {
     });
   }, [
     current?.id,
+    bookmarks,
     isPlaying,
     hasPrev,
     hasNext,

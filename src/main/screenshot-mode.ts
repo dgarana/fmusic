@@ -12,7 +12,7 @@ import {
   addTrackToPlaylist,
   listPlaylists
 } from './library/playlists-repo.js';
-import { insertTrack } from './library/tracks-repo.js';
+import { createTrackBookmark, insertTrack } from './library/tracks-repo.js';
 import {
   getRemoteControllerInfo
 } from './remote-controller-server.js';
@@ -153,6 +153,15 @@ export function seedScreenshotDemoData(userDataDir: string): DemoSeedResult {
       sourceUrl: null
     });
   });
+
+  createTrackBookmark(tracks[0].id, 18, 'Intro', '#f59e0b');
+  createTrackBookmark(tracks[0].id, 72, 'First drop', '#8b5cf6');
+  createTrackBookmark(tracks[0].id, 146, 'Breakdown', '#3b82f6');
+  createTrackBookmark(tracks[0].id, 204, 'Final hook', '#22c55e');
+  createTrackBookmark(tracks[1].id, 36, 'Verse', '#ec4899');
+  createTrackBookmark(tracks[1].id, 98, 'Chorus', '#f59e0b');
+  createTrackBookmark(tracks[2].id, 54, 'Heavy riff', '#ef4444');
+  createTrackBookmark(tracks[2].id, 188, 'Outro', '#eab308');
 
   const synthwave = createPlaylist('Synthwave Mix');
   const gym = createPlaylist('Gym Rotation');
@@ -398,9 +407,13 @@ async function captureRemoteControllerMobile(win: BrowserWindow): Promise<void> 
   mobile.setMenuBarVisibility(false);
   try {
     await mobile.loadURL(localUrl);
-    // Give the websocket handshake + initial state/data + applyI18n enough
-    // time to settle before grabbing the pixels.
-    await wait(2800);
+    // Give the websocket handshake time to attach, then re-emit the demo
+    // playback state so bookmark chips are present in the connected client.
+    await wait(900);
+    await win.webContents.executeJavaScript(`(async () => {
+      await window.__fmusicScreenshot?.prepareSonosDemo?.();
+    })()`);
+    await wait(2400);
     const image = await mobile.capturePage();
     fs.writeFileSync(
       path.join(screenshotOutputDir, 'remote-controller-mobile.png'),
@@ -481,11 +494,17 @@ export async function runScreenshotCapture(win: BrowserWindow): Promise<void> {
 
   if (seededData?.tracks[0]) {
     await win.webContents.executeJavaScript(`(async () => {
+      const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
       window.location.hash = '#/edit/${seededData.tracks[0].id}';
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      await wait(700);
       await window.__fmusicScreenshot?.prepareSonosDemo?.(); // Use this to start playback for visual effect
+      await wait(900);
+      const bookmarkSection = document
+        .querySelector('.editor-bookmark-list, .editor-bookmarks-empty')
+        ?.closest('.editor-section');
+      bookmarkSection?.scrollIntoView({ block: 'center' });
     })()`);
-    await wait(1200);
+    await wait(500);
     const editImage = await win.capturePage();
     fs.writeFileSync(path.join(screenshotOutputDir, 'edit.png'), editImage.toPNG());
   }

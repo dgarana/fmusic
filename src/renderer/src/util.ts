@@ -9,6 +9,20 @@ export function formatDuration(seconds: number | null | undefined): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+export function formatAddedDate(value: string | null | undefined): string {
+  if (!value) return '-';
+  const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)
+    ? `${value.replace(' ', 'T')}Z`
+    : value;
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  }).format(date);
+}
+
 export function isYouTubeUrl(input: string): boolean {
   return /(^https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(input.trim());
 }

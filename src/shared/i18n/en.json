@@ -59,6 +59,8 @@
     "loading": "Loading...",
     "fetchingPlaylist": "Fetching playlist entries...",
     "playlistEmpty": "The playlist is empty or could not be read.",
+    "playlistReady": "\"{title}\" loaded with {count} items. Review them before downloading.",
+    "downloadPlaylist": "Download playlist",
     "playlistEnqueued": "Playlist \"{playlist}\": {total} items · {enqueued} enqueued · {skipped} skipped (already in library or queued).",
     "playlistDefaultName": "YouTube Playlist",
     "playlistBatchTitle": "Playlist: {title}",
@@ -82,7 +84,7 @@
       "album": "Album",
       "genre": "Genre",
       "duration": "Duration",
-      "downloaded": "Downloaded",
+      "downloaded": "Added",
       "playlists": "Playlists"
     },
     "deleteConfirm": "Remove \"{title}\" from the library?",
@@ -247,7 +249,9 @@
       "moveLibraryConfirm": "Do you want to move your existing music library to the new location? If you choose 'No', the files will stay in the old folder and might become unavailable in FMusic.",
       "movingLibrary": "Moving music library...",
       "format": "Default format",
-      "quality": "Default quality"
+      "quality": "Default quality",
+      "concurrency": "Simultaneous downloads",
+      "concurrencyDescription": "How many tracks FMusic may download and process at the same time. Higher values are faster but use more CPU and network."
     },
     "system": {
       "language": "Language",
@@ -314,11 +318,19 @@
     "stopDevice": "Stop this device",
     "addByIp": "Add by IP (useful with VPN)",
     "add": "Add",
-    "noDevicesFound": "No Sonos devices found on the network.",
+    "noDevicesFound": "No Sonos speakers found. Make sure they are powered on, on the same Wi-Fi network, and not blocked by VPN or firewall settings.",
     "sessionExpired": "Sonos session expired after inactivity. Please start casting again.",
     "deviceNotFound": "Sonos device {host} not found.",
     "deviceNotFoundDiscover": "Sonos device {host} not found — run discover first.",
-    "connectFailed": "Could not connect to Sonos device at {host}."
+    "connectFailed": "Could not connect to Sonos device at {host}.",
+    "discoverFailed": "Could not search for Sonos speakers. Check that this computer is on the same network and that local network access is allowed.",
+    "networkError": "Could not reach Sonos on the local network. Check Wi-Fi, VPN, and firewall settings, then try again.",
+    "networkErrorWithHost": "Could not reach the Sonos speaker at {host}. Check that it is online and on the same network.",
+    "addByIpFailed": "Could not add the Sonos speaker at {host}. Check the IP address and try again.",
+    "addByIpFailedNoHost": "Could not add that Sonos speaker. Check the IP address and try again.",
+    "castFailed": "Could not start playback on {host}. Check that the speaker is reachable and try again.",
+    "castFailedNoHost": "Could not start Sonos playback. Check that the speaker is reachable and try again.",
+    "controlFailed": "Could not control the Sonos speaker right now. Check the network connection and try again."
   },
   "miniPlayer": {
     "nothingPlaying": "Nothing playing",

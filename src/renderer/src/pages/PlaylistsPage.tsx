@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLibraryStore } from '../store/library';
 import { usePlayerStore } from '../store/player';
 import { useSonosStore } from '../store/sonos';
-import { formatDuration } from '../util';
+import { formatAddedDate, formatDuration } from '../util';
 import { useT, playlistDisplayName } from '../i18n';
 import type { Playlist, Track } from '../../../shared/types';
 import { MobileSyncCard } from '../components/MobileSyncCard';
@@ -468,6 +468,7 @@ function PlaylistDetail({
             <col className="col-artist" />
             <col className="col-album" />
             <col className="col-duration" />
+            <col className="col-added" />
             <col className="col-actions playlist-actions" />
           </colgroup>
           <thead>
@@ -476,6 +477,7 @@ function PlaylistDetail({
               <th>{t('playlists.columns.artist')}</th>
               <th>{t('library.columns.album')}</th>
               <th>{t('playlists.columns.duration')}</th>
+              <th>{t('library.columns.downloaded')}</th>
               <th></th>
             </tr>
           </thead>
@@ -495,6 +497,7 @@ function PlaylistDetail({
                     <td className="cell-ellipsis" title={tr.artist ?? undefined}>{tr.artist ?? '-'}</td>
                     <td className="cell-ellipsis" title={tr.album ?? undefined}>{tr.album ?? '-'}</td>
                     <td className="cell-narrow">{formatDuration(tr.durationSec)}</td>
+                    <td className="cell-narrow" title={tr.downloadedAt}>{formatAddedDate(tr.downloadedAt)}</td>
                     <td className="actions">
                       <div className="row-actions">
                         <button

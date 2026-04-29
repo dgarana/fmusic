@@ -6,10 +6,49 @@ import { usePlayerStore } from './player';
 import { useSettingsStore } from './settings';
 import { clampSeekPosition, offsetSeekPosition } from '../util';
 
-const t = (key: string) => {
+const t = (key: string, params?: Record<string, string | number>) => {
   const locale = (useSettingsStore.getState().settings?.language ?? 'en') as Locale;
-  return translate(locale, key);
+  return translate(locale, key, params);
 };
+
+type SonosErrorContext = 'discover' | 'addByIp' | 'cast' | 'control';
+
+function rawSonosErrorMessage(err: unknown): string {
+  return toErrorMessage(err)
+    .replace(/^Error invoking remote method '[^']+':\s*/i, '')
+    .replace(/^Error:\s*/i, '')
+    .trim();
+}
+
+function sonosErrorMessage(err: unknown, context: SonosErrorContext, host?: string): string {
+  const detail = rawSonosErrorMessage(err);
+  const lower = detail.toLowerCase();
+
+  if (detail.includes('SONOS_STALE_SESSION')) return t('sonos.sessionExpired');
+
+  if (/no players found|no sonos|no devices found/.test(lower)) {
+    return t('sonos.noDevicesFound');
+  }
+
+  if (/not found/.test(lower) && host) {
+    return t('sonos.deviceNotFound', { host });
+  }
+
+  if (
+    /econnrefused|ehostunreach|enetunreach|etimedout|econnreset|socket hang up|network|timeout|timed out|fetch failed|failed to fetch|connect failed|could not connect/.test(
+      lower
+    )
+  ) {
+    return host
+      ? t('sonos.networkErrorWithHost', { host })
+      : t('sonos.networkError');
+  }
+
+  if (context === 'discover') return t('sonos.discoverFailed');
+  if (context === 'addByIp') return host ? t('sonos.addByIpFailed', { host }) : t('sonos.addByIpFailedNoHost');
+  if (context === 'cast') return host ? t('sonos.castFailed', { host }) : t('sonos.castFailedNoHost');
+  return t('sonos.controlFailed');
+}
 
 interface SonosState {
   devices: SonosDevice[];
@@ -71,7 +110,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
       set({ devices });
       if (devices.length === 0) set({ error: t('sonos.noDevicesFound') });
     } catch (err) {
-      set({ error: toErrorMessage(err) });
+      set({ error: sonosErrorMessage(err, 'discover') });
     } finally {
       set({ discovering: false });
     }
@@ -88,8 +127,9 @@ export const useSonosStore = create<SonosState>((set, get) => ({
         error: null
       }));
     } catch (err) {
-      set({ error: toErrorMessage(err) });
-      throw err;
+      const message = sonosErrorMessage(err, 'addByIp', normalizedHost);
+      set({ error: message });
+      throw new Error(message);
     }
   },
 
@@ -101,7 +141,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
       await Promise.allSettled(devices.map((d) => window.fmusic.sonosStop(d.host)));
       set({ activeHost: null, isPlaying: false, position: 0, duration: 0, transportState: null });
     } catch (err) {
-      set({ error: toErrorMessage(err) });
+      set({ error: sonosErrorMessage(err, 'discover') });
     } finally {
       set({ discovering: false });
     }
@@ -129,7 +169,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
         await window.fmusic.sonosSeek(host, seekTo);
       }
     } catch (err) {
-      set({ error: toErrorMessage(err) });
+      set({ error: sonosErrorMessage(err, 'cast', host) });
     }
   },
 
@@ -141,7 +181,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
       set({ isPlaying: true, position: 0, duration: 0, transportState: 'TRANSITIONING' });
       get().startPositionPolling();
     } catch (err) {
-      set({ error: toErrorMessage(err) });
+      set({ error: sonosErrorMessage(err, 'cast', activeHost) });
     }
   },
 
@@ -152,7 +192,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
       await window.fmusic.sonosPause(activeHost);
       set({ isPlaying: false, transportState: 'PAUSED_PLAYBACK' });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = rawSonosErrorMessage(err);
       if (msg.includes('SONOS_STALE_SESSION')) {
         get().stopPositionPolling();
         set({
@@ -164,7 +204,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
           error: t('sonos.sessionExpired')
         });
       } else {
-        set({ error: msg });
+        set({ error: sonosErrorMessage(err, 'control', activeHost) });
       }
     }
   },
@@ -176,7 +216,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
       await window.fmusic.sonosResume(activeHost);
       set({ isPlaying: true, transportState: 'PLAYING' });
     } catch (err) {
-      set({ error: toErrorMessage(err) });
+      set({ error: sonosErrorMessage(err, 'control', activeHost) });
     }
   },
 
@@ -216,7 +256,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
     try {
       await window.fmusic.sonosSetVolume(activeHost, volume);
     } catch (err) {
-      set({ error: toErrorMessage(err) });
+      set({ error: sonosErrorMessage(err, 'control', activeHost) });
     }
   },
 
@@ -229,7 +269,7 @@ export const useSonosStore = create<SonosState>((set, get) => ({
       await window.fmusic.sonosSeek(activeHost, nextPosition);
       set({ position: nextPosition });
     } catch (err) {
-      set({ error: toErrorMessage(err) });
+      set({ error: sonosErrorMessage(err, 'control', activeHost) });
     }
   },
 

@@ -12,15 +12,64 @@ const fs = require('node:fs');
 const path = require('node:path');
 const https = require('node:https');
 
+const projectRoot = path.resolve(__dirname, '..');
+
+// node-fetch@2 pulls old whatwg-url/tr46 builds that import Node's deprecated
+// core `punycode` module. The userland package is already installed; the
+// trailing slash makes Node resolve that package instead of the core module.
+function patchDeprecatedPunycodeImports() {
+  const patches = [
+    {
+      file: path.join(
+        projectRoot,
+        'node_modules',
+        'node-fetch',
+        'node_modules',
+        'whatwg-url',
+        'lib',
+        'url-state-machine.js'
+      ),
+      from: 'const punycode = require("punycode");',
+      to: 'const punycode = require("punycode/");'
+    },
+    {
+      file: path.join(
+        projectRoot,
+        'node_modules',
+        'node-fetch',
+        'node_modules',
+        'tr46',
+        'index.js'
+      ),
+      from: 'var punycode = require("punycode");',
+      to: 'var punycode = require("punycode/");'
+    }
+  ];
+
+  for (const patch of patches) {
+    if (!fs.existsSync(patch.file)) continue;
+    const source = fs.readFileSync(patch.file, 'utf8');
+    if (source.includes(patch.to)) continue;
+    if (!source.includes(patch.from)) {
+      console.warn(`[postinstall] punycode patch did not match ${patch.file}`);
+      continue;
+    }
+    fs.writeFileSync(patch.file, source.replace(patch.from, patch.to));
+    const relativeFile = path.relative(projectRoot, patch.file);
+    console.log(`[postinstall] patched deprecated punycode import in ${relativeFile}`);
+  }
+}
+
+patchDeprecatedPunycodeImports();
+
+const targetPlatform = process.env.FMUSIC_TARGET_PLATFORM || process.platform;
+const targetArch = process.env.FMUSIC_TARGET_ARCH || process.arch;
+
 if (process.env.FMUSIC_SKIP_BINARIES === '1') {
   console.log('[postinstall] FMUSIC_SKIP_BINARIES=1 -> skipping binary setup.');
   process.exit(0);
 }
 
-const targetPlatform = process.env.FMUSIC_TARGET_PLATFORM || process.platform;
-const targetArch = process.env.FMUSIC_TARGET_ARCH || process.arch;
-
-const projectRoot = path.resolve(__dirname, '..');
 const binDir = path.join(projectRoot, 'resources', 'bin');
 fs.mkdirSync(binDir, { recursive: true });
 

@@ -41,6 +41,9 @@ export function getSettings(): AppSettings {
 export function updateSettings(partial: Partial<AppSettings>): AppSettings {
   const current = getSettings();
   const next: AppSettings = { ...current, ...partial };
+  if (partial.concurrency !== undefined) {
+    next.concurrency = Math.max(1, Math.min(6, Math.floor(partial.concurrency || 1)));
+  }
   getStore().set('settings', next);
   return next;
 }

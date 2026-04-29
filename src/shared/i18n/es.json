@@ -59,6 +59,8 @@
     "loading": "Cargando...",
     "fetchingPlaylist": "Obteniendo entradas de la playlist...",
     "playlistEmpty": "La playlist está vacía o no se pudo leer.",
+    "playlistReady": "\"{title}\" cargada con {count} elementos. Revísalos antes de descargar.",
+    "downloadPlaylist": "Descargar playlist",
     "playlistEnqueued": "Playlist \"{playlist}\": {total} vídeos · {enqueued} añadidos · {skipped} omitidos (ya están en la biblioteca o en cola).",
     "playlistDefaultName": "Playlist de YouTube",
     "playlistBatchTitle": "Playlist: {title}",
@@ -83,7 +85,7 @@
       "album": "Álbum",
       "genre": "Género",
       "duration": "Duración",
-      "downloaded": "Descargada",
+      "downloaded": "Añadida",
       "playlists": "Playlists"
     },
     "deleteConfirm": "¿Eliminar \"{title}\" de la biblioteca?",
@@ -248,7 +250,9 @@
       "moveLibraryConfirm": "¿Quieres mover tu biblioteca de música actual a la nueva ubicación? Si eliges 'No', los archivos se quedarán en la carpeta antigua y podrían dejar de estar disponibles en FMusic.",
       "movingLibrary": "Moviendo biblioteca de música...",
       "format": "Formato por defecto",
-      "quality": "Calidad por defecto"
+      "quality": "Calidad por defecto",
+      "concurrency": "Descargas simultáneas",
+      "concurrencyDescription": "Cuántas canciones puede descargar y procesar FMusic a la vez. Los valores altos van más rápido, pero usan más CPU y red."
     },
     "system": {
       "language": "Idioma",
@@ -315,11 +319,19 @@
     "stopDevice": "Parar este dispositivo",
     "addByIp": "Añadir por IP (útil con VPN)",
     "add": "Añadir",
-    "noDevicesFound": "No se encontraron dispositivos Sonos en la red.",
+    "noDevicesFound": "No se encontraron altavoces Sonos. Comprueba que estén encendidos, en la misma red Wi-Fi y que la VPN o el firewall no bloqueen la red local.",
     "sessionExpired": "La sesión de Sonos ha caducado por inactividad. Por favor, vuelve a conectar.",
     "deviceNotFound": "No se ha encontrado el dispositivo Sonos {host}.",
     "deviceNotFoundDiscover": "No se ha encontrado el dispositivo Sonos {host} — busca dispositivos primero.",
-    "connectFailed": "No se ha podido conectar al dispositivo Sonos en {host}."
+    "connectFailed": "No se ha podido conectar al dispositivo Sonos en {host}.",
+    "discoverFailed": "No se han podido buscar altavoces Sonos. Comprueba que este ordenador esté en la misma red y que el acceso a la red local esté permitido.",
+    "networkError": "No se ha podido conectar con Sonos en la red local. Comprueba la Wi-Fi, la VPN y el firewall, y vuelve a intentarlo.",
+    "networkErrorWithHost": "No se ha podido conectar con el altavoz Sonos en {host}. Comprueba que esté encendido y en la misma red.",
+    "addByIpFailed": "No se ha podido añadir el altavoz Sonos en {host}. Comprueba la IP y vuelve a intentarlo.",
+    "addByIpFailedNoHost": "No se ha podido añadir ese altavoz Sonos. Comprueba la IP y vuelve a intentarlo.",
+    "castFailed": "No se ha podido iniciar la reproducción en {host}. Comprueba que el altavoz esté accesible y vuelve a intentarlo.",
+    "castFailedNoHost": "No se ha podido iniciar la reproducción en Sonos. Comprueba que el altavoz esté accesible y vuelve a intentarlo.",
+    "controlFailed": "No se ha podido controlar el altavoz Sonos ahora mismo. Comprueba la conexión de red y vuelve a intentarlo."
   },
   "miniPlayer": {
     "nothingPlaying": "Nada reproduciéndose",

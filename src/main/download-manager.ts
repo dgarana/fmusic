@@ -32,6 +32,13 @@ function stripArtistPrefixFromTitle(rawTitle: string, artist: string | null): st
   return trimmedTitle;
 }
 
+function normalizeOptionalMetadata(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  if (/^(n\/?a|none|null|undefined)$/i.test(trimmed)) return null;
+  return trimmed;
+}
+
 function resolveImportedTitle(
   rawTitle: string,
   structuredTrack: string | null,
@@ -103,12 +110,10 @@ async function ensureEmbeddedArtwork(filePath: string, thumbnailUrl: string | nu
 
 export class DownloadManager extends EventEmitter {
   private queue: DownloadJob[] = [];
-  private current: { job: DownloadJob; proc: DownloadProcess } | null = null;
+  private active = new Map<string, { job: DownloadJob; proc: DownloadProcess }>();
 
   list(): DownloadJob[] {
-    const all = [...this.queue];
-    if (this.current) all.unshift(this.current.job);
-    return all;
+    return [...this.active.values()].map(({ job }) => job).concat(this.queue);
   }
 
   enqueue(request: DownloadRequest): DownloadJob {
@@ -133,8 +138,9 @@ export class DownloadManager extends EventEmitter {
   }
 
   cancel(jobId: string): boolean {
-    if (this.current && this.current.job.id === jobId) {
-      this.current.proc.cancel();
+    const active = this.active.get(jobId);
+    if (active) {
+      active.proc.cancel();
       return true;
     }
     const idx = this.queue.findIndex((j) => j.id === jobId);
@@ -146,11 +152,21 @@ export class DownloadManager extends EventEmitter {
     return false;
   }
 
-  private async processNext(): Promise<void> {
-    if (this.current) return;
-    const job = this.queue.shift();
-    if (!job) return;
+  refreshConcurrency(): void {
+    queueMicrotask(() => this.processNext());
+  }
 
+  private async processNext(): Promise<void> {
+    const settings = getSettings();
+    const maxConcurrent = Math.max(1, Math.min(6, Math.floor(settings.concurrency || 1)));
+    while (this.active.size < maxConcurrent) {
+      const job = this.queue.shift();
+      if (!job) return;
+      void this.runJob(job);
+    }
+  }
+
+  private async runJob(job: DownloadJob): Promise<void> {
     const settings = getSettings();
     const proc = new DownloadProcess({
       url: job.request.url,
@@ -158,7 +174,7 @@ export class DownloadManager extends EventEmitter {
       format: job.request.format ?? settings.defaultFormat,
       quality: job.request.quality ?? settings.defaultQuality
     });
-    this.current = { job, proc };
+    this.active.set(job.id, { job, proc });
 
     this.updateJob(job, { status: 'fetching-metadata' });
 
@@ -191,8 +207,8 @@ export class DownloadManager extends EventEmitter {
       // expose structured artist/album/track); fall back to ID3 tags read
       // from the final file for cases where yt-dlp could not find them.
       let artist: string | null = result.artist;
-      let album: string | null = result.album;
-      let genre: string | null = result.genre;
+      let album: string | null = normalizeOptionalMetadata(result.album);
+      let genre: string | null = normalizeOptionalMetadata(result.genre);
       let durationSec = result.durationSec;
       let title = resolveImportedTitle(result.title, result.track, artist);
 
@@ -202,8 +218,8 @@ export class DownloadManager extends EventEmitter {
         title =
           meta.common.title?.trim() ||
           resolveImportedTitle(result.title, result.track, artist);
-        album = album ?? meta.common.album ?? null;
-        genre = genre ?? meta.common.genre?.[0] ?? null;
+        album = album ?? normalizeOptionalMetadata(meta.common.album);
+        genre = genre ?? normalizeOptionalMetadata(meta.common.genre?.[0]);
         if (!durationSec && meta.format.duration) {
           durationSec = Math.round(meta.format.duration);
         }
@@ -265,7 +281,7 @@ export class DownloadManager extends EventEmitter {
         : 'failed';
       this.updateJob(job, { status, error: message });
     } finally {
-      this.current = null;
+      this.active.delete(job.id);
       queueMicrotask(() => this.processNext());
     }
   }

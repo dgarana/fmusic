@@ -86,7 +86,7 @@ export function SonosPanel() {
             <span>{t('sonos.title')}</span>
           </div>
 
-          {error && <div className="sonos-error">{error}</div>}
+          {error && <div className="sonos-error" aria-live="polite">{error}</div>}
 
           {devices.length === 0 ? (
             <button onClick={() => void discover()} disabled={discovering} className="w-full">
@@ -140,7 +140,7 @@ export function SonosPanel() {
                 {addingIp ? '…' : t('sonos.add')}
               </button>
             </div>
-            {ipError && (
+            {ipError && ipError !== error && (
               <div className="text-danger fs-11 mt-4">{ipError}</div>
             )}
           </div>

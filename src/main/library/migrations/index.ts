@@ -12,6 +12,7 @@ import m004 from './004_playlist_slug.sql?raw';
 import m005 from './005_source_urls.sql?raw';
 import m006 from './006_smart_playlists.sql?raw';
 import m007 from './007_portable_paths.sql?raw';
+import m008 from './008_null_unknown_album.sql?raw';
 
 export interface MigrationDefinition {
   version: number;
@@ -26,5 +27,6 @@ export const migrations: MigrationDefinition[] = [
   { version: 4, name: '004_playlist_slug', sql: m004 },
   { version: 5, name: '005_source_urls', sql: m005 },
   { version: 6, name: '006_smart_playlists', sql: m006 },
-  { version: 7, name: '007_portable_paths', sql: m007 }
+  { version: 7, name: '007_portable_paths', sql: m007 },
+  { version: 8, name: '008_null_unknown_album', sql: m008 }
 ];

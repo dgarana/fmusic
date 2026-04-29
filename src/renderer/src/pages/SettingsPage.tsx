@@ -167,6 +167,20 @@ export function SettingsPage() {
               <option value={320}>320 kbps</option>
             </select>
           </label>
+          <label className="grid gap-4">
+            <span className="fw-500">{t('settings.downloads.concurrency')}</span>
+            <span className="text-muted fs-12">
+              {t('settings.downloads.concurrencyDescription')}
+            </span>
+            <input
+              type="number"
+              min="1"
+              max="6"
+              value={settings.concurrency || 1}
+              onChange={(e) => void update({ concurrency: Number(e.target.value) })}
+              className="w-100px mt-4"
+            />
+          </label>
         </div>
       )}
 

@@ -111,6 +111,13 @@ export interface NewTrack {
   sourceUrl: string | null;
 }
 
+function normalizeOptionalMetadata(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  if (/^(n\/?a|none|null|undefined)$/i.test(trimmed)) return null;
+  return trimmed;
+}
+
 export function insertTrack(track: NewTrack): Track {
   const db = getDb();
   const relativePath = toRelativePath(track.filePath);
@@ -120,7 +127,13 @@ export function insertTrack(track: NewTrack): Track {
        (youtube_id, title, artist, album, genre, duration_sec, file_path, thumbnail_path, source_url)
        VALUES (@youtubeId, @title, @artist, @album, @genre, @durationSec, @filePath, @thumbnailPath, @sourceUrl)`
     )
-    .run({ ...track, filePath: relativePath });
+    .run({
+      ...track,
+      artist: normalizeOptionalMetadata(track.artist),
+      album: normalizeOptionalMetadata(track.album),
+      genre: normalizeOptionalMetadata(track.genre),
+      filePath: relativePath
+    });
   return getTrack(Number(result.lastInsertRowid))!;
 }
 
@@ -196,9 +209,9 @@ export async function importLocalTracks(filePaths: string[]): Promise<ImportSumm
       insertTrack({
         youtubeId: null,
         title: common.title || path.basename(sourcePath, ext),
-        artist: common.artist || null,
-        album: common.album || null,
-        genre: common.genre?.[0] || null,
+        artist: normalizeOptionalMetadata(common.artist),
+        album: normalizeOptionalMetadata(common.album),
+        genre: normalizeOptionalMetadata(common.genre?.[0]),
         durationSec: format.duration ? Math.round(format.duration) : null,
         filePath: targetPath,
         thumbnailPath: null,
@@ -363,7 +376,13 @@ export function updateTrack(
 ): Track | null {
   const current = getTrack(id);
   if (!current) return null;
-  const next = { ...current, ...patch };
+  const next = {
+    ...current,
+    ...patch,
+    artist: normalizeOptionalMetadata(patch.artist ?? current.artist),
+    album: normalizeOptionalMetadata(patch.album ?? current.album),
+    genre: normalizeOptionalMetadata(patch.genre ?? current.genre)
+  };
   // Keep the on-disk ID3 tags in sync for MP3 files so edits made in fmusic
   // are also visible in other players and file explorers.
   syncTrackTagsToFile(next);

@@ -6,6 +6,7 @@ import type {
   DownloadJob,
   DownloadRequest,
   ImportSummary,
+  McpServerInfo,
   Playlist,
   SmartPlaylistDefinition,
   RemoteControllerCommand,
@@ -163,6 +164,8 @@ const api = {
   },
   addTracksByYoutubeIdsToPlaylist: (playlistId: number, youtubeIdToUrl: Record<string, string>) =>
     invoke<number>(Channels.PlaylistsAddTracksByYoutubeIds, playlistId, youtubeIdToUrl),
+  onPlaylistsChanged: (handler: () => void) =>
+    on<void>(Channels.PlaylistsChanged, handler),
 
   // Schema
   schemaHistory: () =>
@@ -230,6 +233,8 @@ const api = {
     invoke<RemoteControllerInfo>(Channels.RemoteControllerInfo),
   regenerateRemoteControllerToken: () =>
     invoke<RemoteControllerInfo>(Channels.RemoteControllerRegenerate),
+  getMcpServerInfo: () =>
+    invoke<McpServerInfo>(Channels.McpServerInfo),
   sendRemoteState: (state: RemotePlayerSnapshot) => ipcRenderer.send('remote:state-from-main', state),
   onRemoteCommand: (handler: (cmd: RemoteControllerCommand) => void) =>
     on<RemoteControllerCommand>('remote:command', handler),

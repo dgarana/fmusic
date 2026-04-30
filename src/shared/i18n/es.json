@@ -301,7 +301,15 @@
       "remoteControllerRegenerate": "Regenerar token",
       "remoteControllerStarting": "Iniciando remote controller...",
       "remoteControllerBetaTitle": "Función en beta",
-      "remoteControllerBetaDescription": "El remote controller está en BETA: puedes encontrar bugs, detalles pendientes o textos sin traducir. Si ves algo raro, repórtalo."
+      "remoteControllerBetaDescription": "El remote controller está en BETA: puedes encontrar bugs, detalles pendientes o textos sin traducir. Si ves algo raro, repórtalo.",
+      "mcpServer": "Servidor MCP",
+      "mcpServerDescription": "Permite que herramientas de IA locales busquen en la biblioteca y controlen la reproducción mediante un endpoint MCP en localhost.",
+      "mcpServerBetaTitle": "Función en beta",
+      "mcpServerBetaDescription": "El servidor MCP está en BETA: puede haber bugs o detalles pendientes. Si ves algo raro, repórtalo.",
+      "mcpServerPort": "Puerto del servidor MCP",
+      "mcpServerPortDescription": "Puerto para el servidor MCP en localhost. Debe ser un puerto válido entre 1 y 65535.",
+      "mcpServerUrl": "Endpoint MCP: {url}",
+      "mcpServerStarting": "Iniciando servidor MCP..."
     },
     "dependencies": {
       "available": "disponible",

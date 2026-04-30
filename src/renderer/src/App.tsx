@@ -37,6 +37,7 @@ function demoThumbnail(label: string, colors: [string, string]): string {
 
 export function App() {
   const refreshAll = useLibraryStore((s) => s.refreshAll);
+  const refreshPlaylists = useLibraryStore((s) => s.refreshPlaylists);
   const handleTrackAdded = useLibraryStore((s) => s.handleTrackAdded);
   const refreshDownloads = useDownloadsStore((s) => s.refresh);
   const applyDownloadUpdate = useDownloadsStore((s) => s.applyUpdate);
@@ -58,6 +59,9 @@ export function App() {
 
     const offDownload = window.fmusic.onDownloadUpdate((job) => applyDownloadUpdate(job));
     const offTrack = window.fmusic.onTrackAdded((track) => handleTrackAdded(track));
+    const offPlaylists = window.fmusic.onPlaylistsChanged(() => {
+      void refreshPlaylists();
+    });
     // Keep every window's settings store in sync: the main process
     // broadcasts Channels.SettingsChanged after any update, so the mini
     // player picks up theme/language changes made in the main window.
@@ -67,9 +71,10 @@ export function App() {
     return () => {
       offDownload();
       offTrack();
+      offPlaylists();
       offSettings();
     };
-  }, [refreshAll, refreshDownloads, applyDownloadUpdate, handleTrackAdded]);
+  }, [refreshAll, refreshDownloads, applyDownloadUpdate, handleTrackAdded, refreshPlaylists]);
 
   useEffect(() => {
     const screenshotHelpers = {

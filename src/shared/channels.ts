@@ -66,6 +66,7 @@ export const Channels = {
   PlaylistsForTrack: 'playlists:for-track',
   PlaylistsForTracks: 'playlists:for-tracks',
   PlaylistsAddTracksByYoutubeIds: 'playlists:add-tracks-by-yt',
+  PlaylistsChanged: 'playlists:changed', // event, main -> renderer
 
   // Schema
   SchemaHistory: 'schema:history',
@@ -95,6 +96,9 @@ export const Channels = {
   // Remote Controller
   RemoteControllerInfo: 'remote-controller:info',
   RemoteControllerRegenerate: 'remote-controller:regenerate',
+
+  // MCP
+  McpServerInfo: 'mcp:info',
 
   // Window Controls
   WindowMaximizeChange: 'window:maximize-change', // event, main -> renderer

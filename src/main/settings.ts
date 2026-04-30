@@ -27,6 +27,8 @@ function getStore(): Store<Schema> {
         miniPlayerEnabled: true,
         mobileSyncEnabled: false,
         remoteControllerEnabled: false,
+        mcpServerEnabled: false,
+        mcpServerPort: 7863,
         localServerPort: 0
       }
     }

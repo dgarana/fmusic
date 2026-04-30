@@ -300,7 +300,15 @@
       "remoteControllerRegenerate": "Regenerate token",
       "remoteControllerStarting": "Starting remote controller...",
       "remoteControllerBetaTitle": "Beta feature",
-      "remoteControllerBetaDescription": "The remote controller is in BETA: you may hit bugs, rough edges or missing translations. Please report anything that looks off."
+      "remoteControllerBetaDescription": "The remote controller is in BETA: you may hit bugs, rough edges or missing translations. Please report anything that looks off.",
+      "mcpServer": "MCP server",
+      "mcpServerDescription": "Allows local AI tools to search the library and control playback through a localhost MCP endpoint.",
+      "mcpServerBetaTitle": "Beta feature",
+      "mcpServerBetaDescription": "The MCP server is in BETA: you may hit bugs or rough edges. Please report anything that looks off.",
+      "mcpServerPort": "MCP server port",
+      "mcpServerPortDescription": "Port for the localhost MCP server. Must be a valid port between 1 and 65535.",
+      "mcpServerUrl": "MCP endpoint: {url}",
+      "mcpServerStarting": "Starting MCP server..."
     },
     "dependencies": {
       "available": "available",

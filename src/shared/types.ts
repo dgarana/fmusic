@@ -209,7 +209,7 @@ export interface AppSettings {
   remoteControllerEnabled: boolean;
   /** Enable local MCP server for AI control. Default: false. */
   mcpServerEnabled: boolean;
-  /** Port for the localhost MCP server. 0 for random available port. Default: 0. */
+  /** Port for the localhost MCP server. Default: 7863. */
   mcpServerPort: number;
   /** Port for the local unified server (Sonos, Mobile Sync, Remote). 0 for random available port. Default: 0. */
   localServerPort: number;

@@ -66,6 +66,10 @@ import {
   regenerateRemoteControllerToken
 } from './remote-controller-server.js';
 import { getMcpServerInfo, startMcpServer, stopMcpServer } from './mcp-server.js';
+import { startUnifiedServer, stopUnifiedServer } from './server-manager.js';
+import { refreshTrayLanguage } from './tray.js';
+import { checkForUpdates, downloadUpdate, quitAndInstall, getLastUpdaterStatus } from './app-updater.js';
+import { lookupTrackMetadata } from './musicbrainz.js';
 
 let mcpPortDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -77,10 +81,6 @@ function scheduleMcpRestart() {
     startMcpServer().catch(console.error);
   }, 10_000);
 }
-import { startUnifiedServer, stopUnifiedServer } from './server-manager.js';
-import { refreshTrayLanguage } from './tray.js';
-import { checkForUpdates, downloadUpdate, quitAndInstall, getLastUpdaterStatus } from './app-updater.js';
-import { lookupTrackMetadata } from './musicbrainz.js';
 
 function broadcast(channel: string, payload: unknown) {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -88,6 +88,10 @@ function broadcast(channel: string, payload: unknown) {
       win.webContents.send(channel, payload);
     }
   }
+}
+
+function broadcastPlaylistsChanged() {
+  broadcast(Channels.PlaylistsChanged, null);
 }
 
 export function registerIpc(): void {
@@ -327,33 +331,69 @@ export function registerIpc(): void {
   ipcMain.handle(Channels.PlaylistsList, () => listPlaylists());
   ipcMain.handle(
     Channels.PlaylistsCreate,
-    (_evt, name: string, sourceUrl: string | null = null) => createPlaylist(name, sourceUrl)
+    (_evt, name: string, sourceUrl: string | null = null) => {
+      const playlist = createPlaylist(name, sourceUrl);
+      broadcastPlaylistsChanged();
+      broadcastRemoteControllerData();
+      return playlist;
+    }
   );
   ipcMain.handle(
     Channels.PlaylistsCreateSmart,
-    (_evt, name: string, definition: SmartPlaylistDefinition) =>
-      createSmartPlaylist(name, definition)
+    (_evt, name: string, definition: SmartPlaylistDefinition) => {
+      const playlist = createSmartPlaylist(name, definition);
+      broadcastPlaylistsChanged();
+      broadcastRemoteControllerData();
+      return playlist;
+    }
   );
   ipcMain.handle(
     Channels.PlaylistsUpdateSmart,
-    (_evt, id: number, name: string, definition: SmartPlaylistDefinition) =>
-      updateSmartPlaylist(id, name, definition)
+    (_evt, id: number, name: string, definition: SmartPlaylistDefinition) => {
+      const playlist = updateSmartPlaylist(id, name, definition);
+      if (playlist) {
+        broadcastPlaylistsChanged();
+        broadcastRemoteControllerData();
+      }
+      return playlist;
+    }
   );
-  ipcMain.handle(Channels.PlaylistsRename, (_evt, id: number, name: string) =>
-    renamePlaylist(id, name)
-  );
-  ipcMain.handle(Channels.PlaylistsDelete, (_evt, id: number) => deletePlaylist(id));
-  ipcMain.handle(Channels.PlaylistsAddTrack, (_evt, playlistId: number, trackId: number) =>
-    addTrackToPlaylist(playlistId, trackId)
-  );
+  ipcMain.handle(Channels.PlaylistsRename, (_evt, id: number, name: string) => {
+    const playlist = renamePlaylist(id, name);
+    if (playlist) {
+      broadcastPlaylistsChanged();
+      broadcastRemoteControllerData();
+    }
+    return playlist;
+  });
+  ipcMain.handle(Channels.PlaylistsDelete, (_evt, id: number) => {
+    const deleted = deletePlaylist(id);
+    if (deleted) {
+      broadcastPlaylistsChanged();
+      broadcastRemoteControllerData();
+    }
+    return deleted;
+  });
+  ipcMain.handle(Channels.PlaylistsAddTrack, (_evt, playlistId: number, trackId: number) => {
+    addTrackToPlaylist(playlistId, trackId);
+    broadcastPlaylistsChanged();
+    broadcastRemoteControllerData();
+  });
   ipcMain.handle(
     Channels.PlaylistsRemoveTrack,
-    (_evt, playlistId: number, trackId: number) => removeTrackFromPlaylist(playlistId, trackId)
+    (_evt, playlistId: number, trackId: number) => {
+      removeTrackFromPlaylist(playlistId, trackId);
+      broadcastPlaylistsChanged();
+      broadcastRemoteControllerData();
+    }
   );
   ipcMain.handle(
     Channels.PlaylistsReorder,
-    (_evt, playlistId: number, orderedTrackIds: number[]) =>
-      reorderPlaylist(playlistId, orderedTrackIds)
+    (_evt, playlistId: number, orderedTrackIds: number[]) => {
+      reorderPlaylist(playlistId, orderedTrackIds);
+      broadcastPlaylistsChanged();
+      broadcastRemoteControllerData();
+    }
   );
   ipcMain.handle(Channels.PlaylistsForTrack, (_evt, trackId: number) =>
     playlistsForTrack(trackId)
@@ -385,6 +425,10 @@ export function registerIpc(): void {
           // layer via INSERT OR IGNORE so this should only hit on schema
           // errors.
         }
+      }
+      if (added > 0) {
+        broadcastPlaylistsChanged();
+        broadcastRemoteControllerData();
       }
       return added;
     }

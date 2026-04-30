@@ -12,6 +12,7 @@ const fmusicMock = {
   createPlaylist: vi.fn().mockResolvedValue(null),
   deletePlaylist: vi.fn().mockResolvedValue(false),
   listPlaylists: vi.fn().mockResolvedValue([]),
+  onPlaylistsChanged: vi.fn().mockReturnValue(() => {}),
   listTracks: vi.fn().mockResolvedValue([]),
   getMobileSyncUrl: vi.fn().mockResolvedValue('http://localhost/test.mp3'),
   sendTrayState: vi.fn(),

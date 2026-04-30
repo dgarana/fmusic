@@ -164,6 +164,8 @@ const api = {
   },
   addTracksByYoutubeIdsToPlaylist: (playlistId: number, youtubeIdToUrl: Record<string, string>) =>
     invoke<number>(Channels.PlaylistsAddTracksByYoutubeIds, playlistId, youtubeIdToUrl),
+  onPlaylistsChanged: (handler: () => void) =>
+    on<void>(Channels.PlaylistsChanged, handler),
 
   // Schema
   schemaHistory: () =>

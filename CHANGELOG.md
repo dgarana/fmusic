@@ -1,7 +1,7 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.11.1
+## v0.12.0
 
 ### Bug Fixes
 
@@ -42,6 +42,7 @@ _Generated from repository tags and commit history._
 - Fix Sonos queue advance after track end (#24) ([41c33bb](https://github.com/dgarana/fmusic/commit/41c33bbfd4116bd89b89b081d9180d9ca3db56ae))
 - Add quick seek controls (#25) ([da909ec](https://github.com/dgarana/fmusic/commit/da909ec7b2697dd3b9ae0a208dbc3e2efa837a1e))
 - Add renaming feature to playlists (#26) ([0cedbac](https://github.com/dgarana/fmusic/commit/0cedbac3674998376f94ebcbab72f60a0b0242f0))
+- Implement bookmarks section (#34) ([9a23e02](https://github.com/dgarana/fmusic/commit/9a23e02c2606924625a96c41d5e1d79309887504))
 
 ### Miscellaneous
 
@@ -65,7 +66,8 @@ _Generated from repository tags and commit history._
 - Release v0.10.0 ([0fab4ec](https://github.com/dgarana/fmusic/commit/0fab4ece09b0081d58da6c2c506b03e3d6b27b35))
 - Release v0.10.1 ([d1f426c](https://github.com/dgarana/fmusic/commit/d1f426c06d1bde8ae922f745131c56e2620211ff))
 - Release v0.11.0 ([1a466aa](https://github.com/dgarana/fmusic/commit/1a466aa23ba411afca18016a92b00e08d174c8f1))
-- Release v0.11.1 ([eb2dc9e](https://github.com/dgarana/fmusic/commit/eb2dc9e48f494243372c649d958c954e6015e798))
+- Release v0.11.1 ([d10962f](https://github.com/dgarana/fmusic/commit/d10962fefa10ba369729300302f839dedaf7f8b8))
+- Release v0.12.0 ([5772b11](https://github.com/dgarana/fmusic/commit/5772b113e0a575598c24909e0678663f9d49330f))
 
 ### Other
 
@@ -111,6 +113,24 @@ Fixes #17.
 - Prompt to move music files when changing download directory in Settings.
 - Automatically cleanup database entries for missing files at startup.
 - Refined duplicate detection and added import summary reporting. ([c2ab22f](https://github.com/dgarana/fmusic/commit/c2ab22f8af0891cdf76edf85d8f6dff115c2e5ff))
+- Fix/sonos errors (#33)
+
+* fix: Sonos error messages and UI
+
+* feat: Improve playlist imports and download metadata
+
+* fix: Error log on startup ([30eb03d](https://github.com/dgarana/fmusic/commit/30eb03d85d558373103f3e4b5e0abde718afaeb0))
+- Feature/implement mcp (#35)
+
+* feat: add local MCP player control
+
+Add an opt-in MCP server bound to 127.0.0.1 so local AI clients can inspect and control FMusic playback.
+
+Expose player state, playback controls, library search, playlist listing, and play-track tools through JSON-RPC/MCP.
+
+Add Settings controls for enabling MCP and choosing the localhost port, plus a stdio bridge for Claude Desktop-style local MCP clients.
+
+* feat: Improve MCP to write data ([be24112](https://github.com/dgarana/fmusic/commit/be24112f9c98a6e2af3d1e8b189be76e6e9fdd25))
 
 ### Refactor
 

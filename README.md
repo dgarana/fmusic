@@ -92,10 +92,24 @@ required on the user's machine.
 ### Remote controller (BETA)
 - 📱 **Control FMusic from any phone** on the same Wi-Fi: the desktop app exposes a small web UI with player, library, downloads and playlists tabs.
 - 🔑 **Scan the QR** in Settings → Network → Remote controller to open the web UI already authenticated (single-use token per session, regenerable).
+- 🎚️ **Choose where audio plays** from the remote UI:
+  - **Host** keeps the existing behavior: the phone controls playback on the desktop computer.
+  - **This device** streams the selected track to the phone/browser and uses the client's own speaker or headphones.
+  - In **This device** mode, play/pause, previous/next, seek and volume apply to the client-side player; the choice is remembered per browser.
+- 🌐 Local-device playback is served by the same local HTTP server and token-protected URL as the remote controller, with **Range request** support for seeking.
 - 🔖 **Remote bookmark jumps**: current-track bookmarks are shown as ordered colored chips with labels and timestamps, and tapping one seeks directly to that cue point.
 - ▶️ **Now-playing awareness**: the current track is highlighted with a green border and an animated equalizer overlay on both the Library and Playlist views, mirroring the desktop behaviour.
 - 🌍 **Same translations as the desktop**: the controller speaks whichever language is active in the app and switches on the fly (no reload) when the user changes it in Settings.
 - ⚠️ Marked as **BETA** both in the settings pane and inside the mobile UI while we stabilize it.
+
+To use it:
+
+1. Open **Settings → Network** and enable **Remote controller**.
+2. Scan the QR code from your phone, or open the shown URL on another device on the same local network.
+3. Use the output selector in the remote player:
+   - **Host**: remote-control the desktop player.
+   - **This device**: play the library audio directly on the phone/browser.
+4. If the browser blocks autoplay after switching to **This device**, tap the play button once to start audio.
 
 ![Remote controller - Settings](docs/screenshots/remote-controller-settings.png)
 

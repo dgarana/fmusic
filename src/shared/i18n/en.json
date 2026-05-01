@@ -385,6 +385,13 @@
     "player": {
       "toggle": "Play or pause"
     },
+    "output": {
+      "host": "Host",
+      "local": "This device",
+      "hostHint": "Playing on the host computer.",
+      "localHint": "Playing on this device.",
+      "tapToStart": "Tap play to start audio on this device."
+    },
     "library": {
       "unknownArtist": "Unknown artist",
       "search": "Search"

@@ -386,6 +386,13 @@
     "player": {
       "toggle": "Reproducir o pausar"
     },
+    "output": {
+      "host": "Host",
+      "local": "Este dispositivo",
+      "hostHint": "Sonando en el ordenador host.",
+      "localHint": "Sonando en este dispositivo.",
+      "tapToStart": "Toca reproducir para iniciar el audio en este dispositivo."
+    },
     "library": {
       "unknownArtist": "Artista desconocido",
       "search": "Buscar"

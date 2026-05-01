@@ -38,7 +38,10 @@ export async function startUnifiedServer(): Promise<number> {
 
       // Route to Remote Controller (multiple paths)
       if (
-        (url.pathname === '/' || url.pathname === '/remote' || url.pathname.startsWith('/artwork/')) &&
+        (url.pathname === '/' ||
+          url.pathname === '/remote' ||
+          url.pathname.startsWith('/artwork/') ||
+          url.pathname.startsWith('/remote-track/')) &&
         isRemoteEnabled()
       ) {
         return handleRemoteRequest(req, res);

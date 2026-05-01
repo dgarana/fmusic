@@ -446,11 +446,12 @@ input[type='range']:active::-webkit-slider-thumb { background: var(--accent); }
 .app-shell {
   display: grid;
   grid-template-columns: 240px 1fr;
-  grid-template-rows: 1fr 118px;
+  grid-template-rows: minmax(0, 1fr) auto;
   grid-template-areas:
     'sidebar main'
     'player player';
   height: 100vh;
+  min-height: 0;
 }
 
 /* --- Sidebar ---------------------------------------------------------- */
@@ -607,6 +608,7 @@ input[type='range']:active::-webkit-slider-thumb { background: var(--accent); }
   grid-area: main;
   overflow-y: auto;
   padding: 58px 32px 36px;
+  min-height: 0;
 }
 .main h1 {
   margin: 0 0 20px 0;
@@ -1170,17 +1172,19 @@ body.theme-light .track-thumb-overlay {
   grid-area: player;
   background: var(--bg-elevated);
   border-top: 1px solid var(--divider);
-  padding: 12px 28px;
+  min-height: 118px;
+  padding: 12px clamp(18px, 2vw, 28px);
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(240px, 1fr) minmax(340px, 520px) minmax(190px, 1fr);
   align-items: center;
-  gap: 28px;
+  gap: clamp(16px, 2vw, 28px);
   box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.18);
+  overflow: visible;
 }
 .player-current {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   min-width: 0;
 }
 .player-current .cover {
@@ -1215,7 +1219,8 @@ body.theme-light .track-thumb-overlay {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  min-width: 0;
 }
 .player-controls .buttons {
   display: flex;
@@ -1226,8 +1231,8 @@ body.theme-light .track-thumb-overlay {
   display: flex;
   gap: 10px;
   align-items: flex-end;
-  width: 460px;
-  max-width: 46vw;
+  width: 100%;
+  min-width: 0;
   font-size: 11px;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
@@ -1374,6 +1379,7 @@ body.theme-light .track-thumb-overlay {
   justify-content: flex-end;
   gap: 8px;
   align-items: center;
+  min-width: 0;
 }
 .player-extras .volume {
   display: flex;
@@ -1407,6 +1413,89 @@ body.theme-light .track-thumb-overlay {
 }
 .heart-btn.is-favorited { color: #ef4d6f; }
 .player-current-action:disabled { opacity: 0.35; cursor: default; }
+
+@media (max-width: 1180px) {
+  .player-bar {
+    grid-template-columns: minmax(220px, 1fr) minmax(300px, 480px) auto;
+    gap: 14px;
+  }
+
+  .player-current .cover {
+    width: 56px;
+    height: 56px;
+  }
+
+  .player-extras .volume input[type='range'] {
+    width: 92px;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    grid-template-columns: 210px 1fr;
+  }
+
+  .player-bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'current extras'
+      'controls controls';
+    min-height: 146px;
+    padding-block: 10px 12px;
+  }
+
+  .player-current {
+    grid-area: current;
+  }
+
+  .player-controls {
+    grid-area: controls;
+  }
+
+  .player-extras {
+    grid-area: extras;
+  }
+
+  .player-controls .scrub {
+    max-width: min(680px, calc(100vw - 56px));
+  }
+}
+
+@media (max-height: 720px) {
+  .app-shell {
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .player-bar {
+    min-height: 104px;
+    padding-block: 8px;
+  }
+
+  .player-current .cover {
+    width: 52px;
+    height: 52px;
+  }
+
+  .player-controls {
+    gap: 6px;
+  }
+
+  .player-controls .play-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .seek-jump-btn {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+@media (max-width: 900px) and (max-height: 720px) {
+  .player-bar {
+    min-height: 132px;
+  }
+}
 
 /* --- Sonos --- */
 

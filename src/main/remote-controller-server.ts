@@ -1,11 +1,14 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import path from 'node:path';
 import type { Duplex } from 'node:stream';
 import {
   findDownloadedYoutubeIds,
   getTrack,
   getTrackEmbeddedArtworkDataUrl,
-  listTracks
+  listTracks,
+  resolveTrackFilePath
 } from './library/tracks-repo.js';
 import {
   addTrackToPlaylist,
@@ -19,7 +22,7 @@ import {
 import { getDownloadManager } from './download-manager.js';
 import { searchYouTube } from './ytdlp.js';
 import { getSettings } from './settings.js';
-import { getLocalIp, getServicePort } from './network.js';
+import { getLocalIp, getServicePort, parseRange } from './network.js';
 import enBundle from '../shared/i18n/en.json';
 import esBundle from '../shared/i18n/es.json';
 import { toErrorMessage } from '../shared/errors.js';
@@ -63,6 +66,14 @@ type RemoteIncoming =
 interface RemoteDataSnapshot {
   tracks: Track[];
   playlists: Playlist[];
+}
+
+function mimeForExt(ext: string): string {
+  if (ext === '.mp3') return 'audio/mpeg';
+  if (ext === '.m4a') return 'audio/mp4';
+  if (ext === '.ogg') return 'audio/ogg';
+  if (ext === '.flac') return 'audio/flac';
+  return 'audio/mpeg';
 }
 
 function remoteUrl(): string | null {
@@ -334,6 +345,56 @@ async function handleAction(socket: Duplex, action: RemoteAction & { requestId?:
   }
 }
 
+function serveRemoteTrack(req: IncomingMessage, res: ServerResponse, trackId: number): void {
+  const track = getTrack(trackId);
+  const filePath = track ? resolveTrackFilePath(track) : null;
+  if (!filePath) {
+    res.writeHead(404);
+    res.end('Not found');
+    return;
+  }
+
+  let stat: fs.Stats;
+  try {
+    stat = fs.statSync(filePath);
+  } catch {
+    res.writeHead(404);
+    res.end('Not found');
+    return;
+  }
+
+  const fileSize = stat.size;
+  const contentType = mimeForExt(path.extname(filePath).toLowerCase());
+  const range = req.headers.range;
+
+  if (range) {
+    const parsedRange = parseRange(range, fileSize);
+    if (!parsedRange) {
+      res.writeHead(416, { 'Content-Range': `bytes */${fileSize}` });
+      res.end();
+      return;
+    }
+    const { start, end } = parsedRange;
+    res.writeHead(206, {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': end - start + 1,
+      'Content-Type': contentType,
+      'Cache-Control': 'no-store'
+    });
+    fs.createReadStream(filePath, { start, end }).pipe(res);
+    return;
+  }
+
+  res.writeHead(200, {
+    'Content-Length': fileSize,
+    'Content-Type': contentType,
+    'Accept-Ranges': 'bytes',
+    'Cache-Control': 'no-store'
+  });
+  fs.createReadStream(filePath).pipe(res);
+}
+
 function serveRemotePage(res: ServerResponse): void {
   res.writeHead(200, {
     'Content-Type': 'text/html; charset=utf-8',
@@ -381,6 +442,10 @@ function serveRemotePage(res: ServerResponse): void {
     button .play-icon { fill: currentColor; stroke: none; }
     button:disabled { opacity: .35; }
     .volume { display: flex; align-items: center; gap: 10px; margin-top: 14px; color: #9aa3b5; font-size: 12px; }
+    .output-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-top: 12px; padding: 3px; border: 1px solid #272c36; border-radius: 12px; background: #171b22; }
+    .output-switch button { width: 100%; height: 32px; border: 0; border-radius: 9px; background: transparent; color: #9aa3b5; font-size: 12px; }
+    .output-switch button.active { background: #242a35; color: #f5f7fb; }
+    .output-message { min-height: 18px; margin-top: 8px; color: #9aa3b5; font-size: 12px; text-align: center; }
     h2 { margin: 0 0 8px; font-size: 14px; color: #d8dce5; }
     .toolbar { display: flex; gap: 6px; margin: 0 0 8px; }
     .toolbar input, .toolbar select { min-width: 0; flex: 1; }
@@ -476,6 +541,11 @@ function serveRemotePage(res: ServerResponse): void {
       <button id="next" data-i18n-aria="player.next" data-i18n-title="player.next" aria-label="Next" title="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="play-icon" d="m5 4 10 8-10 8V4Z"/><path d="M19 5v14"/></svg></button>
     </div>
     <div class="volume"><span data-i18n="player.volume">Volume</span><input id="volume" type="range" min="0" max="1" step="0.01" value="0.9" /></div>
+    <div class="output-switch" role="group" aria-label="Playback output">
+      <button id="outputHost" class="active" data-output="host" data-i18n="remote.output.host">Host</button>
+      <button id="outputLocal" data-output="local" data-i18n="remote.output.local">This device</button>
+    </div>
+    <div id="outputMessage" class="output-message" data-i18n="remote.output.hostHint">Playing on the host computer.</div>
     <div id="sonosPanel" class="sonos-inline hidden"></div>
   </section>
   <section id="library" class="view">
@@ -549,6 +619,31 @@ const extractYtId = (value) => {
   return match ? match[1] : null;
 };
 let current = null;
+let hostState = null;
+let outputMode = localStorage.getItem('fmusic.remote.output') === 'local' ? 'local' : 'host';
+const localAudio = new Audio();
+let localVolume = Math.min(1, Math.max(0, Number(localStorage.getItem('fmusic.remote.volume') || '0.9') || 0.9));
+let audioContext = null;
+let audioSource = null;
+let gainNode = null;
+let localQueue = [];
+let localIndex = -1;
+let localTrack = null;
+let localState = {
+  trackId: null,
+  title: null,
+  artist: null,
+  album: null,
+  bookmarks: [],
+  isPlaying: false,
+  hasPrev: false,
+  hasNext: false,
+  position: 0,
+  duration: 0,
+  volume: localVolume,
+  downloads: [],
+  sonos: { enabled: false, devices: [], activeHost: null, isPlaying: false, discovering: false, error: null }
+};
 let data = { tracks: [], playlists: [] };
 let playlistTracks = new Map();
 let scrubbing = false;
@@ -556,6 +651,191 @@ let coverTrackId = null;
 let requestSeq = 0;
 const pending = new Map();
 function send(msg) { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg)); }
+function getTrackFromData(trackId) {
+  return (data.tracks || []).find((track) => track.id === trackId) || null;
+}
+function trackUrl(trackId) {
+  return '/remote-track/' + trackId + '?token=' + encodeURIComponent(token);
+}
+function decorateLocalState() {
+  return {
+    ...localState,
+    downloads: hostState?.downloads || [],
+    sonos: hostState?.sonos || localState.sonos,
+    bookmarks: hostState?.trackId === localState.trackId ? (hostState.bookmarks || []) : []
+  };
+}
+function refreshLocalState() {
+  localState = {
+    ...localState,
+    trackId: localTrack?.id ?? null,
+    title: localTrack?.title ?? null,
+    artist: localTrack?.artist ?? null,
+    album: localTrack?.album ?? null,
+    isPlaying: !localAudio.paused && !localAudio.ended,
+    hasPrev: localIndex > 0,
+    hasNext: localIndex >= 0 && localIndex < localQueue.length - 1,
+    position: Number(localAudio.currentTime) || 0,
+    duration: Number(localAudio.duration) || localTrack?.durationSec || 0,
+    volume: localVolume
+  };
+  if (outputMode === 'local') render(decorateLocalState());
+}
+function ensureLocalAudioGraph() {
+  if (gainNode) return true;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return false;
+  try {
+    audioContext = audioContext || new AudioCtx();
+    audioSource = audioSource || audioContext.createMediaElementSource(localAudio);
+    gainNode = audioContext.createGain();
+    gainNode.gain.value = localVolume;
+    audioSource.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function resumeLocalAudioGraph() {
+  if (!ensureLocalAudioGraph()) return;
+  if (audioContext?.state === 'suspended') void audioContext.resume().catch(() => {});
+}
+function applyLocalVolume(volume) {
+  localVolume = Math.min(1, Math.max(0, Number(volume) || 0));
+  localStorage.setItem('fmusic.remote.volume', String(localVolume));
+  try {
+    localAudio.volume = localVolume;
+  } catch {
+    // Some mobile browsers expose volume but ignore writes; Web Audio covers it.
+  }
+  if (ensureLocalAudioGraph() && gainNode) {
+    gainNode.gain.value = localVolume;
+  }
+}
+function setOutputMessage() {
+  const key = outputMode === 'local' ? 'remote.output.localHint' : 'remote.output.hostHint';
+  const node = el('outputMessage');
+  node.setAttribute('data-i18n', key);
+  node.textContent = t(key);
+}
+function updateOutputButtons() {
+  document.querySelectorAll('[data-output]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.output === outputMode);
+  });
+  setOutputMessage();
+}
+function setOutputMode(mode) {
+  outputMode = mode === 'local' ? 'local' : 'host';
+  localStorage.setItem('fmusic.remote.output', outputMode);
+  updateOutputButtons();
+  if (outputMode === 'local') {
+    if (!localTrack && hostState?.trackId) {
+      const track = getTrackFromData(hostState.trackId) || {
+        id: hostState.trackId,
+        title: hostState.title,
+        artist: hostState.artist,
+        album: hostState.album,
+        durationSec: hostState.duration
+      };
+      void playLocalTrack(track, data.tracks || [track], hostState.position || 0, !!hostState.isPlaying);
+      if (hostState.isPlaying) send({ type: 'toggle-play' });
+      return;
+    }
+    refreshLocalState();
+  } else {
+    localAudio.pause();
+    render(hostState || localState);
+  }
+}
+function setLocalQueue(track, queue) {
+  localQueue = queue && queue.length ? queue : [track];
+  localIndex = localQueue.findIndex((item) => item.id === track.id);
+  if (localIndex < 0) {
+    localQueue = [track, ...localQueue];
+    localIndex = 0;
+  }
+}
+async function playLocalTrack(track, queue, startAt, autoplay) {
+  if (!track) return;
+  resumeLocalAudioGraph();
+  applyLocalVolume(localVolume);
+  setLocalQueue(track, queue);
+  localTrack = track;
+  coverTrackId = null;
+  localAudio.src = trackUrl(track.id);
+  try {
+    localAudio.currentTime = Math.max(0, Number(startAt) || 0);
+  } catch {
+    localAudio.addEventListener('loadedmetadata', () => {
+      localAudio.currentTime = Math.max(0, Number(startAt) || 0);
+    }, { once: true });
+  }
+  refreshLocalState();
+  if (autoplay !== false) {
+    try {
+      await localAudio.play();
+    } catch (err) {
+      el('outputMessage').textContent = t('remote.output.tapToStart');
+    }
+  }
+  refreshLocalState();
+}
+function playLocalByIndex(index) {
+  if (index < 0 || index >= localQueue.length) {
+    localAudio.pause();
+    localAudio.currentTime = 0;
+    refreshLocalState();
+    return;
+  }
+  void playLocalTrack(localQueue[index], localQueue, 0, true);
+}
+function toggleLocalPlay() {
+  if (!localTrack && hostState?.trackId) {
+    const track = getTrackFromData(hostState.trackId);
+    if (track) void playLocalTrack(track, data.tracks || [track], hostState.position || 0, true);
+    return;
+  }
+  if (!localTrack) return;
+  if (localAudio.paused) {
+    resumeLocalAudioGraph();
+    void localAudio.play().catch(() => {
+      el('outputMessage').textContent = t('remote.output.tapToStart');
+    });
+  } else {
+    localAudio.pause();
+  }
+  refreshLocalState();
+}
+function seekLocal(seconds) {
+  if (!localTrack) return;
+  const max = localState.duration || localTrack.durationSec || 0;
+  localAudio.currentTime = Math.min(Math.max(0, Number(seconds) || 0), max || Number(seconds) || 0);
+  refreshLocalState();
+}
+function setLocalVolume(volume) {
+  applyLocalVolume(volume);
+  refreshLocalState();
+}
+function playTrackById(trackId, queueIds) {
+  const queue = queueIds && queueIds.length
+    ? queueIds.map(getTrackFromData).filter(Boolean)
+    : data.tracks;
+  const track = queue.find((item) => item.id === trackId) || getTrackFromData(trackId);
+  if (outputMode === 'local') void playLocalTrack(track, queue, 0, true);
+  else send({ type: 'play-track', trackId, queueTrackIds: queueIds || data.tracks.map((t) => t.id) });
+}
+function playNextTrackById(trackId, queueIds) {
+  if (outputMode !== 'local') {
+    send({ type: 'play-next-track', trackId, queueTrackIds: queueIds || data.tracks.map((t) => t.id) });
+    return;
+  }
+  const track = getTrackFromData(trackId);
+  if (!track) return;
+  const insertAt = localIndex >= 0 ? Math.min(localIndex + 1, localQueue.length) : localQueue.length;
+  localQueue = [...localQueue.slice(0, insertAt), track, ...localQueue.slice(insertAt)];
+  refreshLocalState();
+}
 function request(msg) {
   const requestId = 'r' + (++requestSeq);
   send({ ...msg, requestId });
@@ -569,6 +849,15 @@ function request(msg) {
     }, 20000);
   });
 }
+applyLocalVolume(localVolume);
+localAudio.addEventListener('timeupdate', refreshLocalState);
+localAudio.addEventListener('durationchange', refreshLocalState);
+localAudio.addEventListener('play', refreshLocalState);
+localAudio.addEventListener('pause', refreshLocalState);
+localAudio.addEventListener('ended', () => {
+  if (localIndex + 1 < localQueue.length) playLocalByIndex(localIndex + 1);
+  else refreshLocalState();
+});
 function render(state) {
   current = state;
   el('title').textContent = state.title || t('player.nothingPlaying');
@@ -636,8 +925,8 @@ function activeDownloadIds() {
 function renderSonos(sonos) {
   const enabled = !!sonos?.enabled;
   const panel = el('sonosPanel');
-  panel.classList.toggle('hidden', !enabled);
-  if (!enabled) {
+  panel.classList.toggle('hidden', !enabled || outputMode === 'local');
+  if (!enabled || outputMode === 'local') {
     panel.innerHTML = '';
     return;
   }
@@ -713,6 +1002,7 @@ async function handleDownloadGo() {
   }
 }
 applyI18n();
+updateOutputButtons();
 function setStatus(key) {
   const conn = el('conn');
   conn.setAttribute('data-i18n', key);
@@ -722,7 +1012,11 @@ ws.onopen = () => { el('dot').classList.add('on'); setStatus('remote.status.live
 ws.onclose = () => { el('dot').classList.remove('on'); setStatus('remote.status.disconnected'); };
 ws.onmessage = (event) => {
   const msg = JSON.parse(event.data);
-  if (msg.type === 'state') render(msg.state);
+  if (msg.type === 'state') {
+    hostState = msg.state;
+    if (outputMode === 'host') render(hostState);
+    else render(decorateLocalState());
+  }
   else if (msg.type === 'data') renderData(msg.data);
   else if (msg.type === 'settings') {
     const nextLocale = msg.data?.language;
@@ -730,6 +1024,7 @@ ws.onmessage = (event) => {
       locale = nextLocale;
       document.documentElement.setAttribute('lang', locale);
       applyI18n();
+      updateOutputButtons();
       if (current) render(current); else renderData(data);
     }
   }
@@ -756,13 +1051,23 @@ document.querySelectorAll('nav button').forEach((button) => button.onclick = () 
   document.querySelectorAll('nav button').forEach((item) => item.classList.toggle('active', item === button));
   document.querySelectorAll('.view').forEach((view) => view.classList.toggle('active', view.id === button.dataset.view));
 });
-el('play').onclick = () => send({ type: 'toggle-play' });
-el('prev').onclick = () => send({ type: 'prev' });
-el('next').onclick = () => send({ type: 'next' });
+el('play').onclick = () => outputMode === 'local' ? toggleLocalPlay() : send({ type: 'toggle-play' });
+el('prev').onclick = () => outputMode === 'local' ? playLocalByIndex(localIndex - 1) : send({ type: 'prev' });
+el('next').onclick = () => outputMode === 'local' ? playLocalByIndex(localIndex + 1) : send({ type: 'next' });
 el('seek').addEventListener('pointerdown', () => { scrubbing = true; });
 el('seek').addEventListener('input', () => { el('pos').textContent = fmt(el('seek').value); });
-el('seek').addEventListener('change', () => { scrubbing = false; send({ type: 'seek', seconds: Number(el('seek').value) }); });
-el('volume').addEventListener('input', () => send({ type: 'volume', volume: Number(el('volume').value) }));
+el('seek').addEventListener('change', () => {
+  scrubbing = false;
+  if (outputMode === 'local') seekLocal(Number(el('seek').value));
+  else send({ type: 'seek', seconds: Number(el('seek').value) });
+});
+el('volume').addEventListener('input', () => {
+  if (outputMode === 'local') setLocalVolume(Number(el('volume').value));
+  else send({ type: 'volume', volume: Number(el('volume').value) });
+});
+document.querySelectorAll('[data-output]').forEach((button) => {
+  button.addEventListener('click', () => setOutputMode(button.dataset.output));
+});
 el('librarySearch').onclick = () => void searchLibrary();
 el('libraryQuery').addEventListener('keydown', (event) => { if (event.key === 'Enter') void searchLibrary(); });
 el('downloadGo').onclick = () => void handleDownloadGo();
@@ -778,11 +1083,12 @@ document.body.addEventListener('click', async (event) => {
   if (!(target instanceof HTMLElement)) return;
   const bookmarkButton = target.closest('[data-bookmark-seek]');
   if (bookmarkButton instanceof HTMLElement) {
-    send({ type: 'seek', seconds: Number(bookmarkButton.dataset.bookmarkSeek) });
+    if (outputMode === 'local') seekLocal(Number(bookmarkButton.dataset.bookmarkSeek));
+    else send({ type: 'seek', seconds: Number(bookmarkButton.dataset.bookmarkSeek) });
   } else if (target.dataset.play) {
-    send({ type: 'play-track', trackId: Number(target.dataset.play), queueTrackIds: data.tracks.map((t) => t.id) });
+    playTrackById(Number(target.dataset.play), data.tracks.map((t) => t.id));
   } else if (target.dataset.playNext) {
-    send({ type: 'play-next-track', trackId: Number(target.dataset.playNext), queueTrackIds: data.tracks.map((t) => t.id) });
+    playNextTrackById(Number(target.dataset.playNext), data.tracks.map((t) => t.id));
     target.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
     target.setAttribute('disabled', '');
   } else if (target.dataset.downloadUrl) {
@@ -811,6 +1117,7 @@ document.body.addEventListener('click', async (event) => {
     send({ type: 'sonos-add-by-ip', host });
     input.value = '';
   } else if (target.dataset.sonosCast) {
+    if (outputMode === 'local') return;
     send({ type: 'sonos-cast', host: target.dataset.sonosCast });
   } else if (target.dataset.sonosStop) {
     send({ type: 'sonos-stop', host: target.dataset.sonosStop });
@@ -828,7 +1135,10 @@ document.body.addEventListener('click', async (event) => {
     updateHighlight();
   } else if (target.dataset.playPlaylist) {
     const tracks = await request({ type: 'playlist:tracks', playlistId: Number(target.dataset.playPlaylist) });
-    if (tracks[0]) send({ type: 'play-track', trackId: tracks[0].id, queueTrackIds: tracks.map((tr) => tr.id) });
+    if (tracks[0]) {
+      if (outputMode === 'local') void playLocalTrack(tracks[0], tracks, 0, true);
+      else send({ type: 'play-track', trackId: tracks[0].id, queueTrackIds: tracks.map((tr) => tr.id) });
+    }
   } else if (target.dataset.renamePlaylist) {
     const playlist = data.playlists.find((p) => p.id === Number(target.dataset.renamePlaylist));
     const name = prompt(t('remote.playlists.namePrompt'), playlist ? playlist.name : '');
@@ -916,6 +1226,11 @@ export async function handleRemoteRequest(req: IncomingMessage, res: ServerRespo
       'Cache-Control': 'no-store'
     });
     res.end(Buffer.from(match[2], 'base64'));
+    return;
+  }
+  const trackMatch = url.pathname.match(/^\/remote-track\/(\d+)$/);
+  if (trackMatch) {
+    serveRemoteTrack(req, res, Number(trackMatch[1]));
     return;
   }
   res.writeHead(404);

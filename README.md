@@ -141,6 +141,20 @@ To use it:
 
 ## Getting started
 
+### Install the latest release
+
+macOS and Linux users can install the latest GitHub Release with:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dgarana/fmusic/main/scripts/install.sh | bash
+```
+
+The installer detects your OS and architecture, downloads the latest
+release asset, installs the macOS `.app` from the DMG or places the Linux
+AppImage at `~/.local/bin/fmusic`, and creates a desktop entry on Linux.
+
+### Development
+
 ```bash
 npm install
 npm run dev

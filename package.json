@@ -35,6 +35,7 @@
     "howler": "^2.2.4",
     "music-metadata": "^11.12.3",
     "node-id3": "^0.2.6",
+    "punycode": "^2.3.1",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

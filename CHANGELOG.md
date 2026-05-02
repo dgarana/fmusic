@@ -1,7 +1,7 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.12.0
+## v0.12.1
 
 ### Bug Fixes
 
@@ -17,6 +17,7 @@ _Generated from repository tags and commit history._
 - Sync Sonos volume with player UI when casting starts (#29) ([bb403f7](https://github.com/dgarana/fmusic/commit/bb403f7e21f45b10e14589c0b7d33cf48c4cc558))
 - Prevent multiple app instances using single instance lock (#30) ([464f006](https://github.com/dgarana/fmusic/commit/464f00609272f424c327c7d373636d4e3c44fd2c))
 - Error in player when disabling sonos if already streaming (#32) ([b286d33](https://github.com/dgarana/fmusic/commit/b286d330c86a56ae6dbac8ec1e2ddd55e779680a))
+- Fix ubuntu installer ([ebfe835](https://github.com/dgarana/fmusic/commit/ebfe8356f3b490bd97af238ccb5f586d76a94548))
 
 ### Documentation
 
@@ -43,6 +44,7 @@ _Generated from repository tags and commit history._
 - Add quick seek controls (#25) ([da909ec](https://github.com/dgarana/fmusic/commit/da909ec7b2697dd3b9ae0a208dbc3e2efa837a1e))
 - Add renaming feature to playlists (#26) ([0cedbac](https://github.com/dgarana/fmusic/commit/0cedbac3674998376f94ebcbab72f60a0b0242f0))
 - Implement bookmarks section (#34) ([9a23e02](https://github.com/dgarana/fmusic/commit/9a23e02c2606924625a96c41d5e1d79309887504))
+- Add script installer ([1c31703](https://github.com/dgarana/fmusic/commit/1c31703e64cc3f47c487b266931a6dc10a8df532))
 
 ### Miscellaneous
 
@@ -67,7 +69,8 @@ _Generated from repository tags and commit history._
 - Release v0.10.1 ([d1f426c](https://github.com/dgarana/fmusic/commit/d1f426c06d1bde8ae922f745131c56e2620211ff))
 - Release v0.11.0 ([1a466aa](https://github.com/dgarana/fmusic/commit/1a466aa23ba411afca18016a92b00e08d174c8f1))
 - Release v0.11.1 ([d10962f](https://github.com/dgarana/fmusic/commit/d10962fefa10ba369729300302f839dedaf7f8b8))
-- Release v0.12.0 ([5772b11](https://github.com/dgarana/fmusic/commit/5772b113e0a575598c24909e0678663f9d49330f))
+- Release v0.12.0 ([8bf5224](https://github.com/dgarana/fmusic/commit/8bf52246a40cad7aaaf152375421307629d2fd42))
+- Release v0.12.1 ([e5f2d21](https://github.com/dgarana/fmusic/commit/e5f2d21c1aa33396a425ed24f72855ef36e8d90b))
 
 ### Other
 
@@ -131,6 +134,10 @@ Expose player state, playback controls, library search, playlist listing, and pl
 Add Settings controls for enabling MCP and choosing the localhost port, plus a stdio bridge for Claude Desktop-style local MCP clients.
 
 * feat: Improve MCP to write data ([be24112](https://github.com/dgarana/fmusic/commit/be24112f9c98a6e2af3d1e8b189be76e6e9fdd25))
+- Feature/implement remote controller host audio (#36)
+
+* feat: Add capability for playing the songs on remote device
+* doc: Update README ([a513c44](https://github.com/dgarana/fmusic/commit/a513c44230ef5cc880be828d316a14cd709662fe))
 
 ### Refactor
 

@@ -12,6 +12,32 @@ Built with **Electron + Vite + React + TypeScript** and powered by the
 standalone **yt-dlp** and **FFmpeg** binaries — no Python installation
 required on the user's machine.
 
+## Table of contents
+
+- [Features](#features)
+  - [Search and download](#search-and-download)
+  - [Library and playlists](#library-and-playlists)
+  - [Edit Audio](#edit-audio)
+  - [Player](#player)
+  - [Sonos](#sonos)
+  - [System tray and mini player](#system-tray-and-mini-player)
+  - [Remote controller (BETA)](#remote-controller-beta)
+- [Stack](#stack)
+- [Getting started](#getting-started)
+  - [Install the latest release](#install-the-latest-release)
+  - [Development](#development)
+- [Commands](#commands)
+- [Database migrations](#database-migrations)
+- [Project structure](#project-structure)
+- [IPC architecture (mini player and tray)](#ipc-architecture-mini-player-and-tray)
+- [Internationalization](#internationalization)
+- [Built-in playlists](#built-in-playlists)
+- [Smart playlists](#smart-playlists)
+- [`FMusic-media:` protocol](#fmusic-media-protocol)
+- [Important notes](#important-notes)
+- [Disclaimer](#disclaimer)
+- [License](#license)
+
 ## Features
 
 ### Search and download

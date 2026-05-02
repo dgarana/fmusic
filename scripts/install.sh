@@ -4,6 +4,7 @@ set -euo pipefail
 REPO="${FMUSIC_REPO:-dgarana/fmusic}"
 API_URL="https://api.github.com/repos/${REPO}/releases/latest"
 ICON_URL="https://raw.githubusercontent.com/${REPO}/main/resources/icon.png"
+LATEST_LINUX_YML="https://github.com/${REPO}/releases/latest/download/latest-linux.yml"
 APP_NAME="FMusic"
 
 say() {
@@ -29,6 +30,29 @@ download() {
 latest_asset_url() {
   local pattern="$1"
   printf '%s\n' "$RELEASE_ASSETS" | grep -E "$pattern" | head -n 1 || true
+}
+
+latest_release_download_url() {
+  printf 'https://github.com/%s/releases/latest/download/%s\n' "$REPO" "$1"
+}
+
+fetch_release_assets() {
+  RELEASE_ASSETS="$(
+    curl -fsSL \
+      -H 'Accept: application/vnd.github+json' \
+      -H 'User-Agent: fmusic-installer' \
+      "$API_URL" |
+      grep '"browser_download_url"' |
+      sed -E 's/.*"browser_download_url"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/'
+  )"
+  [ -n "$RELEASE_ASSETS" ] || die "No downloadable release assets found."
+}
+
+linux_asset_name_from_latest_yml() {
+  local ext="$1"
+  curl -fsSL -H 'User-Agent: fmusic-installer' "$LATEST_LINUX_YML" |
+    sed -nE "s/^[[:space:]]*(- )?(url|path):[[:space:]]*([^[:space:]]+[.]${ext})[[:space:]]*$/\\3/p" |
+    head -n 1 || true
 }
 
 install_macos() {
@@ -73,8 +97,17 @@ install_macos() {
 }
 
 install_linux() {
-  local url bin_dir appimage desktop_dir desktop_file icon_dir
-  url="$(latest_asset_url 'FMusic-.*[.]AppImage$')"
+  local asset_name url bin_dir appimage desktop_dir desktop_file icon_dir
+  asset_name="$(linux_asset_name_from_latest_yml 'AppImage')"
+
+  if [ -z "$asset_name" ]; then
+    say "Could not read AppImage name from latest-linux.yml; falling back to the GitHub release API."
+    fetch_release_assets
+    url="$(latest_asset_url '[.]AppImage$')"
+  else
+    url="$(latest_release_download_url "$asset_name")"
+  fi
+
   [ -n "$url" ] || die "Could not find a Linux AppImage in the latest ${REPO} release."
 
   bin_dir="${HOME}/.local/bin"
@@ -117,19 +150,12 @@ main() {
   need grep
   need sed
 
-  say "Fetching latest release from ${REPO}"
-  RELEASE_ASSETS="$(
-    curl -fsSL \
-      -H 'Accept: application/vnd.github+json' \
-      -H 'User-Agent: fmusic-installer' \
-      "$API_URL" |
-      grep '"browser_download_url"' |
-      sed -E 's/.*"browser_download_url": "([^"]+)".*/\1/'
-  )"
-  [ -n "$RELEASE_ASSETS" ] || die "No downloadable release assets found."
-
   case "$(uname -s)" in
-    Darwin) install_macos ;;
+    Darwin)
+      say "Fetching latest release from ${REPO}"
+      fetch_release_assets
+      install_macos
+      ;;
     Linux) install_linux ;;
     *) die "Unsupported OS: $(uname -s). Please download FMusic manually from https://github.com/${REPO}/releases/latest" ;;
   esac

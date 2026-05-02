@@ -61,7 +61,7 @@ jobs:
               dist/*.dmg.blockmap
               dist/*.zip
               dist/latest*.yml
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             target: linux
             script: 'dist:linux'
             artifact_glob: |
@@ -85,7 +85,7 @@ jobs:
           key: fmusic-bin-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/postinstall.js') }}
 
       - name: Install Linux system deps
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.target == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -142,4 +142,3 @@ jobs:
             artifacts/latest*.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

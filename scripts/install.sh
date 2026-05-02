@@ -6,6 +6,7 @@ API_URL="https://api.github.com/repos/${REPO}/releases/latest"
 ICON_URL="https://raw.githubusercontent.com/${REPO}/main/resources/icon.png"
 LATEST_LINUX_YML="https://github.com/${REPO}/releases/latest/download/latest-linux.yml"
 APP_NAME="FMusic"
+MIN_GLIBC="2.33"
 
 say() {
   printf '[fmusic] %s\n' "$*"
@@ -18,6 +19,24 @@ die() {
 
 need() {
   command -v "$1" >/dev/null 2>&1 || die "Missing required command: $1"
+}
+
+version_ge() {
+  [ "$1" = "$2" ] && return 0
+  [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n 1)" = "$2" ]
+}
+
+glibc_version() {
+  getconf GNU_LIBC_VERSION 2>/dev/null | awk '{ print $2 }' || true
+}
+
+check_linux_glibc() {
+  local version
+  version="$(glibc_version)"
+  [ -n "$version" ] || return 0
+  if ! version_ge "$version" "$MIN_GLIBC"; then
+    die "This Linux build requires glibc ${MIN_GLIBC}+ but this system has ${version}. Ubuntu 22.04+ is supported; Ubuntu 20.04 and older are too old for the current package."
+  fi
 }
 
 download() {
@@ -98,6 +117,7 @@ install_macos() {
 
 install_linux() {
   local asset_name url bin_dir appimage desktop_dir desktop_file icon_dir
+  check_linux_glibc
   asset_name="$(linux_asset_name_from_latest_yml 'AppImage')"
 
   if [ -z "$asset_name" ]; then

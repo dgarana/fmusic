@@ -178,6 +178,8 @@ curl -fsSL https://raw.githubusercontent.com/dgarana/fmusic/main/scripts/install
 The installer detects your OS and architecture, downloads the latest
 release asset, installs the macOS `.app` from the DMG or places the Linux
 AppImage at `~/.local/bin/fmusic`, and creates a desktop entry on Linux.
+The Linux package currently requires **glibc 2.33+** (Ubuntu 22.04 or
+newer is recommended).
 
 ### Development
 

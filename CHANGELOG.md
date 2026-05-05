@@ -1,7 +1,7 @@
 # CHANGELOG
 
 _Generated from repository tags and commit history._
-## v0.12.1
+## v0.12.2
 
 ### Bug Fixes
 
@@ -18,11 +18,14 @@ _Generated from repository tags and commit history._
 - Prevent multiple app instances using single instance lock (#30) ([464f006](https://github.com/dgarana/fmusic/commit/464f00609272f424c327c7d373636d4e3c44fd2c))
 - Error in player when disabling sonos if already streaming (#32) ([b286d33](https://github.com/dgarana/fmusic/commit/b286d330c86a56ae6dbac8ec1e2ddd55e779680a))
 - Fix ubuntu installer ([ebfe835](https://github.com/dgarana/fmusic/commit/ebfe8356f3b490bd97af238ccb5f586d76a94548))
+- Update install script ([96cf21a](https://github.com/dgarana/fmusic/commit/96cf21a41d70438f2a83f4403e1e3363d94f1b06))
+- Build target for linux ([451b0e2](https://github.com/dgarana/fmusic/commit/451b0e2178a24d2ea946f13aa50a1e1452ecd67e))
 
 ### Documentation
 
 - Update README according to latest changes ([a03c875](https://github.com/dgarana/fmusic/commit/a03c875c779dc2d4c97201cd1c7e23f131ad9a9c))
 - Update AGENTS and README ([7271d5c](https://github.com/dgarana/fmusic/commit/7271d5ce7cf044f073763ae206b3a6133fb1edd2))
+- Update README and add index ([7e29bc3](https://github.com/dgarana/fmusic/commit/7e29bc30c7ad823457a7a83770d81012949dc99e))
 
 ### Features
 
@@ -45,6 +48,7 @@ _Generated from repository tags and commit history._
 - Add renaming feature to playlists (#26) ([0cedbac](https://github.com/dgarana/fmusic/commit/0cedbac3674998376f94ebcbab72f60a0b0242f0))
 - Implement bookmarks section (#34) ([9a23e02](https://github.com/dgarana/fmusic/commit/9a23e02c2606924625a96c41d5e1d79309887504))
 - Add script installer ([1c31703](https://github.com/dgarana/fmusic/commit/1c31703e64cc3f47c487b266931a6dc10a8df532))
+- Add support for more languages (#37) ([127b1b2](https://github.com/dgarana/fmusic/commit/127b1b2dd8b93bd57fe0dc46a206d23ca76e0f64))
 
 ### Miscellaneous
 
@@ -70,7 +74,8 @@ _Generated from repository tags and commit history._
 - Release v0.11.0 ([1a466aa](https://github.com/dgarana/fmusic/commit/1a466aa23ba411afca18016a92b00e08d174c8f1))
 - Release v0.11.1 ([d10962f](https://github.com/dgarana/fmusic/commit/d10962fefa10ba369729300302f839dedaf7f8b8))
 - Release v0.12.0 ([8bf5224](https://github.com/dgarana/fmusic/commit/8bf52246a40cad7aaaf152375421307629d2fd42))
-- Release v0.12.1 ([e5f2d21](https://github.com/dgarana/fmusic/commit/e5f2d21c1aa33396a425ed24f72855ef36e8d90b))
+- Release v0.12.1 ([ecbddc7](https://github.com/dgarana/fmusic/commit/ecbddc7d148ee579d68738c6b5a66508e2d43303))
+- Release v0.12.2 ([8f5091a](https://github.com/dgarana/fmusic/commit/8f5091a8eca0741b844920547990e7ee8df249ac))
 
 ### Other
 

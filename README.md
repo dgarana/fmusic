@@ -364,29 +364,26 @@ blank.
 
 ## Internationalization
 
-The app ships with English and Spanish. The user's choice lives in
-`AppSettings.language` and is exposed from the UI in Settings → System.
-Translations are plain JSON files under `src/shared/i18n/`:
+The app supports the **top 10 most spoken languages**: English, Mandarin Chinese, Hindi, Spanish, French, Arabic, Bengali, Portuguese, Russian, and Urdu.
 
-```text
-src/shared/i18n/
-├─ en.json
-├─ es.json
-└─ index.ts   # translate(locale, key, params?) + supportedLocales
-```
+The user's choice lives in `AppSettings.language` and is exposed from the UI in Settings → System.
+Translations are plain JSON files under `src/shared/i18n/`.
 
-Every renderer component calls a typed `useT()` hook, and the main
-process has its own `t()` helper for things like the tray menu. Keys are
-dot-separated (`settings.tabs.system`) and values support `{placeholder}`
-interpolation; missing keys fall back to English.
+### Contributing translations
 
-To add another language:
+We welcome contributions to improve existing translations or add new languages!
 
-1. Copy `en.json` to `xx.json` and translate the values.
-2. Add the code to the `Locale` union in `src/shared/types.ts`.
-3. Register the bundle in `src/shared/i18n/index.ts` (`bundles` + `supportedLocales`).
+**To add or improve a language:**
 
-No code changes are needed in components.
+1. **Locate the files**: All translations are in `src/shared/i18n/`.
+2. **Create/Edit the JSON**:
+   - To improve: Edit the relevant `xx.json` file.
+   - To add new: Copy `en.json` to `xx.json` (e.g., `it.json` for Italian) and translate the values.
+3. **Update types**: If adding a new language, add its ISO code to the `Locale` union in `src/shared/types.ts`.
+4. **Register the bundle**: Add the new import and registry entry in `src/shared/i18n/index.ts` (both in the `bundles` object and the `supportedLocales` array).
+5. **Submit a Pull Request**: We'll review and merge your contribution!
+
+Every renderer component calls a typed `useT()` hook, and the main process has its own `t()` helper for things like the tray menu. Keys are dot-separated (`settings.tabs.system`) and values support `{placeholder}` interpolation; missing keys fall back to English.
 
 ## Built-in playlists
 

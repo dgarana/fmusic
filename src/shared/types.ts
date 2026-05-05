@@ -183,7 +183,7 @@ export interface SmartPlaylistDefinition {
   rules: SmartPlaylistRule[];
 }
 
-export type Locale = 'en' | 'es';
+export type Locale = 'en' | 'es' | 'zh' | 'hi' | 'fr' | 'ar' | 'bn' | 'pt' | 'ru' | 'ur' | 'eu' | 'ca';
 
 export interface AppSettings {
   downloadDir: string;

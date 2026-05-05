@@ -11,17 +11,47 @@
 import type { Locale } from '../types.js';
 import en from './en.json';
 import es from './es.json';
+import zh from './zh.json';
+import hi from './hi.json';
+import fr from './fr.json';
+import ar from './ar.json';
+import bn from './bn.json';
+import pt from './pt.json';
+import ru from './ru.json';
+import ur from './ur.json';
+import ca from './ca.json';
+import eu from './eu.json';
 
 type TranslationTree = { [key: string]: string | TranslationTree };
 
 const bundles: Record<Locale, TranslationTree> = {
   en: en as TranslationTree,
-  es: es as TranslationTree
+  es: es as TranslationTree,
+  zh: zh as TranslationTree,
+  hi: hi as TranslationTree,
+  fr: fr as TranslationTree,
+  ar: ar as TranslationTree,
+  bn: bn as TranslationTree,
+  pt: pt as TranslationTree,
+  ru: ru as TranslationTree,
+  ur: ur as TranslationTree,
+  ca: ca as TranslationTree,
+  eu: eu as TranslationTree
 };
 
 export const supportedLocales: ReadonlyArray<{ code: Locale; name: string; flag: string }> = [
   { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' }
+  { code: 'zh', name: '中文 (Mandarin)', flag: '🇨🇳' },
+  { code: 'hi', name: 'हिन्दी (Hindi)', flag: '🇮🇳' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'ca', name: 'Català', flag: '🇪🇸' },
+  { code: 'eu', name: 'Euskara', flag: '🇪🇸' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'ar', name: 'العربية (Arabic)', flag: '🇸🇦' },
+  { code: 'bn', name: 'বাংলা (Bengali)', flag: '🇧🇩' },
+  { code: 'pt', name: 'Português', flag: '🇵🇹' },
+  { code: 'ru', name: 'Русский (Russian)', flag: '🇷🇺' },
+  { code: 'ur', name: 'اردو (Urdu)', flag: '🇵🇰' }
 ];
 
 function lookup(tree: TranslationTree, key: string): string | null {
